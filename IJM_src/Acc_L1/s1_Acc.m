@@ -61,8 +61,8 @@ function [T,meta_tbl] = s1_Acc(m,ID,birdmeta,written_local)
     DateTime.Format = 'yyyy-MM-dd HH:mm:ss.SSS';
 
     % CONFIRM DATEDATE FORMAT:
-    For some reason a handful of files being read as YYYY-dd-MM instead of YYYY-MM-dd.
-    To find, check if the number of unique months is greater than the number of unique days. if so, need to convert to YYYY-MM-dd.
+    % For some reason a handful of files being read as YYYY-dd-MM instead of YYYY-MM-dd.
+    % To find, check if the number of unique months is greater than the number of unique days. if so, need to convert to YYYY-MM-dd.
     if length(unique(day(DateTime))) < length(unique(month(DateTime))) 
         % First convert to string:
         dts=string(DateTime);
