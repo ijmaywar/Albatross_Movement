@@ -23,7 +23,7 @@ function [T,meta_tbl] = s1_Acc(m,ID,birdmeta,written_local)
     meta_tbl.BirdID{1} = ID;
      
 
-    Reformat Dates and Times to a DateTime in ISO 8601
+    % Reformat Dates and Times to a DateTime in ISO 8601
     
     VarNames = m.Properties.VariableNames;
     
@@ -60,19 +60,19 @@ function [T,meta_tbl] = s1_Acc(m,ID,birdmeta,written_local)
 
     DateTime.Format = 'yyyy-MM-dd HH:mm:ss.SSS';
 
-    CONFIRM DATEDATE FORMAT:
+    % CONFIRM DATEDATE FORMAT:
     For some reason a handful of files being read as YYYY-dd-MM instead of YYYY-MM-dd.
     To find, check if the number of unique months is greater than the number of unique days. if so, need to convert to YYYY-MM-dd.
     if length(unique(day(DateTime))) < length(unique(month(DateTime))) 
-        First convert to string:
+        % First convert to string:
         dts=string(DateTime);
-        Then convert to datetime specifying format
+        % Then convert to datetime specifying format
         dtfix = datetime(dts,'InputFormat','yyyy-dd-MM HH:mm:ss.SSS'); % say what the format is when converting to datetime
         dtfix.Format = 'yyyy-MM-dd HH:mm:ss.SSS'; % write to make format same as other files
         DateTime = dtfix;
     end
 
-    Make sure that the capture date and axyON time are correct
+    % Make sure that the capture date and axyON time are correct
     meta_startdate = num2str(birdmeta.AxyON_date_yyyymmdd);
     meta_startdate = strcat(extractBefore(meta_startdate,5),"-",extractBetween(meta_startdate,5,6),"-",extractAfter(meta_startdate,6));
     meta_starttime = birdmeta.AxyON_time_hhmmss;
@@ -83,7 +83,7 @@ function [T,meta_tbl] = s1_Acc(m,ID,birdmeta,written_local)
     meta_startdatetime = strcat(meta_startdate," ",meta_starttime);
     meta_startdatetime = datetime(meta_startdatetime,'InputFormat','yyyy-MM-dd HH:mm:ss');
 
-    Find local timezone
+    % Find local timezone
     if strcmp(birdmeta.Location,"Midway")
         local_tz = "Pacific/Midway";
     elseif strcmp(birdmeta.Location,"Bird_Island")
@@ -93,35 +93,35 @@ function [T,meta_tbl] = s1_Acc(m,ID,birdmeta,written_local)
         return
     end
 
-    Declare the timezone of the metadata - I think that Midway metadata
-    were written in local tz. 
+    % Declare the timezone of the metadata - I think that Midway metadata
+    % were written in local tz. 
     
     meta_startdatetime.TimeZone = local_tz;
 
     if written_local
-        If the datetimes of the acc data is recorded in local_tz convert it to GMT
+        % If the datetimes of the acc data is recorded in local_tz convert it to GMT
 
-        First, declare the timezone of the recorded datetimes (local_tz)
+        % First, declare the timezone of the recorded datetimes (local_tz)
         DateTime.TimeZone = local_tz;
     
-        Next, convert the DateTime to GMT
+        % Next, convert the DateTime to GMT
         DateTime.TimeZone = "GMT";
 
     else % For Midway files written in GMT. 
-        If the acc file datetimes are already in GMT the meta acc_on time must be
-        converted to GMT to compare to the first datetime sampled in the acc data
+        % If the acc file datetimes are already in GMT the meta acc_on time must be
+        % converted to GMT to compare to the first datetime sampled in the acc data
 
-        Declare that DateTime is in GMT
+        % Declare that DateTime is in GMT
         DateTime.TimeZone = "GMT";
 
-        Convert the metadata acc_on time to GMT
+        % Convert the metadata acc_on time to GMT
         meta_startdatetime.TimeZone = "GMT";
     
     end
 
-    Test to see if datetime was inputted correct in AxyManager. I am
-    using a buffer of <= 4 minutes because sometimes
-    AxyManager glitches and slightly changes the start datetime.
+    % Test to see if datetime was inputted correct in AxyManager. I am
+    % using a buffer of <= 4 minutes because sometimes
+    % AxyManager glitches and slightly changes the start datetime.
     mismatch_mins = minutes(time(between(meta_startdatetime,DateTime(1))));
     meta_tbl.DT_mismatch_mins(1,:) = mismatch_mins;
     if abs(mismatch_mins)>=4
