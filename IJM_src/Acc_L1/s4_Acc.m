@@ -15,7 +15,7 @@ function [m,Q,HasNaN] = s4_Acc(m,dropdir,bird)
     %% Calculate q-mat
     
     % Make a folder for the current bird's figures
-    figdir = strcat('s4_Figures/',bird,'/');
+    figdir = strcat('Figures/',bird,'/');
     mkdir(strcat(dropdir,figdir))
     
     A = [m.Ax,m.Ay,m.Az];
