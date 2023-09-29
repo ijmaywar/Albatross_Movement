@@ -3,7 +3,7 @@ clearvars
  
 %% USER INPUTED VALUES
 
-szn = '2019_2020';
+szn = '2021_2022';
 location = 'Bird_Island'; % Options: 'Bird_Island', 'Midway', 'Wandering'
 tagtype = "AGM"; % Options: 'AGM', 'Axy5'
 computer = 'MBP'; % Options:'MBP', 'ThinkPad'
@@ -22,29 +22,31 @@ fullmeta = fullmeta(strcmp(fullmeta.Field_season,szn) & strcmp(fullmeta.Location
 
 %% How far did I get?
 
-s4_dir = strcat('/Volumes/LaCie/L1/',location,'/Tag_Data/Accelerometer/Acc_Technosmart/',szn,'/s4_Trimmed_Untilted/');
-cd(s4_dir)
-s4_fileList = exFAT_aux_remove(struct2table(dir('*.txt')));
+% set directories
+GD_dir = '/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/';
+L1_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/Accelerometer/Acc_Technosmart/',szn,'/');
+cd(L1_dir)
+L1_fileList = exFAT_aux_remove(struct2table(dir('*.csv')));
 
-metastruct_dir = strcat('/Volumes/LaCie/L1/',location,'/Tag_Data/Accelerometer/Acc_Technosmart/',szn,'/s4_Trimmed_Untilted/meta_structures/');
+metastruct_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/Accelerometer/Acc_Technosmart/',szn,'/meta_structures/');
 cd(metastruct_dir)
 metastruct_fileList = exFAT_aux_remove(struct2table(dir('*.mat')));
 
 %% Create table
 nBirds = height(fullmeta);
 meta_table = table(cell(nBirds,1),zeros(nBirds,1),zeros(nBirds,1),zeros(nBirds,1),zeros(nBirds,1),zeros(nBirds,1), ...
-    'VariableNames',{'Deployment_ID','NumFiles','Step','HasNaN','findMeta_idx','s4_file'}); 
+    'VariableNames',{'Deployment_ID','NumFiles','Step','HasNaN','findMeta_idx','L1_file'}); 
 
 for i = 1:nBirds
     current_bird = fullmeta.Deployment_ID{i};
     meta_table.Deployment_ID{i} = current_bird;
 
-    % Check to see if there is an s4 file for this bird
-    s4_name = strcat(current_bird,"_Acc_L1_s4.txt");
-    finds4 = find(strcmp(s4_fileList.name,s4_name));
+    % Check to see if there is an L1 file for this bird
+    L1_name = strcat(current_bird,"_Acc_L1.csv");
+    findL1 = find(strcmp(L1_fileList.name,L1_name));
 
-    if ~isempty(finds4)
-        meta_table.s4_file(i) = length(finds4);
+    if ~isempty(findL1)
+        meta_table.L1_file(i) = length(findL1);
     end
 
     % Check the metastruct to see how far we are into preprocessing
@@ -86,20 +88,25 @@ for i = 1:height(meta_table)
     end
 end
 
-%% Look for discrepencies between fullmeta, metastruct, and the presence of an s4 file
+%% Look for discrepencies between fullmeta, metastruct, and the presence of an L1 file
 for i = 1:height(meta_table)
-    if meta_table.s4_file(i) > 0 && (meta_table.Step(i) < 4 || fullmeta.Acc_L1_s4(i) ~= 1) 
-        disp(strcat("Why is there an s4 file for ", meta_table.Deployment_ID(i), "?"))
+    if meta_table.L1_file(i) > 0 && (meta_table.Step(i) < 4 || fullmeta.Acc_L1(i) ~= 1) 
+        disp(strcat("Why is there an L1 file for ", meta_table.Deployment_ID(i), "?"))
         pause;
     end
 
-    if meta_table.s4_file(i) == 0 && (meta_table.Step(i) == 4 || fullmeta.Acc_L1_s4(i) == 1) 
-        disp(strcat("There is no s4 file for ", meta_table.Deployment_ID(i), "."))
+    if meta_table.L1_file(i) == 0 && (meta_table.Step(i) == 4 || fullmeta.Acc_L1(i) == 1) 
+        disp(strcat("There is no L1 file for ", meta_table.Deployment_ID(i), "."))
         pause;
     end
 
-    if meta_table.Step(i) == 4 && fullmeta.Acc_L1_s4(i) ~= 1
+    if meta_table.Step(i) == 4 && fullmeta.Acc_L1(i) ~= 1
         disp(strcat("Why isn't ", meta_table.Deployment_ID(i), " marked as preprocessed."))
+        pause;
+    end
+
+    if fullmeta.Acc_L1 + fullmeta.Acc_Fix + fullmeta.Acc_Skip ~= 1
+        disp(stract("L1 should be marked as either complete, 'Fix', or 'Skip' for ", meta_table.Deployment_ID(i)))
         pause;
     end
 
