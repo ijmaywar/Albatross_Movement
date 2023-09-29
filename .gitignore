@@ -1,3 +1,5 @@
 # Ignore Mac OS Files
 
 .DS_Store
+IJM_src/.DS_Store
+.DS_Store
