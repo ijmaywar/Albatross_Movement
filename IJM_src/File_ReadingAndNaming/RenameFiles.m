@@ -7,35 +7,23 @@ clearvars
 
 %% USER INPUTED VALUES
 
-szn = '2022_2023';
-location = 'Midway'; % Options: 'Bird_Island', 'Midway', 'Wandering'
-tagtype = "Catlog"; % Options: 'AGM', 'Axy5', 'AxyAir', 'Catlog', 'iGotU'
-computer = 'MBP'; % Options: 'MBP', 'ThinkPad'
+szn = '2021_2022';
+location = 'Bird_Island'; % Options: 'Bird_Island', 'Midway', 'Wandering'
+type = "Acc"; % Options: 'AGM', 'Axy5', 'AxyAir', 'Catlog', 'iGotU'
+datalvl = "L1"; % Options: "L0", "L1", "L2"
+newname = true; % Options: true, false
 
 %% Set environment
 
-if strcmp(computer,'MBP')
-    % Matlab functions toolbox
-    addpath(genpath('/Users/ian/Documents/ThorneLab_FlightDynamics/IJM_src/'))
-    fullmeta = readtable('/Volumes/LaCie/Full_metadata.xlsx','Sheet',location,'TreatAsEmpty',{'NA'});
-elseif strcmp(computer,'ThinkPad')
-    addpath(genpath("G:/Other computers/My MacBook Pro (1)/ThorneLab_FlightDynamics/IJM_src"))
-    fullmeta = readtable("G:/My Drive/Full_metadata.xlsx",'Sheet',location,'TreatAsEmpty',{'NA'});
-else
-    disp("Can't Find Computer")
-    return
-end
-
+% Full_metadata sheet
+fullmeta = readtable('/Volumes/LaCie/Full_metadata.xlsx','Sheet',location,'TreatAsEmpty',{'NA'});
 % Specify the field season, location, and Acc tag type
-if ismember(tagtype,["Catlog","iGotU"])
-    fullmeta = fullmeta(strcmp(fullmeta.Field_season,szn) & strcmp(fullmeta.Location,location),:);
-else
-    fullmeta = fullmeta(strcmp(fullmeta.Field_season,szn) & strcmp(fullmeta.Location,location) & strcmp(fullmeta.ACC_TagType,tagtype),:);
-end
+% fullmeta = fullmeta(strcmp(fullmeta.Field_season,szn) & strcmp(fullmeta.Location,location) & strcmp(fullmeta.ACC_TagType,tagtype),:);
+fullmeta = fullmeta(strcmp(fullmeta.Field_season,szn) & strcmp(fullmeta.Location,location),:);
 
 % Find files
 %directory = strcat('/Volumes/LaCie/L0/Bird_Island/Tag_Data/',szn,'/',tagtype,'/');
-directory = '/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L0/Midway/Tag_Data/2022_2023/Catlog/';
+directory = '/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L1/Bird_Island/Tag_Data/Accelerometer/Acc_Technosmart/2021_2022/';
 cd(directory)
 fileList = exFAT_aux_remove(struct2table(dir('*.csv')));
 
@@ -55,10 +43,14 @@ for id = 1:nfiles
     rename_table.Old_ID{id} = string(Old_BirdName);
 
     % Find metadata
-    if ismember(tagtype,["Catlog","iGotU"])
-        findmeta = find(strcmp(fullmeta.GPS_OG_ID,Old_BirdName));
-    else
-        findmeta = find(strcmp(fullmeta.Acc_OG_ID,Old_BirdName));
+    if ~newname % For OG_IDs   
+        if ismember(type,["Catlog","iGotU"])
+            findmeta = find(strcmp(fullmeta.GPS_OG_ID,Old_BirdName));
+        else
+            findmeta = find(strcmp(fullmeta.Acc_OG_ID,Old_BirdName));
+        end
+    else % For names that have already been updated to the naming convention but need to be tweaked.
+        findmeta = find(strcmp(fullmeta.Deployment_ID,Old_BirdName));
     end
 
     if isempty(findmeta)
@@ -76,8 +68,14 @@ for id = 1:nfiles
         rename_table.Deployment_ID{id} = string(Dep_ID);
     
         % CHANGE THIS ACCORDINGLY
-        rename = strcat(Dep_ID,'_',tagtype,'_L0',ext);
-        rename_table.New_fileName{id} = string(rename); 
+        if strcmp(datalvl,"L0")
+            rename = strcat(Dep_ID,'_',type,'_L0',ext);
+            rename_table.New_fileName{id} = string(rename); 
+        else
+            rename = strcat(Dep_ID,'_',type,'_L1',ext);
+            rename_table.New_fileName{id} = string(rename); 
+        end
+
     end
 end
 
