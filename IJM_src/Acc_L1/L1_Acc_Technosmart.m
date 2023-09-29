@@ -1,5 +1,5 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Peform all L1 steps (s1-s4)
+% Peform all L1 steps (s1-s4) for Technosmart Acc tags
 %
 % I. Maywar
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -9,9 +9,9 @@ clearvars
 
 %% USER INPUTED VALUES
 
-szn = '2019_2020';
+szn = '2021_2022';
 location = "Bird_Island"; % Options: 'Bird_Island', 'Midway', 'Wandering'
-tagtype = "AGM"; % Options: 'AGM', 'Axy5', 'AxyAir', 'GCDC'
+tagtype = "Axy5"; % Options: 'AGM', 'Axy5', 'AxyAir', 'GCDC'
 
 %% Timezone
 if strcmp(location,"Midway")
@@ -37,15 +37,13 @@ end
 warning('off','MATLAB:table:ModifiedAndSavedVarNames')
 
 % set directories
-comp_dir = '/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/';
-l0_dir = strcat('/Volumes/LaCie/L0/',location,'/Tag_Data/',szn,'/',tagtype,'/');
-% l0_dir = strcat('/Volumes/LaCie/L0/',location,'/Tag_Data/',szn,'/');
-s4_dir = strcat('/Volumes/LaCie/L1/',location,'/Tag_Data/Accelerometer/Acc_Technosmart/',szn,'/s4_Trimmed_Untilted/');
-GPS_dir = strcat(comp_dir,'.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L1/',location,'/Tag_Data/GPS/GPS_Catlog/',szn,'/2_buffer2km/');
+GD_dir = '/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/';
+l0_dir = strcat(GD_dir,'L0/',location,'/Tag_Data/',szn,'/',tagtype,'/');
+L1_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/Accelerometer/Acc_Technosmart/',szn,'/');
+GPS_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/GPS/GPS_Catlog/',szn,'/2_buffer2km/');
 
 % Matlab functions toolbox
-addpath(genpath('/Volumes/LaCie/Functions_Toolboxes/Matlab/'))
-addpath(genpath('/Users/ian/Documents/ThorneLab_FlightDynamics/IJM_src/'))
+addpath(genpath('/Users/ian/Documents/GitHub/AlbatrossFlightDynamics/'))
 
 % Full_metadata sheet
 fullmeta = readtable('/Volumes/LaCie/Full_metadata.xlsx','Sheet',location,'TreatAsEmpty',{'NA'});
@@ -59,6 +57,9 @@ GPS_fileList = exFAT_aux_remove(struct2table(dir('*.csv')));
 % Acc L0 file LIst
 cd(l0_dir)
 l0_fileList = exFAT_aux_remove(struct2table(dir('*.csv')));
+
+% Prevent figures from popping up when running in the background
+set(0,'DefaultFigureVisible','off')
 
 %% Initial checks
 
@@ -109,7 +110,7 @@ start_i=1;
 
 %% Loop through each unique bird
 loop_Start = tic;
-parfor(i = start_i:height(l0_fileList),4)
+parfor(i = start_i:height(l0_fileList))
 %for i = 1:height(l0_fileList)
     %% Load data
     
@@ -124,7 +125,7 @@ parfor(i = start_i:height(l0_fileList),4)
     dep_ID = current_bird;
     meta.bird = dep_ID;
     meta.step = 0;
-    parsave(meta,strcat(s4_dir,'meta_structures/',dep_ID,'_meta.mat'));
+    parsave(meta,strcat(L1_dir,'meta_structures/',dep_ID,'_meta.mat'));
     
     % Load L0 Acc data
     cd(l0_dir)
@@ -148,13 +149,12 @@ parfor(i = start_i:height(l0_fileList),4)
     
     [m,s1_meta] = s1_Acc(m,dep_ID,birdmeta,written_local);
 
-    % writetable(s1_m,strcat(s1_dir,dep_ID,'_Acc_L1_s1_Uniformat.csv'))
     meta.s1 = s1_meta;
 
     if s1_meta.skip == 1
         disp(strcat(dep_ID,'(',num2str(i),'/',num2str(height(l0_fileList)), '): skipped at s1.'))
         meta.step = 1;
-        parsave(meta,strcat(s4_dir,'meta_structures/',dep_ID,'_meta.mat'));
+        parsave(meta,strcat(L1_dir,'meta_structures/',dep_ID,'_meta.mat'));
         continue
     end
 
@@ -164,13 +164,12 @@ parfor(i = start_i:height(l0_fileList),4)
 
     [m,s2_meta] = s2_Acc(m,dep_ID,fullmeta);
 
-    % writetable(s2_m,strcat(s2_dir,dep_ID,'_Acc_L1_s2_AnalysisReady.csv'))
     meta.s2 = s2_meta;
-
+  %%
     if s2_meta.skip == 1
         disp(strcat(dep_ID,'(',num2str(i),'/',num2str(height(l0_fileList)), '): skipped at s2.'))
         meta.step = 2;
-        parsave(meta,strcat(s4_dir,'meta_structures/',dep_ID,'_meta.mat'));
+        parsave(meta,strcat(L1_dir,'meta_structures/',dep_ID,'_meta.mat'));
         continue
     end
 
@@ -180,14 +179,13 @@ parfor(i = start_i:height(l0_fileList),4)
 
     [m,s3_timetbl,s3_meta] = s3_Acc(m,GPSdata,dep_ID);
 
-    % writetable(s3_m,strcat(s3_dir,dep_ID,'_Acc_L1_s3_Trimmed','.csv'));
     meta.s3 = s3_meta;
     meta.timetbl = s3_timetbl;
-    
+  %%  
     if ~isempty(find(s3_meta.skip == 1, 1))
         disp(strcat(dep_ID,'(',num2str(i),'/',num2str(height(l0_fileList)), '): skipped at s3.'))
         meta.step = 3;
-        parsave(meta,strcat(s4_dir,'meta_structures/',dep_ID,'_meta.mat'));
+        parsave(meta,strcat(L1_dir,'meta_structures/',dep_ID,'_meta.mat'));
         continue
     end
 
@@ -201,14 +199,14 @@ parfor(i = start_i:height(l0_fileList),4)
         
     %% s4
 
-    [m,Q,HasNaN] = s4_Acc(m,s4_dir,dep_ID);
+    [m,Q,HasNaN] = s4_Acc(m,L1_dir,dep_ID);
 
     meta.HasNaN = HasNaN;
     meta.Q = Q;
     meta.step = 4;
-    parsave(meta,strcat(s4_dir,'meta_structures/',dep_ID,'_meta.mat'));
+    parsave(meta,strcat(L1_dir,'meta_structures/',dep_ID,'_meta.mat'));
 
-    writetable(m,strcat(s4_dir,dep_ID,'_Acc_L1_s4.csv')) %write m data
+    writetable(m,strcat(L1_dir,dep_ID,'_Acc_L1.csv')) %write m data
     
     disp(strcat(dep_ID,'(',num2str(i),'/',num2str(height(l0_fileList)), '): s4 complete.'))
 
