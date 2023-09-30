@@ -29,7 +29,7 @@ L2_dir = strcat(GD_dir,'L2/',location,'/Tag_Data/Accelerometer/',szn,'/');
 addpath(genpath('/Users/ian/Documents/GitHub/AlbatrossFlightDynamics/'))
 
 % Full_metadata sheet
-fullmeta = readtable(strcat(GD_dir,'metadata/Full_metadata.xlsx'));
+fullmeta = readtable(strcat(GD_dir,'metadata/Full_metadata.xlsx'),'Sheet',location,'TreatAsEmpty',{'NA'});
 % Specify the field season and location you are interested in
 fullmeta = fullmeta(strcmp(fullmeta.Field_season,szn) & strcmp(fullmeta.Location,location),:);
 
