@@ -14,7 +14,7 @@ clearvars
 
 %% USER INPUTED VALUES
 
-szn = '2019_2020';
+szn = '2021_2022';
 location = 'Bird_Island'; % Options: 'Bird_Island', 'Midway', 'Wandering'
 
 %% Set envrionment
@@ -23,7 +23,6 @@ location = 'Bird_Island'; % Options: 'Bird_Island', 'Midway', 'Wandering'
 GD_dir = '/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/';
 L1_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/Accelerometer/Acc_Technosmart/',szn,'/');
 L2_dir = strcat(GD_dir,'L2/',location,'/Tag_Data/Accelerometer/',szn,'/');
-%L2_dir = strcat('/Volumes/LaCie/L2/Bird_Island/Tag_Data/Accelerometer/Acc_Technosmart/',szn,'_update/');
 
 % Matlab functions toolbox
 addpath(genpath('/Users/ian/Documents/GitHub/AlbatrossFlightDynamics/'))
@@ -41,11 +40,9 @@ disp(CheckMeta(fullmeta,L1_fileList,3,"Deployment_ID"))
 % Get monitor dimensions to display figures
 p = get(0, "MonitorPositions");
 
-% Prevent figures from popping up when running in the background
-set(0,'DefaultFigureVisible','off')
-
 %% Loop thru birds
-parfor j = 2:height(L1_fileList)
+parfor_progress(height(L1_fileList)); % I THINK THIS IS INVISIBLE...FIX IT?
+parfor j = 1:height(L1_fileList)
 % for j=1:1
 
     %% Read bird 
@@ -134,7 +131,7 @@ parfor j = 2:height(L1_fileList)
 
     % th
 
-    nFlaps_movslp_th = figure;
+    nFlaps_movslp_th = figure('visible','off');
     yyaxis left
         scatter(th_range,num_flaps_th)
         hold on
@@ -150,7 +147,7 @@ parfor j = 2:height(L1_fileList)
 
     % m
 
-    nFlaps_movslp_m = figure;
+    nFlaps_movslp_m = figure('visible','off');
     yyaxis left
         scatter(m_range,num_flaps_m)
         hold on 
@@ -192,7 +189,7 @@ parfor j = 2:height(L1_fileList)
 
     %% Save filtered figure (first 2000 samples)
 
-    filt_fig = figure;
+    filt_fig = figure('visible','off');
     plot(raw(1:2000))
     hold on
     plot(filtered(1:2000))
@@ -216,7 +213,7 @@ parfor j = 2:height(L1_fileList)
     writetable(flap_tbl,strcat(L2_dir,bird,"_Acc_L2.csv"))
 
 end
-
+parfor_progress(0);
 
 
 
