@@ -9,8 +9,8 @@ clearvars
 
 %% USER INPUTED VALUES
 
-szn = '2021_2022';
-location = "Bird_Island"; % Options: 'Bird_Island', 'Midway', 'Wandering'
+szn = '2022_2023';
+location = "Midway"; % Options: 'Bird_Island', 'Midway', 'Wandering'
 tagtype = "Axy5"; % Options: 'AGM', 'Axy5', 'AxyAir', 'GCDC'
 
 %% Timezone
@@ -22,8 +22,11 @@ if strcmp(location,"Midway")
     else
         written_local = true;
     end
-else
+elseif strcmp(location,"Bird_Island")
     written_local = true;
+else
+    disp("Location not found.")
+    return
 end
 
 % Some Midway files are written in GMT rather than local time.
@@ -46,7 +49,7 @@ GPS_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/GPS/GPS_Catlog/',szn,'/2_buffe
 addpath(genpath('/Users/ian/Documents/GitHub/AlbatrossFlightDynamics/'))
 
 % Full_metadata sheet
-fullmeta = readtable('/Volumes/LaCie/Full_metadata.xlsx','Sheet',location,'TreatAsEmpty',{'NA'});
+fullmeta = readtable(strcat(GD_dir,'metadata/Full_metadata.xlsx'),'Sheet',location,'TreatAsEmpty',{'NA'});
 % Specify the field season and location you are interested in
 fullmeta = fullmeta(strcmp(fullmeta.Field_season,szn) & strcmp(fullmeta.Location,location),:);
 
