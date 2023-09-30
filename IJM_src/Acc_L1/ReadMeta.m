@@ -3,28 +3,27 @@ clearvars
  
 %% USER INPUTED VALUES
 
-szn = '2021_2022';
-location = 'Bird_Island'; % Options: 'Bird_Island', 'Midway', 'Wandering'
+szn = '2018_2019';
+location = 'Midway'; % Options: 'Bird_Island', 'Midway', 'Wandering'
 tagtype = "AGM"; % Options: 'AGM', 'Axy5'
 computer = 'MBP'; % Options:'MBP', 'ThinkPad'
 
 %% Set environment
 
+% set directories
+GD_dir = '/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/';
+L1_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/Accelerometer/Acc_Technosmart/',szn,'/');
+
 % Matlab functions toolbox
-addpath(genpath('/Volumes/LaCie/Functions_Toolboxes/Matlab/'))
-addpath(genpath('/Users/ian/Documents/ThorneLab_FlightDynamics/IJM_src/'))
+addpath(genpath('/Users/ian/Documents/GitHub/AlbatrossFlightDynamics/'))
 
 % Full_metadata sheet
-fullmeta = readtable('/Volumes/LaCie/Full_metadata.xlsx','Sheet',location,'TreatAsEmpty',{'NA'});
-% Specify the field season, location, and Acc tag type
-% fullmeta = fullmeta(strcmp(fullmeta.Field_season,szn) & strcmp(fullmeta.Location,location) & strcmp(fullmeta.ACC_TagType,tagtype),:);
+fullmeta = readtable(strcat(GD_dir,'metadata/Full_metadata.xlsx'),'Sheet',location,'TreatAsEmpty',{'NA'});
+% Specify the field season and location you are interested in
 fullmeta = fullmeta(strcmp(fullmeta.Field_season,szn) & strcmp(fullmeta.Location,location),:);
 
 %% How far did I get?
 
-% set directories
-GD_dir = '/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/';
-L1_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/Accelerometer/Acc_Technosmart/',szn,'/');
 cd(L1_dir)
 L1_fileList = exFAT_aux_remove(struct2table(dir('*.csv')));
 
