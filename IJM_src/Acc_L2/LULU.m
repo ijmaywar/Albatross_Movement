@@ -1,8 +1,10 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 % Flap Detection LULU
-% This code counts number of flaps in five minute windows to match GPS
-% data's resolution.
+% This code detects flaps using the L1 Acc data.
+% Output: metadata regarding the parameters of the LULU filter and
+% threshold. Also an L2 file that records the datetime of every flap and
+% some stats.
 % Ian Maywar
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -39,14 +41,12 @@ disp(CheckMeta(fullmeta,L1_fileList,3,"Deployment_ID"))
 % Get monitor dimensions to display figures
 p = get(0, "MonitorPositions");
 
-% parameter table
-param_tbl = readtable(strcat(L2_dir,"ParameterSearch.csv"));
-
 % Prevent figures from popping up when running in the background
 set(0,'DefaultFigureVisible','off')
 
 %% Loop thru birds
-parfor j = 6:height(L1_fileList)
+parfor j = 2:height(L1_fileList)
+% for j=1:1
 
     %% Read bird 
     bird = strsplit(L1_fileList.name{j},"_");
