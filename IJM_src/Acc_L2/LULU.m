@@ -1,3 +1,4 @@
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 % Flap Detection LULU
@@ -14,8 +15,8 @@ clearvars
 
 %% USER INPUTED VALUES
 
-szn = '2021_2022';
-location = 'Bird_Island'; % Options: 'Bird_Island', 'Midway', 'Wandering'
+szn = '2022_2023';
+location = 'Midway'; % Options: 'Bird_Island', 'Midway', 'Wandering'
 
 %% Set envrionment
 
@@ -32,16 +33,20 @@ fullmeta = readtable(strcat(GD_dir,'metadata/Full_metadata.xlsx'),'Sheet',locati
 % Specify the field season and location you are interested in
 fullmeta = fullmeta(strcmp(fullmeta.Field_season,szn) & strcmp(fullmeta.Location,location),:);
 
+% Create L1 file list
 cd(L1_dir)
 L1_fileList = exFAT_aux_remove(struct2table(dir('*.csv')));
 
+% Make sure that every L1 file can be found in Full_metadata.xlsx
 disp(CheckMeta(fullmeta,L1_fileList,3,"Deployment_ID"))
 
 % Get monitor dimensions to display figures
 p = get(0, "MonitorPositions");
 
+% Create Parameters folder
+mkdir(strcat(L2_dir,"Parameters/"))
+
 %% Loop thru birds
-parfor_progress(height(L1_fileList)); % I THINK THIS IS INVISIBLE...FIX IT?
 parfor j = 1:height(L1_fileList)
 % for j=1:1
 
@@ -212,14 +217,9 @@ parfor j = 1:height(L1_fileList)
     flap_tbl = table(Acc.DateTime(pk_locs),pks,pk_locs,pk_w,pk_p,pk_nearest,'VariableNames', {'DateTime','pks','pk_locs','pk_w','pk_p','pk_nearest'});
     writetable(flap_tbl,strcat(L2_dir,bird,"_Acc_L2.csv"))
 
+    disp(strcat(bird,'(',num2str(j),'/',num2str(height(L1_fileList)), '): L2 complete.'))
+
 end
-parfor_progress(0);
-
-
-
-
-
-
 
 
 
