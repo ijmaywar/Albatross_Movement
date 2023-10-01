@@ -1,11 +1,21 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% This Code reads the meta structures created when running the L0->L1 code.
+% It finds out why some files weren't able to be processed and if there are
+% any discrepancies between the files processed and progress indicated on
+% Full_metadata
+%
+% IJM
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %% Clear variables
 clearvars
  
 %% USER INPUTED VALUES
 
-szn = '2018_2019';
+szn = '2022_2023';
 location = 'Midway'; % Options: 'Bird_Island', 'Midway', 'Wandering'
-tagtype = "AGM"; % Options: 'AGM', 'Axy5'
 computer = 'MBP'; % Options:'MBP', 'ThinkPad'
 
 %% Set environment
