@@ -7,25 +7,29 @@ clearvars
 
 %% USER INPUTED VALUES
 
-szn = '2021_2022';
+szn = '2019_2020';
 location = 'Bird_Island'; % Options: 'Bird_Island', 'Midway', 'Wandering'
-type = "Acc"; % Options: 'AGM', 'Axy5', 'AxyAir', 'Catlog', 'iGotU'
+tagtype = "GLS"; % Options: 'AGM', 'Axy5', 'AxyAir', 'Catlog', 'iGotU'
+datatype = "GLS"; % Options: "Accelerometer", "GPS", "GLS", "Magnetometer", "EEG"
 datalvl = "L1"; % Options: "L0", "L1", "L2"
-newname = true; % Options: true, false
+computer = "MacMini"; % Options: "MacMini", "MacBookPro"
+
+newname = false; % Options: true, false
 
 %% Set environment
 
+GD_dir = findGD(computer);
+
 % Full_metadata sheet
-fullmeta = readtable('/Volumes/LaCie/Full_metadata.xlsx','Sheet',location,'TreatAsEmpty',{'NA'});
-% Specify the field season, location, and Acc tag type
-% fullmeta = fullmeta(strcmp(fullmeta.Field_season,szn) & strcmp(fullmeta.Location,location) & strcmp(fullmeta.ACC_TagType,tagtype),:);
+% fullmeta = readtable(strcat(GD_dir,'metadata/Full_metadata.xlsx'),'Sheet',location,'TreatAsEmpty',{'NA'});
+% fullmeta = readtable(strcat(GD_dir,'metadata/Full_metadata.xlsx'),'Sheet','HRL','TreatAsEmpty',{'NA'});
+fullmeta = readtable(strcat(GD_dir,'metadata/Full_metadata.xlsx'),'Sheet','AxyTrek','TreatAsEmpty',{'NA'});
 fullmeta = fullmeta(strcmp(fullmeta.Field_season,szn) & strcmp(fullmeta.Location,location),:);
 
 % Find files
-%directory = strcat('/Volumes/LaCie/L0/Bird_Island/Tag_Data/',szn,'/',tagtype,'/');
-directory = '/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L1/Bird_Island/Tag_Data/Accelerometer/Acc_Technosmart/2021_2022/';
-cd(directory)
-fileList = exFAT_aux_remove(struct2table(dir('*.csv')));
+directory = NavigateGD(computer,datalvl,location,szn,tagtype,datatype);
+cd(strcat(directory,"AxyTrek/"))
+fileList = exFAT_aux_remove(struct2table(dir('*.txt')));
 
 nfiles = height(fileList);
 rename_table = table(cell(nfiles,1),cell(nfiles,1),cell(nfiles,1),cell(nfiles,1),'VariableNames',{'Old_fileName','Old_ID','New_fileName','Deployment_ID'}); 
@@ -39,12 +43,12 @@ for id = 1:nfiles
     nameSplit = strsplit(f,'_');
 
     % CHANGE THIS ACCORDINGLY
-    Old_BirdName = strcat(nameSplit{1},"_",nameSplit{2},"_",nameSplit{3});
+    Old_BirdName = strcat(nameSplit{1},"_",nameSplit{2});%,"_",nameSplit{3});
     rename_table.Old_ID{id} = string(Old_BirdName);
 
     % Find metadata
     if ~newname % For OG_IDs   
-        if ismember(type,["Catlog","iGotU"])
+        if ismember(tagtype,["Catlog","iGotU","GLS"])
             findmeta = find(strcmp(fullmeta.GPS_OG_ID,Old_BirdName));
         else
             findmeta = find(strcmp(fullmeta.Acc_OG_ID,Old_BirdName));
@@ -61,21 +65,24 @@ for id = 1:nfiles
         return
     else
         birdmeta = fullmeta(findmeta,:);
-        % Deployment ID: SPEC_capdate_darvic
-        % L0: Dep_ID_TagType_L0
-        % L1: Dep_ID_DataType_L1_level
-        Dep_ID = birdmeta.Deployment_ID;
-        rename_table.Deployment_ID{id} = string(Dep_ID);
-    
-        % CHANGE THIS ACCORDINGLY
-        if strcmp(datalvl,"L0")
-            rename = strcat(Dep_ID,'_',type,'_L0',ext);
-            rename_table.New_fileName{id} = string(rename); 
-        else
-            rename = strcat(Dep_ID,'_',type,'_L1',ext);
-            rename_table.New_fileName{id} = string(rename); 
-        end
+    end
 
+    % Deployment ID: SPEC_capdate_darvic
+    % L0: Dep_ID_TagType_L0
+    % L1: Dep_ID_DataType_L1_level
+    Dep_ID = birdmeta.Deployment_ID;
+    rename_table.Deployment_ID{id} = string(Dep_ID);
+
+    % CHANGE THIS ACCORDINGLY
+    if strcmp(datalvl,"L0")
+        rename = strcat(Dep_ID,'_',tagtype,'_L0',ext);
+        rename_table.New_fileName{id} = string(rename); 
+    elseif strcmp(datalvl,"L1")
+        rename = strcat(Dep_ID,'_',tagtype,'_L1',ext);
+        rename_table.New_fileName{id} = string(rename); 
+    else
+        disp("Data level not found.")
+        return
     end
 end
 
