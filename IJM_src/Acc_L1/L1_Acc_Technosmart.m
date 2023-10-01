@@ -1,3 +1,4 @@
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Peform all L1 steps (s1-s4) for Technosmart Acc tags
 %
@@ -9,9 +10,9 @@ clearvars
 
 %% USER INPUTED VALUES
 
-szn = '2022_2023';
+szn = '2018_2019';
 location = "Midway"; % Options: 'Bird_Island', 'Midway', 'Wandering'
-tagtype = "Axy5"; % Options: 'AGM', 'Axy5', 'AxyAir', 'GCDC'
+tagtype = "AxyAir"; % Options: 'AGM', 'Axy5', 'AxyAir', 'GCDC'
 
 %% Timezone
 if strcmp(location,"Midway")
@@ -41,9 +42,21 @@ warning('off','MATLAB:table:ModifiedAndSavedVarNames')
 
 % set directories
 GD_dir = '/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/';
-l0_dir = strcat(GD_dir,'L0/',location,'/Tag_Data/',szn,'/',tagtype,'/');
+% l0_dir = strcat(GD_dir,'L0/',location,'/Tag_Data/',szn,'/',tagtype,'/');
+l0_dir = strcat(GD_dir,'L0/',location,'/Tag_Data/',szn,'/',tagtype,'/dt_local/');
 L1_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/Accelerometer/Acc_Technosmart/',szn,'/');
 GPS_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/GPS/GPS_Catlog/',szn,'/2_buffer2km/');
+
+% Sometimes a select few individuals have been written in a different
+% timezone than the rest of the files in a given field szn. This is the
+% case for three files in Midway 2018_2019 AxyAir which were written in local
+% time, not GMT.
+l0_split = strsplit(l0_dir,"_");
+if strcmp(l0_split(end),"local/")
+    written_local = true;
+elseif strcmp(l0_split(end),"GMT/")
+    written_local = false;
+end
 
 % Matlab functions toolbox
 addpath(genpath('/Users/ian/Documents/GitHub/AlbatrossFlightDynamics/'))
