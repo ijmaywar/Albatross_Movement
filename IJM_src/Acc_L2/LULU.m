@@ -15,15 +15,16 @@ clearvars
 
 %% USER INPUTED VALUES
 
-szn = '2022_2023';
-location = 'Midway'; % Options: 'Bird_Island', 'Midway', 'Wandering'
+szn = '2019_2020';
+location = 'Bird_Island'; % Options: 'Bird_Island', 'Midway', 'Wandering'
+computer = 'MacMini'; % Options: "MacMini," "MacBookPro"
 
 %% Set envrionment
 
 % set directories
-GD_dir = '/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/';
-L1_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/Accelerometer/Acc_Technosmart/',szn,'/');
-L2_dir = strcat(GD_dir,'L2/',location,'/Tag_Data/Accelerometer/',szn,'/');
+GD_dir = findGD(computer);
+L1_dir = NavigateGD(computer,"L1",location,szn,tagtype,datatype);
+L2_dir = NavigateGD(computer,"L2",location,szn,tagtype,datatype);
 
 % Matlab functions toolbox
 addpath(genpath('/Users/ian/Documents/GitHub/AlbatrossFlightDynamics/'))

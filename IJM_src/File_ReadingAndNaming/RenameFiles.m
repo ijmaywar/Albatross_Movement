@@ -7,14 +7,14 @@ clearvars
 
 %% USER INPUTED VALUES
 
-szn = '2019_2020';
+szn = '2020_2021';
 location = 'Bird_Island'; % Options: 'Bird_Island', 'Midway', 'Wandering'
 tagtype = "GLS"; % Options: 'AGM', 'Axy5', 'AxyAir', 'Catlog', 'iGotU'
 datatype = "GLS"; % Options: "Accelerometer", "GPS", "GLS", "Magnetometer", "EEG"
-datalvl = "L1"; % Options: "L0", "L1", "L2"
+datalvl = 0; % Options: 0 ,1, 2
 computer = "MacMini"; % Options: "MacMini", "MacBookPro"
 
-newname = false; % Options: true, false
+newname = true; % Options: true, false
 
 %% Set environment
 
@@ -23,12 +23,13 @@ GD_dir = findGD(computer);
 % Full_metadata sheet
 % fullmeta = readtable(strcat(GD_dir,'metadata/Full_metadata.xlsx'),'Sheet',location,'TreatAsEmpty',{'NA'});
 % fullmeta = readtable(strcat(GD_dir,'metadata/Full_metadata.xlsx'),'Sheet','HRL','TreatAsEmpty',{'NA'});
-fullmeta = readtable(strcat(GD_dir,'metadata/Full_metadata.xlsx'),'Sheet','AxyTrek','TreatAsEmpty',{'NA'});
+fullmeta = readtable(strcat(GD_dir,'metadata/Full_metadata.xlsx'),'Sheet','GLS','TreatAsEmpty',{'NA'});
 fullmeta = fullmeta(strcmp(fullmeta.Field_season,szn) & strcmp(fullmeta.Location,location),:);
 
 % Find files
-directory = NavigateGD(computer,datalvl,location,szn,tagtype,datatype);
-cd(strcat(directory,"AxyTrek/"))
+directory = NavigateGD(datalvl,computer,location,szn,tagtype,datatype);
+% directory = strcat(directory,"AxyTrek");
+cd(directory)
 fileList = exFAT_aux_remove(struct2table(dir('*.txt')));
 
 nfiles = height(fileList);
@@ -43,15 +44,17 @@ for id = 1:nfiles
     nameSplit = strsplit(f,'_');
 
     % CHANGE THIS ACCORDINGLY
-    Old_BirdName = strcat(nameSplit{1},"_",nameSplit{2});%,"_",nameSplit{3});
+    Old_BirdName = strcat(nameSplit{1});%,"_",nameSplit{2},"_",nameSplit{3});
     rename_table.Old_ID{id} = string(Old_BirdName);
 
     % Find metadata
     if ~newname % For OG_IDs   
-        if ismember(tagtype,["Catlog","iGotU","GLS"])
+        if ismember(tagtype,["Catlog","iGotU"])
             findmeta = find(strcmp(fullmeta.GPS_OG_ID,Old_BirdName));
-        else
+        elseif ismember(tagtype,["AGM","Axy5","AxyAir","Technosmart"])
             findmeta = find(strcmp(fullmeta.Acc_OG_ID,Old_BirdName));
+        elseif strcmp(tagtype,"GLS")
+            findmeta = find(strcmp(fullmeta.GLS_OG_ID,Old_BirdName));
         end
     else % For names that have already been updated to the naming convention but need to be tweaked.
         findmeta = find(strcmp(fullmeta.Deployment_ID,Old_BirdName));
@@ -74,16 +77,17 @@ for id = 1:nfiles
     rename_table.Deployment_ID{id} = string(Dep_ID);
 
     % CHANGE THIS ACCORDINGLY
-    if strcmp(datalvl,"L0")
-        rename = strcat(Dep_ID,'_',tagtype,'_L0',ext);
-        rename_table.New_fileName{id} = string(rename); 
-    elseif strcmp(datalvl,"L1")
-        rename = strcat(Dep_ID,'_',tagtype,'_L1',ext);
-        rename_table.New_fileName{id} = string(rename); 
+    if datalvl == 0
+        rename = strcat(Dep_ID,'_',tagtype,'_L0',ext); 
+    elseif datalvl == 1
+        rename = strcat(Dep_ID,'_',datatype,'_L1',ext);
+    elseif datalvl == 2
+        rename = strcat(Dep_ID,'_',datatype,'_L2',ext);
     else
         disp("Data level not found.")
         return
     end
+    rename_table.New_fileName{id} = string(rename); 
 end
 
 % Check for duplicates

@@ -7,14 +7,16 @@
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-function dir = NavigateGD(computer,datalvl,location,szn,tagtype,datatype)
+function dir = NavigateGD(datalvl,computer,location,szn,tagtype,datatype)
 
     GD_dir = findGD(computer);
-    tag_dir = strcat(GD_dir,"/",datalvl,"/",location,"/Tag_Data/");
+    
+    str_datalvl = strcat("L",int2str(datalvl));
+    tag_dir = strcat(GD_dir,str_datalvl,"/",location,"/Tag_Data/");
 
-    if strcmp(datalvl,"L0")
+    if datalvl == 0
         dir = strcat(tag_dir,szn,"/",tagtype,"/");
-    elseif strcmp(datalvl,"L1")
+    elseif datalvl == 1
         if contains(tagtype,["AGM","Axy5","AxyAir"])
             tagtype = "Technosmart";
         end
@@ -26,7 +28,7 @@ function dir = NavigateGD(computer,datalvl,location,szn,tagtype,datatype)
         else
             dir = strcat(tag_dir,datatype,"/",szn,"/");
         end
-    elseif strcmp(datalvl,"L2")
+    elseif datalvl == 2
         dir = strcat(tag_dir,datatype,"/",szn,"/");
     else
         disp("Can't find data level.")
