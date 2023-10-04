@@ -7,7 +7,7 @@ clearvars
 
 %% USER INPUTED VALUES
 
-szn = '2020_2021';
+szn = '2019_2020';
 location = 'Bird_Island'; % Options: 'Bird_Island', 'Midway', 'Wandering'
 tagtype = "GLS"; % Options: 'AGM', 'Axy5', 'AxyAir', 'Catlog', 'iGotU'
 datatype = "GLS"; % Options: "Accelerometer", "GPS", "GLS", "Magnetometer", "EEG"
@@ -44,7 +44,7 @@ for id = 1:nfiles
     nameSplit = strsplit(f,'_');
 
     % CHANGE THIS ACCORDINGLY
-    Old_BirdName = strcat(nameSplit{1});%,"_",nameSplit{2},"_",nameSplit{3});
+    Old_BirdName = strcat(nameSplit{1},"_",nameSplit{2},"_",nameSplit{3});
     rename_table.Old_ID{id} = string(Old_BirdName);
 
     % Find metadata
