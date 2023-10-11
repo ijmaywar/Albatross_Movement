@@ -7,30 +7,32 @@ clearvars
 
 %% USER INPUTED VALUES
 
-szn = '2019_2020';
+szn = '2018_2019';
 location = 'Bird_Island'; % Options: 'Bird_Island', 'Midway', 'Wandering'
-tagtype = "GLS"; % Options: 'AGM', 'Axy5', 'AxyAir', 'Catlog', 'iGotU'
-datatype = "GLS"; % Options: "Accelerometer", "GPS", "GLS", "Magnetometer", "EEG"
-datalvl = 0; % Options: 0 ,1, 2
+tagtype = "iGotU"; % Options: 'AGM', 'Axy5', 'AxyAir', 'Catlog', 'iGotU'
+datatype = "GPS"; % Options: "Accelerometer", "GPS", "GLS", "Magnetometer", "EEG"
+datalvl = 0; % Options: 0, 1, 2
+datasublvl = 2; % Options: 1, 2, 3
 computer = "MacMini"; % Options: "MacMini", "MacBookPro"
 
-newname = true; % Options: true, false
+newname = false; % Options: true, false
 
 %% Set environment
 
 GD_dir = findGD(computer);
 
 % Full_metadata sheet
-% fullmeta = readtable(strcat(GD_dir,'metadata/Full_metadata.xlsx'),'Sheet',location,'TreatAsEmpty',{'NA'});
-% fullmeta = readtable(strcat(GD_dir,'metadata/Full_metadata.xlsx'),'Sheet','HRL','TreatAsEmpty',{'NA'});
-fullmeta = readtable(strcat(GD_dir,'metadata/Full_metadata.xlsx'),'Sheet','GLS','TreatAsEmpty',{'NA'});
+fullmeta = readtable(strcat(GD_dir,'metadata/Full_metadata.xlsx'),'Sheet',location,'TreatAsEmpty',{'NA'});
 fullmeta = fullmeta(strcmp(fullmeta.Field_season,szn) & strcmp(fullmeta.Location,location),:);
 
 % Find files
-directory = NavigateGD(datalvl,computer,location,szn,tagtype,datatype);
+% directory = NavigateGD(datalvl,computer,location,szn,tagtype,datatype);
+directory = "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L0/Bird_Island/Tag_Data/2018_2019/iGotU/csv/";
 % directory = strcat(directory,"AxyTrek");
 cd(directory)
-fileList = exFAT_aux_remove(struct2table(dir('*.txt')));
+fileList = exFAT_aux_remove(struct2table(dir('*.csv')));
+% fileList = dir;
+% fileList = fileList(4:30,:);
 
 nfiles = height(fileList);
 rename_table = table(cell(nfiles,1),cell(nfiles,1),cell(nfiles,1),cell(nfiles,1),'VariableNames',{'Old_fileName','Old_ID','New_fileName','Deployment_ID'}); 
@@ -39,19 +41,21 @@ rename_table = table(cell(nfiles,1),cell(nfiles,1),cell(nfiles,1),cell(nfiles,1)
 for id = 1:nfiles
    
     % Get the file name 
-    rename_table.Old_fileName{id} = string(fileList.name{id});
-    [~, f,ext] = fileparts(fileList.name{id});
+    % fileName = fileList(id).name;
+    fileName = fileList.name{id};
+    rename_table.Old_fileName{id} = string(fileName);
+    [~, f,ext] = fileparts(fileName);
     nameSplit = strsplit(f,'_');
 
     % CHANGE THIS ACCORDINGLY
-    Old_BirdName = strcat(nameSplit{1},"_",nameSplit{2},"_",nameSplit{3});
+    Old_BirdName = strcat(nameSplit{1},"_",nameSplit{2});%,"_",nameSplit{3}(1:4));
     rename_table.Old_ID{id} = string(Old_BirdName);
 
     % Find metadata
     if ~newname % For OG_IDs   
         if ismember(tagtype,["Catlog","iGotU"])
             findmeta = find(strcmp(fullmeta.GPS_OG_ID,Old_BirdName));
-        elseif ismember(tagtype,["AGM","Axy5","AxyAir","Technosmart"])
+        elseif ismember(tagtype,["AGM","Axy5","AxyAir","GCDC","Technosmart"])
             findmeta = find(strcmp(fullmeta.Acc_OG_ID,Old_BirdName));
         elseif strcmp(tagtype,"GLS")
             findmeta = find(strcmp(fullmeta.GLS_OG_ID,Old_BirdName));
@@ -78,9 +82,10 @@ for id = 1:nfiles
 
     % CHANGE THIS ACCORDINGLY
     if datalvl == 0
-        rename = strcat(Dep_ID,'_',tagtype,'_L0',ext); 
+        % rename = Dep_ID;
+        rename = strcat(Dep_ID,'_',tagtype,'_L0.txt'); 
     elseif datalvl == 1
-        rename = strcat(Dep_ID,'_',datatype,'_L1',ext);
+        rename = strcat(Dep_ID,'_',datatype,'_L1_2',ext);
     elseif datalvl == 2
         rename = strcat(Dep_ID,'_',datatype,'_L2',ext);
     else
@@ -113,6 +118,8 @@ writetable(rename_table,strcat(directory,'rename_info/rename_table.csv'),'delimi
 %% RENAME FILES: Check to see that the file names look correct first!!!!
 % Make sure that the tagtype and the data step is correct !!!!
 for id = 1:height(rename_table)
-    movefile(rename_table.Old_fileName{id}, rename_table.New_fileName{id});
+    if ~strcmp(rename_table.Old_fileName{id},rename_table.New_fileName{id})
+        movefile(rename_table.Old_fileName{id}, rename_table.New_fileName{id});
+    end
 end
 
