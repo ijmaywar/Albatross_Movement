@@ -7,10 +7,10 @@ clearvars
 
 %% USER INPUTED VALUES
 
-szn = '2018_2019';
+szn = '2019_2020';
 location = 'Bird_Island'; % Options: 'Bird_Island', 'Midway', 'Wandering'
-tagtype = "iGotU"; % Options: 'AGM', 'Axy5', 'AxyAir', 'Catlog', 'iGotU'
-datatype = "GPS"; % Options: "Accelerometer", "GPS", "GLS", "Magnetometer", "EEG"
+tagtype = "GLS"; % Options: 'AGM', 'Axy5', 'AxyAir', 'Catlog', 'iGotU'
+datatype = "GLS"; % Options: "Accelerometer", "GPS", "GLS", "Magnetometer", "EEG"
 datalvl = 0; % Options: 0, 1, 2
 datasublvl = 2; % Options: 1, 2, 3
 computer = "MacMini"; % Options: "MacMini", "MacBookPro"
@@ -22,17 +22,17 @@ newname = false; % Options: true, false
 GD_dir = findGD(computer);
 
 % Full_metadata sheet
-fullmeta = readtable(strcat(GD_dir,'metadata/Full_metadata.xlsx'),'Sheet',location,'TreatAsEmpty',{'NA'});
+fullmeta = readtable(strcat(GD_dir,'metadata/Full_metadata.xlsx'),'TreatAsEmpty',{'NA'});
 fullmeta = fullmeta(strcmp(fullmeta.Field_season,szn) & strcmp(fullmeta.Location,location),:);
 
 % Find files
 % directory = NavigateGD(datalvl,computer,location,szn,tagtype,datatype);
-directory = "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L0/Bird_Island/Tag_Data/2018_2019/iGotU/csv/";
+directory = "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L0/Bird_Island/Tag_Data/2019_2020/G_GLS/driftadj.deg/";
 % directory = strcat(directory,"AxyTrek");
 cd(directory)
-fileList = exFAT_aux_remove(struct2table(dir('*.csv')));
+fileList = exFAT_aux_remove(struct2table(dir('*.deg')));
 % fileList = dir;
-% fileList = fileList(4:30,:);
+% fileList = fileList(4:end,:);
 
 nfiles = height(fileList);
 rename_table = table(cell(nfiles,1),cell(nfiles,1),cell(nfiles,1),cell(nfiles,1),'VariableNames',{'Old_fileName','Old_ID','New_fileName','Deployment_ID'}); 
@@ -48,7 +48,9 @@ for id = 1:nfiles
     nameSplit = strsplit(f,'_');
 
     % CHANGE THIS ACCORDINGLY
-    Old_BirdName = strcat(nameSplit{1},"_",nameSplit{2});%,"_",nameSplit{3}(1:4));
+    % Old_BirdName = nameSplit{1};
+    Old_BirdName = strcat(nameSplit{1},"_",nameSplit{2});
+    % Old_BirdName = strcat(nameSplit{1},"_",nameSplit{2},"_",nameSplit{3}(1:4));
     rename_table.Old_ID{id} = string(Old_BirdName);
 
     % Find metadata
@@ -83,9 +85,9 @@ for id = 1:nfiles
     % CHANGE THIS ACCORDINGLY
     if datalvl == 0
         % rename = Dep_ID;
-        rename = strcat(Dep_ID,'_',tagtype,'_L0.txt'); 
+        rename = strcat(Dep_ID,'_',tagtype,'_L0.txt');%,ext); 
     elseif datalvl == 1
-        rename = strcat(Dep_ID,'_',datatype,'_L1_2',ext);
+        rename = strcat(Dep_ID,'_',datatype,'_L1',ext);
     elseif datalvl == 2
         rename = strcat(Dep_ID,'_',datatype,'_L2',ext);
     else
