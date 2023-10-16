@@ -1,16 +1,26 @@
-%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Batch rename files
+%   
+%   How to use this code:
+%   1. Paste the path for the files you want to rename and assign it to the
+%   variable "directory"
+%   2. Fill in other USER INPUTED VALUES
+%   3. 
 %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% Clear variables
 clearvars
 
 %% USER INPUTED VALUES
 
-szn = '2019_2020';
+directory = "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L0/Bird_Island/Tag_Data/2021_2022/Catlog/Wandering/";
+
+szn = '2021_2022';
 location = 'Bird_Island'; % Options: 'Bird_Island', 'Midway', 'Wandering'
-tagtype = "GLS"; % Options: 'AGM', 'Axy5', 'AxyAir', 'Catlog', 'iGotU'
-datatype = "GLS"; % Options: "Accelerometer", "GPS", "GLS", "Magnetometer", "EEG"
+Genus = "great";
+tagtype = "Catlog"; % Options: 'AGM', 'Axy5', 'AxyAir', 'Catlog', 'iGotU'
+datatype = "GPS"; % Options: "Accelerometer", "GPS", "GLS", "Magnetometer", "EEG"
 datalvl = 0; % Options: 0, 1, 2
 datasublvl = 2; % Options: 1, 2, 3
 computer = "MacMini"; % Options: "MacMini", "MacBookPro"
@@ -23,14 +33,10 @@ GD_dir = findGD(computer);
 
 % Full_metadata sheet
 fullmeta = readtable(strcat(GD_dir,'metadata/Full_metadata.xlsx'),'TreatAsEmpty',{'NA'});
-fullmeta = fullmeta(strcmp(fullmeta.Field_season,szn) & strcmp(fullmeta.Location,location),:);
+fullmeta = fullmeta(strcmp(fullmeta.Field_season,szn) & strcmp(fullmeta.Location,location) & strcmp(fullmeta.Genus,Genus),:);
 
-% Find files
-% directory = NavigateGD(datalvl,computer,location,szn,tagtype,datatype);
-directory = "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L0/Bird_Island/Tag_Data/2019_2020/G_GLS/driftadj.deg/";
-% directory = strcat(directory,"AxyTrek");
 cd(directory)
-fileList = exFAT_aux_remove(struct2table(dir('*.deg')));
+fileList = exFAT_aux_remove(struct2table(dir('*.csv')));
 % fileList = dir;
 % fileList = fileList(4:end,:);
 
@@ -47,24 +53,28 @@ for id = 1:nfiles
     [~, f,ext] = fileparts(fileName);
     nameSplit = strsplit(f,'_');
 
-    % CHANGE THIS ACCORDINGLY
-    % Old_BirdName = nameSplit{1};
-    Old_BirdName = strcat(nameSplit{1},"_",nameSplit{2});
-    % Old_BirdName = strcat(nameSplit{1},"_",nameSplit{2},"_",nameSplit{3}(1:4));
-    rename_table.Old_ID{id} = string(Old_BirdName);
-
     % Find metadata
     if ~newname % For OG_IDs   
         if ismember(tagtype,["Catlog","iGotU"])
-            findmeta = find(strcmp(fullmeta.GPS_OG_ID,Old_BirdName));
-        elseif ismember(tagtype,["AGM","Axy5","AxyAir","GCDC","Technosmart"])
-            findmeta = find(strcmp(fullmeta.Acc_OG_ID,Old_BirdName));
+            num_ = count(string(fullmeta.Pos_OG_ID(1)),"_");
+            Old_BirdName = findOBN(num_,nameSplit);
+            findmeta = find(strcmp(fullmeta.Pos_OG_ID,Old_BirdName));
+        elseif ismember(tagtype,["AGM","Axy5","AxyAir","GCDC","Technosmart"])           
+            num_ = count(string(fullmeta.Aux_OG_ID(1)),"_");
+            Old_BirdName = findOBN(num_,nameSplit);
+            findmeta = find(strcmp(fullmeta.Aux_OG_ID,Old_BirdName));
         elseif strcmp(tagtype,"GLS")
+            num_ = count(string(fullmeta.GLS_OG_ID(1)),"_");
+            Old_BirdName = findOBN(num_,nameSplit);
             findmeta = find(strcmp(fullmeta.GLS_OG_ID,Old_BirdName));
         end
     else % For names that have already been updated to the naming convention but need to be tweaked.
+        num_ = count(string(fullmeta.Deployment_ID(findmeta)),"_");
+        Old_BirdName = findOBN(num_,nameSplit);
         findmeta = find(strcmp(fullmeta.Deployment_ID,Old_BirdName));
     end
+
+    rename_table.Old_ID{id} = string(Old_BirdName);
 
     if isempty(findmeta)
         disp(strcat(Old_BirdName," cannot be found in metadata."))
@@ -85,7 +95,7 @@ for id = 1:nfiles
     % CHANGE THIS ACCORDINGLY
     if datalvl == 0
         % rename = Dep_ID;
-        rename = strcat(Dep_ID,'_',tagtype,'_L0.txt');%,ext); 
+        rename = strcat(Dep_ID,'_',tagtype,'_L0',ext); 
     elseif datalvl == 1
         rename = strcat(Dep_ID,'_',datatype,'_L1',ext);
     elseif datalvl == 2
@@ -110,8 +120,8 @@ end
 disp("rename_table has been written and there are no duplicate files. Check rename_table to make sure it's correct before continuing.")
 
 %% Write rename file
-mkdir rename_info
-writetable(rename_table,strcat(directory,'rename_info/rename_table.csv'),'delimiter',',');
+mkdir Test
+writetable(rename_table,strcat(directory,'/rename_info/rename_table.csv'),'delimiter',',');
 
 %% Safety
 
@@ -122,6 +132,26 @@ writetable(rename_table,strcat(directory,'rename_info/rename_table.csv'),'delimi
 for id = 1:height(rename_table)
     if ~strcmp(rename_table.Old_fileName{id},rename_table.New_fileName{id})
         movefile(rename_table.Old_fileName{id}, rename_table.New_fileName{id});
+    end
+end
+
+
+
+
+
+%% Functions
+
+% Find old bird name
+
+function Old_BirdName = findOBN(num_,nameSplit)
+    if num_ == 0
+        Old_BirdName = nameSplit{1};
+    elseif num_ == 1
+        Old_BirdName = strcat(nameSplit{1},"_",nameSplit{2});
+    elseif num_ == 2
+        Old_BirdName = strcat(nameSplit{1},"_",nameSplit{2},"_",nameSplit{3}(1:4));
+    else
+        disp("Cannot figure out Old_BirdName.")
     end
 end
 
