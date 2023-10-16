@@ -14,13 +14,14 @@ clearvars
 
 %% USER INPUTED VALUES
 
-directory = "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L0/Bird_Island/Tag_Data/2021_2022/Catlog/Wandering/";
+directory = "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L0/Bird_Island/Tag_Data/2019_2020/GLS/driftadjdeg";
+fileExt = "deg";
 
-szn = '2021_2022';
+szn = '2019_2020';
 location = 'Bird_Island'; % Options: 'Bird_Island', 'Midway', 'Wandering'
 Genus = "great";
-tagtype = "Catlog"; % Options: 'AGM', 'Axy5', 'AxyAir', 'Catlog', 'iGotU'
-datatype = "GPS"; % Options: "Accelerometer", "GPS", "GLS", "Magnetometer", "EEG"
+tagtype = "GLS"; % Options: 'AGM', 'Axy5', 'AxyAir', 'Catlog', 'iGotU'
+datatype = "GLS"; % Options: "Accelerometer", "GPS", "GLS", "Magnetometer", "EEG"
 datalvl = 0; % Options: 0, 1, 2
 datasublvl = 2; % Options: 1, 2, 3
 computer = "MacMini"; % Options: "MacMini", "MacBookPro"
@@ -36,7 +37,7 @@ fullmeta = readtable(strcat(GD_dir,'metadata/Full_metadata.xlsx'),'TreatAsEmpty'
 fullmeta = fullmeta(strcmp(fullmeta.Field_season,szn) & strcmp(fullmeta.Location,location) & strcmp(fullmeta.Genus,Genus),:);
 
 cd(directory)
-fileList = exFAT_aux_remove(struct2table(dir('*.csv')));
+fileList = exFAT_aux_remove(struct2table(dir(strcat('*.',fileExt))));
 % fileList = dir;
 % fileList = fileList(4:end,:);
 
@@ -95,7 +96,7 @@ for id = 1:nfiles
     % CHANGE THIS ACCORDINGLY
     if datalvl == 0
         % rename = Dep_ID;
-        rename = strcat(Dep_ID,'_',tagtype,'_L0',ext); 
+        rename = strcat(Dep_ID,'_',tagtype,'_L0.txt');%,ext); 
     elseif datalvl == 1
         rename = strcat(Dep_ID,'_',datatype,'_L1',ext);
     elseif datalvl == 2
@@ -120,7 +121,7 @@ end
 disp("rename_table has been written and there are no duplicate files. Check rename_table to make sure it's correct before continuing.")
 
 %% Write rename file
-mkdir Test
+mkdir rename_info
 writetable(rename_table,strcat(directory,'/rename_info/rename_table.csv'),'delimiter',',');
 
 %% Safety
