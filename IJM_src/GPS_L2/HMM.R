@@ -23,7 +23,7 @@ wrapCor = function(cor) {corWrap<-ifelse(cor>180,cor-360,cor);return(corWrap)}
 
 # Load Data
 
-df = read.csv(file = "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L1/Bird_Island/Tag_Data/GPS/GPS_Catlog/2019_2020/2_buffer2km/BBAL_20191130_O596_GPS_L1_2.csv")
+df = read.csv(file = "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L1/Bird_Island/Tag_Data/GPS/GPS_Catlog/2019_2020/2_buffer2km/BBAL_20191202_O874_GPS_L1_2.csv")
 
 df$datetime <- as.POSIXct(df$datetime, format = "%Y-%m-%d %H:%M:%S", tz = "GMT")
 df$lon <- wrapCor(df$lon)
