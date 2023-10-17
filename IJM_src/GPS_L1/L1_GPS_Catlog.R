@@ -11,8 +11,8 @@ rm(list = ls())
 
 # User Inputed Values -----------------------------------------------------
 
-szn = '2019_2020'
-location = 'Bird_Island' # Options: 'Bird_Island', 'Midway', 'Wandering'
+szn = '2022_2023'
+location = 'Midway' # Options: 'Bird_Island', 'Midway', 'Wandering'
 buffer_dist <- 2 # KM spatial buffer for counting trips
 
 # Set Environment ---------------------------------------------------------
@@ -28,16 +28,13 @@ library(logr)
 library(readxl)
 library(tools)
 
-# L0_dir <- paste0("/Volumes/LaCie/L0/",location,"/Tag_Data/",szn,"/Catlog/to_fix/")
-L0_dir <- paste0("/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/",
-  "L0/",location,"/Tag_Data/",szn,"/Catlog/")
-# L1_dir <- paste0("/Volumes/LaCie/L1/",location,"/Tag_Data/GPS/GPS_Catlog/",szn,"/")
-L1_dir <- paste0("/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/",
-  "L1/",location,"/Tag_Data/GPS/GPS_Catlog/",szn,"/")
+GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/"
+L0_dir <- paste0(GD_dir, "THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L0/",location,"/Tag_Data/",szn,"/Catlog/")
+L1_dir <- paste0(GD_dir, "THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L1/",location,"/Tag_Data/GPS/GPS_Catlog/",szn,"/")
 meta_dir <- paste0(L1_dir,"GPS_Summaries/")
 
 # Import metdata
-fullmeta <- read_excel("/Volumes/LaCie/Full_metadata.xlsx", sheet = location)
+fullmeta <- read_excel(paste0(GD_dir,"THORNE_LAB/Data/Albatross/NEW_STRUCTURE/metadata/Full_Metadata.xlsx"))
 fullmeta <- fullmeta %>% filter(Field_season  == szn, Location == location)
 
 # Find GPS files
@@ -117,9 +114,9 @@ for (i in 1:length(gpsfiles)) {
   
   # Create GPS datetime columns (GMT column and local TZ column)
   if (substr(m$Date[1],3,3) == "/") {
-    m$ptime <- as.POSIXct(paste(m$Date,m$Time), format='%m/%d/%Y %H:%M:%S')
+    m$ptime <- as.POSIXct(paste(m$Date,m$Time), format='%m/%d/%Y %H:%M:%S', tz="GMT")
   } else {
-    m$ptime <- as.POSIXct(paste(m$Date,m$Time), format='%Y-%m-%d %H:%M:%S')
+    m$ptime <- as.POSIXct(paste(m$Date,m$Time), format='%Y-%m-%d %H:%M:%S', tz="GMT")
   }
   
   # sometimes ptime writes the year like this 0021 (instead of 2021). Fix this.
@@ -202,6 +199,13 @@ for (i in 1:length(gpsfiles)) {
   m_bird <- rename(m_bird, lat = Latitude)
   m_bird <- rename(m_bird, lon = Longitude)
   
+  # Negative timestep filter
+  neg_TS_idx <- which(diff(m_bird$DateTime)<0)+1
+  n_TS_rmv <- length(neg_TS_idx)
+  if (n_TS_rmv > 0) {
+    m_bird <- m_bird[-neg_TS_idx,]
+  }
+  
   # Lat, Lon filter (outside of geographic bounds)
   m_latlon_filter <- m_bird %>% filter((lon >= -180 & lon <= 180) & (lat >=-90 & lat <= 90))
   n_latlon_rmv <- nrow(m_bird) - nrow(m_latlon_filter)
@@ -228,12 +232,12 @@ for (i in 1:length(gpsfiles)) {
   colnames(m_bird) <- c("id","datetime","lon","lat","altitude","Speed_kmhr","Temp_C","satellites","HDOP","PDOP","TTFF")
   
   # Fill out Metadata Table 
-  df$num_locs_filteredOut[i] <- n_latlon_rmv + n_speed_rmv
+  df$num_locs_filteredOut[i] <- n_TS_rmv + n_latlon_rmv + n_speed_rmv
   int<-diff(m_bird$datetime) # Interval Metadata 
   units(int)<-"mins"
   
   df$bird[i]                <- dep_ID
-  df$tagid[i]               <- paste0(birdmeta$GPS_TagType,"_",birdmeta$GPS_TagNumber)
+  df$tagid[i]               <- paste0(birdmeta$Pos_TagType,"_",birdmeta$Pos_TagNumber)
   df$interval_minutes[i]    <- round(Mode(as.numeric(int)),1)
   df$int_sd[i]              <- round(sd(as.numeric(int), na.rm=TRUE),2)
   df$int_max[i]             <- round(max(as.numeric(int),na.rm=TRUE),1)
@@ -338,9 +342,9 @@ for (i in 1:length(gpsfiles)) {
       df$tripcomplete[i] <- TRUE
     }
     
-    df$last_loc_km_from_col[i] <- round(dist_from_col[length(dist_from_col)], digits= 2)# last distance from colony
+    df$last_loc_km_from_col[i] <- round(dist_from_col[nrow(dist_from_col)], digits= 2)# last distance from colony
     
-    tagendlocal<-m$ptime[length(m$ptime)]
+    tagendlocal<-m$ptime_loc[nrow(m)]
     
     if (is.na(RecaptureDateTime)) {
       df$tag_recorded_until_removal[i] <- NA
@@ -358,9 +362,13 @@ for (i in 1:length(gpsfiles)) {
   
   write.csv(m_bird,file=paste0(L1_dir,'1_onbird/',dep_ID,"_GPS_L1_1.csv"),row.names=FALSE)
   write.csv(m_buff,file=paste0(L1_dir,'2_buffer2km/',dep_ID,"_GPS_L1_2.csv"),row.names=FALSE)
-  
+
+  rm(list=ls()[! ls() %in% c("Mode", "calculate_speed", "wrap360",
+                             "df", "fullmeta", "buffer_dist", "colony_coords", "GD_dir", "gpsfiles",
+                             "L0_dir", "L1_dir", "loc_tz", "location", "meta_dir", "szn", "i")])  
 } 
 # End of Bird Loop
+
 
 
 # Write metadata table ----------------------------------------------------
