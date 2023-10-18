@@ -2,18 +2,21 @@
 # Ian's GPS L0 to L1 code
 # ASSUMES THAT THE DATETIMES RECORDED IN METADATA ARE LOCAL TIMES
 # AND TAG DATETIMES ARE RECORDED IN GMT
+#
+# Sometimes I get an error saying that select() cannot find lon, lat. 
+# If I restart Rstudio it gets rid of this error. 
 ################################################################################
 
 
 # Clear envrionment -------------------------------------------------------
 
 rm(list = ls())
+# rm(list = ls(all=TRUE))
 
 # User Inputed Values -----------------------------------------------------
 
 szn = '2022_2023'
-location = 'Midway' # Options: 'Bird_Island', 'Midway', 'Wandering'
-buffer_dist <- 2 # KM spatial buffer for counting trips
+location = 'Midway' # Options: 'Bird_Island', 'Midway'
 
 # Set Environment ---------------------------------------------------------
 
@@ -53,7 +56,7 @@ wrap360 = function(lon) {lon360<-ifelse(lon<0,lon+360,lon);return(lon360)}
 
 calculate_speed <- function(df) {
   # Calculate distance using the Haversine formula from 'geosphere'
-  distances <- distHaversine(select(df,lon,lat))/1000
+  distances <- distHaversine(df %>% select(lon,lat))/1000
   dts <- as.numeric(diff(df$ptime))/60
   # Calculate speed (distance / time) and convert to desired units (e.g., km/h)
   speed <- distances / dts
@@ -79,6 +82,8 @@ if (location == "Midway") {
   print("Location not found.")
   break
 }
+
+buffer_dist <- 2 # KM spatial buffer for counting trips
 
 # initialize meta dataframe
 df<-as.data.frame(matrix(NA,nrow=length(gpsfiles),ncol=12))
@@ -327,7 +332,7 @@ for (i in 1:length(gpsfiles)) {
     df$last_loc_km_from_col[i]=NA
     df$tag_recorded_until_removal[i]=NA
     m_bird$tripID=NA
-    m_bird$datetime<-as.character(m_bird$datetime) # safer for writing csv in character format
+    m_bird$datetime<-as.character(format(m_bird$datetime)) # safer for writing csv in character format
     m_buff<-m_bird
     
     # Otherwise calculate metadata for each trip:  
@@ -352,7 +357,7 @@ for (i in 1:length(gpsfiles)) {
       df$tag_recorded_until_removal[i] <- ifelse(as.numeric(difftime(RecaptureDateTime,tagendlocal,units="mins"))< 120,TRUE,FALSE)
     }
     
-    m_bird$datetime<-as.character(m_bird$datetime) # safer for writing csv in character format
+    m_bird$datetime<-as.character(format(m_bird$datetime)) # safer for writing csv in character format
     m_buff<-m_bird[!is.na(m_bird$tripID),]
     
   }
