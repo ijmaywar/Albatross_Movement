@@ -3,15 +3,14 @@
 ################################################################################
 
 
-# Clear envrionment -------------------------------------------------------
+# Clear environment -------------------------------------------------------
 
 rm(list = ls())
 
 # User Inputed Values -----------------------------------------------------
 
-szn = '2019_2020'
-location = 'Bird_Island' # Options: 'Bird_Island', 'Midway', 'Wandering'
-buffer_dist <- 2 # KM spatial buffer for counting trips
+szn = '2022_2023'
+location = 'Midway' # Options: 'Bird_Island', 'Midway'
 
 # Set Environment ---------------------------------------------------------
 
@@ -20,15 +19,10 @@ library(lubridate)
 library(rlang)
 library(dplyr)
 library(ggplot2)
-library(patchwork)
 
 GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/"
 L1_dir <- paste0(GD_dir, "THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L1/",location,"/Tag_Data/GPS/GPS_Catlog/",szn,"/2_buffer2km/")
 L2_dir <- paste0(GD_dir, "THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L2/",location,"/Tag_Data/GPS/",szn,"/")
-
-# Import metdata
-# fullmeta <- read_excel("/Volumes/LaCie/Full_metadata.xlsx", sheet = location)
-# fullmeta <- fullmeta %>% filter(Field_season  == szn, Location == location)
 
 # Find GPS files
 setwd(L1_dir)
@@ -56,7 +50,8 @@ for (i in 1:length(gpsfiles)) {
   coordinates(newm) = c("lon","lat")
   proj4string(newm) <- CRS("+proj=longlat +ellps=WGS84")
   xy<-cbind(newm$lon,newm$lat)
-  ptime <- as.POSIXct(mi$datetime, format = "%Y-%m-%d %H:%M:%S", tz="UTC")
+  # ptime <- as.POSIXct(mi$datetime, format = "%Y-%m-%d %H:%M:%S", tz="UTC")
+  ptime <- as.POSIXct(mi$datetime, tz="UTC")
   
   tripscheck<-which(!is.na(mi$tripID))
   if (is_empty(tripscheck)) {
@@ -64,6 +59,10 @@ for (i in 1:length(gpsfiles)) {
   }else{
     # convert to ltraj - this is sda filtered and colony-buffered trip (need to keep tripID)
     traj_m<-as.ltraj(xy, date=ptime, id=mi$tripID, typeII=TRUE, proj4string = CRS("+proj=longlat +ellps=WGS84"))
+    if (length(which(is.na(traj_m[[1]])))>0){
+      traj_m<-as.ltraj(xy[1:nrow(xy)-1,], date=ptime[1:length(ptime)-1], id=mi$tripID[1:nrow(mi)-1], typeII=TRUE, proj4string = CRS("+proj=longlat +ellps=WGS84"))
+    }
+    
     traj_300s<-redisltraj(traj_m,300,type="time") 
     traj_600s<-redisltraj(traj_m,600,type="time") 
     
@@ -86,26 +85,6 @@ for (i in 1:length(gpsfiles)) {
     
   }
   
+  rm(list=ls()[! ls() %in% c("wrap360", "buffer_dist", "GD_dir", "gpsfiles", "L1_dir", "L2_dir", "location", "szn", "i")])  
+  
 }
-
-
-
-
-
-##################
-
-
-p1domain = 1:100
-
-p1 <- ggplot(mi[p1domain,], aes(x=lon,y=lat)) + 
-  geom_point(size=1) +
-  geom_point(x=wrap360(-38.0658417),y=-54.0101833,color="blue")
-
-p2domain <- 1:24
-
-p2 <- ggplot(df300_keep[p2domain,], aes(x=lon,y=lat)) + 
-  geom_point(size=1) +
-  geom_point(x=wrap360(-38.0658417),y=-54.0101833,color="blue")
-
-p1+p2
-
