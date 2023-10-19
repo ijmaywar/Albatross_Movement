@@ -9,8 +9,8 @@ rm(list = ls())
 
 # User Inputed Values -----------------------------------------------------
 
-szn = '2022_2023'
-location = 'Midway' # Options: 'Bird_Island', 'Midway'
+szn = '2021_2022'
+location = 'Bird_Island' # Options: 'Bird_Island', 'Midway'
 
 # Set Environment ---------------------------------------------------------
 
@@ -80,8 +80,10 @@ for (i in 1:length(gpsfiles)) {
     colnames(df600_keep) <- c("id","datetime","lon","lat","tripID")
     
     # And Save
-    write.csv(df300_keep, file=paste0(L2_dir,'300s/', mi$id[1], "_L1_3_interp300s.csv"), row.names=FALSE)
-    write.csv(df600_keep, file=paste0(L2_dir,'600s/', mi$id[1], "_L1_3_interp600s.csv"), row.names=FALSE)
+    df300_keep$datetime <- as.character(format(df300_keep$datetime)) # safer for writing csv in character format
+    df600_keep$datetime <- as.character(format(df600_keep$datetime)) # safer for writing csv in character format
+    write.csv(df300_keep, file=paste0(L2_dir,'300s/', mi$id[1], "_L2_interp300s.csv"), row.names=FALSE)
+    write.csv(df600_keep, file=paste0(L2_dir,'600s/', mi$id[1], "_L2_interp600s.csv"), row.names=FALSE)
     
   }
   
