@@ -10,16 +10,15 @@ clearvars
 
 szn = '2019_2020';
 location = 'Bird_Island'; % Options: 'Bird_Island', 'Midway', 'Wandering'
-tagtype = "GLS"; % Options: 'AGM', 'Axy5', 'AxyAir', 'Catlog', 'iGotU', 'GLS'
 datatype = "GLS"; % Options: "Accelerometer", "GPS", "GLS", "Magnetometer", "EEG"
-computer = "MacMini"; % Options: "MacMini", "MacBookPro"
 
 %% Set envrionment
 
 % set directories
 
-L0_dir = NavigateGD(0,computer,location,szn,tagtype,datatype);
-L1_dir = NavigateGD(1,computer,location,szn,tagtype,datatype);
+GD_dir = "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/";
+L0_dir = strcat(GD_dir,"THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L0/",location,"/Tag_Data/",szn,"/",datatype,"/");
+L1_dir = strcat(GD_dir,"THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L1/",location,"/Tag_Data/",datatype,"/",szn,"/");
 
 % Matlab functions toolbox
 addpath(genpath('/Users/ian/Documents/GitHub/AlbatrossFlightDynamics/'))
@@ -39,6 +38,8 @@ L0_files = dir("*.txt");
 
 % suppress annoying warnings that are created when filling in the dataframe
 warning('off','MATLAB:table:RowsAddedExistingVars')
+% suppress annoying warnings when reading GLS_L0 files
+warning('off','MATLAB:table:ModifiedAndSavedVarnames')
 
 % Make N by 2 matrix of fieldname + value type
 variable_names_types = [["starttime", "datetime"];["endtime", "datetime"]; ["state", "string"]];
@@ -49,22 +50,22 @@ variable_names_types = [["starttime", "datetime"];["endtime", "datetime"]; ["sta
     % Desired output: a dataframe of:
     % startIx, endIx for each on-water portion.     
 
-
-
 for i = 1:length(L0_files)
     %%
     filesplit = strsplit(L0_files(i).name, '_');
     bird = strcat(char(filesplit(1)),"_",char(filesplit(2)), "_" ,char(filesplit(3)));      % grab glsid
-    L0_data = readtable(L0_files(i).name, 'HeaderLines', 19);
-    % if height(L0_data) < 3
-    %     disp(strcat ("Not enought data for ",bird))
-    %     continue
-    % end
+    
+    opts = detectImportOptions(L0_files(i).name,'NumHeaderLines',19);
+    % opts = detectImportOptions(L0_files(i).name);
+    opts = setvaropts(opts,'DD_MM_YYYYHH_MM_SS','InputFormat','MM/dd/uuuu HH:mm:ss');
+    L0_data = readtable(L0_files(i).name, opts);
 
     L0_data.Properties.VariableNames = {'DateTime','dur_secs','wet_dry'};
-   
+   %%
     % Figure out how to correct dd-MM, MM-dd issue
-    if L0_data.DateTime.Format == 'dd-MMM-uuuu HH:mm:ss'
+    if ~strcmp(L0_data.DateTime.Format, 'dd-MMM-uuuu HH:mm:ss')
+        disp("ERROR")
+    end
 
         % Make table using fieldnames & value types from above
         df = table('Size',[0,size(variable_names_types,1)],'VariableNames', variable_names_types(:,1),...
