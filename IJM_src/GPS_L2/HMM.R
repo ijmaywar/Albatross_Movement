@@ -1,121 +1,184 @@
-
-# Sample code to apply Theo Michelot's Hiden Markove Model to estimate behavioral states from 
-# animal movement data (applied here to jaegers tracked in the Pacific Ocean for a paper, Amon et al. In Review)
-
-# Autumn-Lynn Harrison, HarrisonAL@si.edu, 2023
-
-
+################################################################################
+#
+# Use Theo Michelot's moveHMM to seperate flight behaviors:
+#   1. Area-restricted foraging
+#   2. Commuting
+#
+################################################################################
 
 # Clear environment -------------------------------------------------------
 
 rm(list = ls())
 
-######################################################
-### Estimate movement states
-######################################################
+# User Inputed Values -----------------------------------------------------
 
+location = 'Bird_Island' # Options: 'Bird_Island', 'Midway'
+spp = "GHAL"
+interps = c("300s","600s")
+  
+# Set Environment ---------------------------------------------------------
+  
 library(moveHMM)
+library(dplyr)
 library(ggplot2)
 
-wrapCor = function(cor) {corWrap<-ifelse(cor>180,cor-360,cor);return(corWrap)}
+for (ii in 1:length(interps)) {
+  interp_interval = interps[ii]
+  
+  GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/"
+  compile_dir <- paste0(GD_dir, "THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L2/",location,"/Tag_Data/GPS/compiled/",interp_interval)
+  L3_dir <- paste0(GD_dir, "THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L3/",location,"/Tag_Data/GPS/",interp_interval,"/")
+  
+  # User functions ----------------------------------------------------------
+  
+  wrapCor = function(cor) {corWrap<-ifelse(cor>180,cor-360,cor);return(corWrap)}
+  
+  # Load data ---------------------------------------------------------------
+  
+  if (location == "Midway") {
+    colony_coords <- c(-177.3813,28.19989)
+    loc_tz = "Pacific/Midway"
+  } else if (location == "Bird_Island") {
+    colony_coords <- c(-38.0658417,-54.0101833)
+    loc_tz = "GMT" # Bird_Island uses GMT, not UTC-2:00.
+  } else {
+    print("Location not found.")
+    break
+  }
+  
+  setwd(compile_dir)
+  gpsfiles<-list.files(pattern='*.csv')
+  
+  df = read.csv(gpsfiles[which(substr(gpsfiles,1,4)==spp)])
+  
+  df$datetime <- as.POSIXct(df$datetime, format = "%Y-%m-%d %H:%M:%S", tz = "GMT")
+  df$lon <- wrapCor(df$lon)
+  
+  names(df) <- c("", "date", "lon",  "lat", "ID" )
+  
+  df$ID =factor(df$ID)
+  
+  hmmdata = prepData(
+    df,
+    type = "LL",
+    coordNames = c("lon", "lat"),
+    LLangle = TRUE
+  )
+  
+  # Search for initial parameters -------------------------------------------
+  
+  # Plot histogram of step lengths
+  hist(hmmdata$step, xlab = "step length", main = "")
+  
+  # Plot histogram of turning angles
+  hist(hmmdata$angle, breaks = seq(-pi, pi, length = 15), xlab = "angle", main = "")
+  
+  # 2-state model -----------------------------------------------------------
+  
+  # Set up initial params
+  stepMean0 <- c(0.1,4) #(state1,state2)
+  stepSD0 <- c(0.1,4) #(state1,state2)
+  stepPar0 <- c(stepMean0,stepSD0)
+  
+  angleMean0 <- c(pi,0)
+  angleCon0 <- c(1,5)
+  anglePar0 <- c(angleMean0,angleCon0)
+  
+  # fit the HMM
+  m <- fitHMM(data = hmmdata, 
+              nbStates = 2, 
+              stepPar0 = stepPar0, 
+              anglePar0 = anglePar0)
+  
+  # Plot the model -----------------------------------------------------------
+  plot(m, animals = 1, ask = TRUE)
+  
+  # Get the states -----------------------------------------------------------
+  states <- viterbi(m)
+  state_probs <- stateProbs(m)
+  
+  # Create a df with all of the important info -----------------------------------------------------------
+  HMMdf <- cbind(df,hmmdata$step,hmmdata$angle,states,state_probs)
+  names(HMMdf) <- c("birdID", "datetime", "lon",  "lat", "tripID",
+                    "step_length", "angle", "state", "prob_1", "prob_2")
+  HMMdf$state <- factor(HMMdf$state)
+  
+  GPS_commuting <- HMMdf %>% filter(state==2)
+  GPS_commuting <- GPS_commuting %>% select("birdID", "datetime", "lon", "lat", "tripID")
+  
+  # Save plots and data I NEED TO BREAK THESE UP INTO FIELD SZNs
+  birdIDs = unique(substr(hmmdata$ID,1,18))
+  tripIDs = unique(hmmdata$ID)
+  for (i in 1:length(birdIDs)) {
+    current_bird = birdIDs[i]
+    trips = tripIDs[substr(tripIDs,1,18) == birdIDs[i]]
+    
+    bird_commuting_df <- GPS_commuting %>% filter(birdID == current_bird)
+    bird_commuting_df$datetime <- as.character(format(bird_commuting_df$datetime)) # safer for writing csv in character format
+    write.csv(bird_commuting_df, file=paste0(L3_dir,spp,"/",current_bird,"_L1_3_",interp_interval,".csv"), row.names=FALSE)
+    
+    for (j in 1:length(trips)) {
+      current_trip = trips[j]
+      trip_df <- HMMdf %>% filter(tripID == current_trip)
+      ggplot(data = trip_df, aes(x=lon, y=lat)) + 
+        geom_point(size = 1, aes(color = state)) +
+        ggtitle(current_trip) + 
+        geom_point(size = 3, x = colony_coords[1], y = colony_coords[2])
+      ggsave(paste0(L3_dir,spp,"/","Figures/",current_trip,"_",interp_interval,"_path_with_states.png"))
+    }
+    
+  }
+}
 
-# Two state model will likely separate:
-# Breeding/stationary/ARS as a single state
-# and commuting/migrating as a single state
-
-#############################
-### Estimate movement states
-#############################
-
-# Load Data
-
-df = read.csv(file = "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L2/Bird_Island/Tag_Data/GPS/compiled/300s/BBALinterp_300s.csv")
-
-df$datetime <- as.POSIXct(df$datetime, format = "%Y-%m-%d %H:%M:%S", tz = "GMT")
-df$lon <- wrapCor(df$lon)
-
-names(df) <- c("ID",   "date", "lon",  "lat" )
-
-# df$ID =factor(x=df$ID)
-## I might need to factor trip ID
-## Is it required that all GPS outputs are put into one csv file or can i run them seperately?
-
-data = prepData(
-  df,
-  type = "LL",
-  coordNames = c("lon", "lat"),
-  LLangle = TRUE
-)
 
 
-## initial parameters for gamma and von Mises distributions. See Michelot vignette
-## TWO STATE MODEL
-mu0 <- c(0.2,1) #(state1,state2)
-sigma0 <- c(0.2,0.5) #(state1,state2)
-stepPar0 <- c(mu0,sigma0)
-angleMean0 <- c(pi,0)
-kappa0 <- c(1,4) # angle concentration
-anglePar0 <- c(angleMean0,kappa0)
-# anglePar0 <- kappa0
-
-m <- fitHMM(data=data, 
-            nbStates = 2, 
-            stepPar0 = stepPar0, 
-            anglePar0 = anglePar0)
-
-# Plot the results #
-plot(m, plotCI = TRUE)
-
-# Get the states #
-states <- viterbi(m)
-state_probs <- stateProbs(m)
 
 # Plots time series showing for each position a binary estimate of whether they are in State 1 or 2 (dot plot, based on a threshold of the probability line graphs plotted below)
 # Plots line graphs showing the continuous probability of being in state 1 or 2 (a threshold is used to turn into binary)
-plotStates(m)
+# plotStates(m)
 
 ###########################
 ### SAVE OUT TWO STATE MODEL
 ###########################
 
-# Add states to the data set #
-df$predictedState <- viterbi(m)
-df$probState1 <- stateProbs(m)[,1]
-df$probState2 <- stateProbs(m)[,2]
-
-#md24 <- md
-save(df, file = "data-created/2stateHMM_24hr.Rdata")
-
-migState = df[df$predictedState ==1,]
-resState = df[df$predictedState==2,]
-
-
-
-
-##################################################
-###
-### Plot turn angle and step size with GPS track
-###
-##################################################
-
-data$predictedstate = viterbi(m)
-
-plotdomain = 500:1000
-
-ggplot(data[plotdomain,], aes(x=x,y=y)) + 
-  geom_point(size=2,aes(color=abs(angle))) +
-  scale_color_gradient(low="yellow",high="black") +
-  geom_point(x=-38.0658417,y=-54.0101833,color="blue")
-
-ggplot(data[plotdomain,], aes(x=x,y=y)) + 
-  geom_point(size=2,aes(color=factor(predictedstate))) +
-  geom_point(x=-38.0658417,y=-54.0101833,color="blue")
-
-ggplot(data[plotdomain,], aes(x=x,y=y)) + 
-  geom_point(size=2,aes(color=abs(step))) +
-  scale_color_gradient(low="yellow",high="black") +
-  geom_point(x=-38.0658417,y=-54.0101833,color="blue")
-
+# # Add states to the data set #
+# df$predictedState <- viterbi(m)
+# df$probState1 <- stateProbs(m)[,1]
+# df$probState2 <- stateProbs(m)[,2]
+# 
+# #md24 <- md
+# save(df, file = "data-created/2stateHMM_24hr.Rdata")
+# 
+# migState = df[df$predictedState ==1,]
+# resState = df[df$predictedState==2,]
+# 
+# 
+# 
+# 
+# ##################################################
+# ###
+# ### Plot turn angle and step size with GPS track
+# ###
+# ##################################################
+# 
+# hmmdata$predictedstate = viterbi(m)
+# 
+# plotdomain = 500:1000
+# 
+# ggplot(hmmdata[plotdomain,], aes(x=x,y=y)) + 
+#   geom_point(size=2,aes(color=abs(angle))) +
+#   scale_color_gradient(low="yellow",high="black") +
+#   geom_point(x=-38.0658417,y=-54.0101833,color="blue")
+# 
+# ggplot(hmmdata[plotdomain,], aes(x=x,y=y)) + 
+#   geom_point(size=2,aes(color=factor(predictedstate))) +
+#   geom_point(x=-38.0658417,y=-54.0101833,color="blue")
+# 
+# ggplot(hmmdata[plotdomain,], aes(x=x,y=y)) + 
+#   geom_point(size=2,aes(color=abs(step))) +
+#   scale_color_gradient(low="yellow",high="black") +
+#   geom_point(x=-38.0658417,y=-54.0101833,color="blue")
+# 
 
 
 
@@ -140,61 +203,6 @@ ggplot(data[plotdomain,], aes(x=x,y=y)) +
 # lines(cczRGDAL, col="red", lwd = 2)
 
 #mapLines(ind$lon, ind$lat, pch=19, cex=0.25, col=alpha("darkblue"))
-
-######################################################
-### COMPARE TO 3-STATE MODEL
-# To see if model separates breeding residency periods from ARS during flights
-######################################################
-
-df = read.csv(file = "/Users/harrisonAL/Dropbox (Personal)/Manuscripts/2024_PacificJaegers/Harrison_Jaegers_CCZ.csv")
-
-df$date <- as.POSIXct(df$date, format = "%m/%d/%y %H:%M")
-
-names(df) <- c("ID",   "date", "lon",  "lat" )
-
-df$ID =factor(x=df$ID)
-
-data = prepData(
-  df,
-  type = c("LL"),
-  coordNames = c("lon", "lat"),
-  LLangle = TRUE
-)
-
-# THREE STATE MODEL
-# initial parameters pulled completely out of thin air?? How to decide?
-mu0 <- c(1,15,30)
-sigma0 <- c(50,50,100)
-zeromass0 <- c(0,1,1)
-stepPar0 <- c(mu0,sigma0)
-angleMean0 <- c(pi,pi,0)
-kappa0 <- c(1,1,1)
-anglePar0 <- c(angleMean0,kappa0)
-
-m3 <- fitHMM(data=data, 
-             nbStates = 3, 
-             stepPar0 = stepPar0, 
-             anglePar0 = anglePar0, 
-             formula = ~1)
-
-# Plot the results #
-plot(m3, plotCI = TRUE)
-# Three state model seems like it correctly separates breeding from migration from staging and over-wintering. 
-
-# compare the 2 models
-AIC(m,m3)
-
-###########################
-### SAVE OUT THREE STATE MODEL
-###########################
-
-# Add states to the data set #
-df$predictedState <- viterbi(m)
-df$probState1 <- stateProbs(m3)[,1]
-df$probState2 <- stateProbs(m3)[,2]
-df$probState3 <- stateProbs(m3)[,3]
-
-save(df, file = "data-created/3stateHMM_24hr.Rdata")
 
 
 
