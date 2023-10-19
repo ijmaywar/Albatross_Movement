@@ -29,7 +29,7 @@ compile_dir <- paste0(GD_dir, "THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L2/",loca
 setwd(szn_dir)
 seasons <- list.files()[1:length(list.files())-1] # Remove the last folder because that's for the compiled data
 
-# Find seasons and species ------------------------------------------------
+# Find species ------------------------------------------------
 
 if (location == "Bird_Island") {
   species = c("BBAL", "GHAL", "WAAL")
@@ -38,6 +38,8 @@ if (location == "Bird_Island") {
 } else {
   print("Can't find location")
 }
+
+# Write Files ------------------------------------------------
 
 for (i in 1:length(species)) {
   
@@ -65,7 +67,7 @@ for (i in 1:length(species)) {
     gpsfiles<-list.files(pattern='*.csv')
     for (k in 1:length(gpsfiles)) {
       if (substr(gpsfiles[k],1,4)==spp) {
-        current_file <- read.csv(gpsfiles[i])
+        current_file <- read.csv(gpsfiles[k])
         if (!exists("compiled600s")){
           compiled600s <- current_file
         } else {
@@ -74,6 +76,9 @@ for (i in 1:length(species)) {
       }
     }
   }
+  
+  compiled300s$datetime <- as.character(format(compiled300s$datetime)) # safer for writing csv in character format
+  compiled600s$datetime <- as.character(format(compiled600s$datetime)) # safer for writing csv in character format
   
   write.csv(compiled300s, file=paste0(compile_dir,"300s/",spp,"interp_300s.csv"), row.names=FALSE)
   write.csv(compiled600s, file=paste0(compile_dir,"600s/",spp,"interp_600s.csv"), row.names=FALSE)
