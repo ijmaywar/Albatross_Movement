@@ -14,16 +14,16 @@ clearvars
 
 %% USER INPUTED VALUES
 
-directory = "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L0/Bird_Island/Tag_Data/2019_2020/GLS/driftadjdeg";
+directory = "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L0/Bird_Island/Tag_Data/2021_2022/GLS/driftadj/";
 fileExt = "deg";
 
-szn = '2019_2020';
+szn = '2021_2022';
 location = 'Bird_Island'; % Options: 'Bird_Island', 'Midway', 'Wandering'
-Genus = "great";
+% Genus = "great";
 tagtype = "GLS"; % Options: 'AGM', 'Axy5', 'AxyAir', 'Catlog', 'iGotU'
 datatype = "GLS"; % Options: "Accelerometer", "GPS", "GLS", "Magnetometer", "EEG"
 datalvl = 0; % Options: 0, 1, 2
-datasublvl = 2; % Options: 1, 2, 3
+% datasublvl = 2; % Options: 1, 2, 3
 computer = "MacMini"; % Options: "MacMini", "MacBookPro"
 
 newname = false; % Options: true, false
@@ -34,7 +34,7 @@ GD_dir = findGD(computer);
 
 % Full_metadata sheet
 fullmeta = readtable(strcat(GD_dir,'metadata/Full_metadata.xlsx'),'TreatAsEmpty',{'NA'});
-fullmeta = fullmeta(strcmp(fullmeta.Field_season,szn) & strcmp(fullmeta.Location,location) & strcmp(fullmeta.Genus,Genus),:);
+fullmeta = fullmeta(strcmp(fullmeta.Field_season,szn) & strcmp(fullmeta.Location,location),:); % & strcmp(fullmeta.Genus,Genus),:);
 
 cd(directory)
 fileList = exFAT_aux_remove(struct2table(dir(strcat('*.',fileExt))));
