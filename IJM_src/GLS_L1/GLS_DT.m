@@ -8,7 +8,7 @@ clearvars
 
 %% USER INPUTED VALUES
 
-szn = '2019_2020';
+szn = '2021_2022';
 location = 'Bird_Island'; % Options: 'Bird_Island', 'Midway', 'Wandering'
 datatype = "GLS"; % Options: "Accelerometer", "GPS", "GLS", "Magnetometer", "EEG"
 
@@ -55,9 +55,9 @@ for i = 1:length(L0_files)
     filesplit = strsplit(L0_files(i).name, '_');
     bird = strcat(char(filesplit(1)),"_",char(filesplit(2)), "_" ,char(filesplit(3)));      % grab glsid
     
-    opts = detectImportOptions(L0_files(i).name,'NumHeaderLines',19);
-    % opts = detectImportOptions(L0_files(i).name);
-    opts = setvaropts(opts,'DD_MM_YYYYHH_MM_SS','InputFormat','MM/dd/uuuu HH:mm:ss');
+    % opts = detectImportOptions(L0_files(i).name,'NumHeaderLines',19);
+    opts = detectImportOptions(L0_files(i).name);
+    opts = setvaropts(opts,'DD_MM_YYYYHH_MM_SS','InputFormat','dd/MM/uuuu HH:mm:ss');
     L0_data = readtable(L0_files(i).name, opts);
 
     L0_data.Properties.VariableNames = {'DateTime','dur_secs','wet_dry'};
@@ -80,7 +80,7 @@ for i = 1:length(L0_files)
      
         end % end loop throughe each row of L0_data
         
-        filenamei = strcat(L1_dir, bird, '_L1.csv');
+        filenamei = strcat(L1_dir, bird, '_GLS_L1.csv');
         writetable(df, filenamei);
     
 end
