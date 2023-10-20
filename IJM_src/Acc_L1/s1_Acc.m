@@ -73,9 +73,9 @@ function [T,meta_tbl] = s1_Acc(m,ID,birdmeta,written_local)
     end
 
     % Make sure that the capture date and axyON time are correct
-    meta_startdate = num2str(birdmeta.AxyON_date_yyyymmdd);
+    meta_startdate = num2str(birdmeta.AuxON_date_yyyymmdd);
     meta_startdate = strcat(extractBefore(meta_startdate,5),"-",extractBetween(meta_startdate,5,6),"-",extractAfter(meta_startdate,6));
-    meta_starttime = birdmeta.AxyON_time_hhmmss;
+    meta_starttime = birdmeta.AuxON_time_hhmmss;
     if isa(meta_starttime,'double')
         meta_starttime = sprintf('%06d',meta_starttime);
     end

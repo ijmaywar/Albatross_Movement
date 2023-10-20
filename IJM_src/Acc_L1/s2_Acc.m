@@ -30,7 +30,7 @@ function [m,meta_tbl] = s2_Acc(m,birdid,fullmeta)
     meta_tbl = table(cell(1,1),cell(1,1),zeros(1,1),cell(1,1),zeros(1,1),zeros(1,1),zeros(1,1),zeros(1,1),zeros(1,1),cell(1,1),zeros(1,1),'VariableNames', {'BirdID','TagType','Z-Mean-G','Z-Orientation','Dur-Days','Num_Breaks','Max_Break_Sec','Last_Row_Deleted','Zeros_Removed','Warning','skip'});                     
 
     birdmeta = fullmeta(strcmp(fullmeta.Deployment_ID,birdid),:);
-    tagtype = birdmeta.ACC_TagType{1};
+    tagtype = birdmeta.Aux_TagType{1};
 
     meta_tbl.("BirdID")(1,:) = {birdid};
     meta_tbl.("TagType")(1,:) = {tagtype};
