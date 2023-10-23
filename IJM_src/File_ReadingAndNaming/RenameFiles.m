@@ -14,14 +14,18 @@ clearvars
 
 %% USER INPUTED VALUES
 
-directory = "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L0/Bird_Island/Tag_Data/2021_2022/GLS/driftadj/";
-fileExt = "deg";
+directory = "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L0/Bird_Island/Tag_Data/2019_2020/HRL/L0_0_Raw_Compressed_dat/";
+fileExt = "dat";
 
-szn = '2021_2022';
+szn = '2019_2020';
 location = 'Bird_Island'; % Options: 'Bird_Island', 'Midway', 'Wandering'
 % Genus = "great";
-tagtype = "GLS"; % Options: 'AGM', 'Axy5', 'AxyAir', 'Catlog', 'iGotU'
-datatype = "GLS"; % Options: "Accelerometer", "GPS", "GLS", "Magnetometer", "EEG"
+Tag = "Aux"; % Options: "Aux", "GPS", "GLS" 
+TagType = "HRL"; % Options: 
+                  % GPS: "Catlog", "iGotU"
+                  % Aux: "AGM", "Axy5", "AxyAir", "GCDC", "HRL", "uMoth"
+                  % GLS 
+                  % AxyTrek
 datalvl = 0; % Options: 0, 1, 2
 % datasublvl = 2; % Options: 1, 2, 3
 computer = "MacMini"; % Options: "MacMini", "MacBookPro"
@@ -56,20 +60,24 @@ for id = 1:nfiles
 
     % Find metadata
     if ~newname % For OG_IDs   
-        if ismember(tagtype,["Catlog","iGotU"])
+        if ismember(Tag,["GPS","AxyTrek"])
             num_ = count(string(fullmeta.Pos_OG_ID(1)),"_");
             Old_BirdName = findOBN(num_,nameSplit);
             findmeta = find(strcmp(fullmeta.Pos_OG_ID,Old_BirdName));
-        elseif ismember(tagtype,["AGM","Axy5","AxyAir","GCDC","Technosmart"])           
+        elseif ismember(Tag,["Aux"])           
             num_ = count(string(fullmeta.Aux_OG_ID(1)),"_");
             Old_BirdName = findOBN(num_,nameSplit);
             findmeta = find(strcmp(fullmeta.Aux_OG_ID,Old_BirdName));
-        elseif strcmp(tagtype,"GLS")
+        elseif strcmp(Tag,"GLS")
             num_ = count(string(fullmeta.GLS_OG_ID(1)),"_");
             Old_BirdName = findOBN(num_,nameSplit);
             findmeta = find(strcmp(fullmeta.GLS_OG_ID,Old_BirdName));
+        else
+            disp("Can't find Tag.")
+            return
         end
-    else % For names that have already been updated to the naming convention but need to be tweaked.
+
+    else % For names that have already been updated to the naming convention but need to be tweaked a little bit.
         num_ = count(string(fullmeta.Deployment_ID(findmeta)),"_");
         Old_BirdName = findOBN(num_,nameSplit);
         findmeta = find(strcmp(fullmeta.Deployment_ID,Old_BirdName));
@@ -96,7 +104,7 @@ for id = 1:nfiles
     % CHANGE THIS ACCORDINGLY
     if datalvl == 0
         % rename = Dep_ID;
-        rename = strcat(Dep_ID,'_',tagtype,'_L0.txt');%,ext); 
+        rename = strcat(Dep_ID,'_',TagType,'_L0',ext); 
     elseif datalvl == 1
         rename = strcat(Dep_ID,'_',datatype,'_L1',ext);
     elseif datalvl == 2
