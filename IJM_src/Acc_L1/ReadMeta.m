@@ -14,33 +14,34 @@ clearvars
  
 %% USER INPUTED VALUES
 
-szn = '2019_2020';
+szn = '2021_2022';
 location = 'Bird_Island'; % Options: 'Bird_Island', 'Midway', 'Wandering'
 computer = 'MacMini'; % Options: "MacMini," "MacBookPro"
 datalvl = "L1";
-tagtype = "Technosmart";
+tagtype = "AGM";
 datatype = "Accelerometer";
 
 %% Set environment
 
 % set directories
 GD_dir = findGD(computer);
-L1_dir = NavigateGD(computer,datalvl,location,szn,tagtype,datatype);
+L1_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/Acc/Acc_Technosmart/',szn,'/');
 
 % Matlab functions toolbox
 addpath(genpath('/Users/ian/Documents/GitHub/AlbatrossFlightDynamics/'))
 
 % Full_metadata sheet
-fullmeta = readtable(strcat(GD_dir,'metadata/Full_metadata.xlsx'),'Sheet',location,'TreatAsEmpty',{'NA'});
+fullmeta = readtable(strcat(GD_dir,'metadata/Full_metadata.xlsx'),'TreatAsEmpty',{'NA'});
 % Specify the field season and location you are interested in
-fullmeta = fullmeta(strcmp(fullmeta.Field_season,szn) & strcmp(fullmeta.Location,location),:);
+% fullmeta = fullmeta(strcmp(fullmeta.Field_season,szn) & strcmp(fullmeta.Location,location),:);
+fullmeta = fullmeta(strcmp(fullmeta.Field_season,szn) & strcmp(fullmeta.Location,location) & strcmp(fullmeta.Aux_TagType,tagtype),:);
 
 %% How far did I get?
 
 cd(L1_dir)
 L1_fileList = exFAT_aux_remove(struct2table(dir('*.csv')));
 
-metastruct_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/Accelerometer/Acc_Technosmart/',szn,'/meta_structures/');
+metastruct_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/Acc/Acc_Technosmart/',szn,'/meta_structures/');
 cd(metastruct_dir)
 metastruct_fileList = exFAT_aux_remove(struct2table(dir('*.mat')));
 
