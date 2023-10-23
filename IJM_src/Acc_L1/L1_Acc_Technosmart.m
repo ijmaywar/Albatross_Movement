@@ -1,4 +1,3 @@
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Peform all L1 steps (s1-s4) for Technosmart Acc tags
 %
@@ -10,9 +9,10 @@ clearvars
 
 %% USER INPUTED VALUES
 
-szn = '2018_2019';
+szn = '2022_2023';
 location = "Midway"; % Options: 'Bird_Island', 'Midway', 'Wandering'
 tagtype = "AxyAir"; % Options: 'AGM', 'Axy5', 'AxyAir', 'GCDC'
+computer = "MacMini";
 
 %% Timezone
 if strcmp(location,"Midway")
@@ -41,20 +41,20 @@ end
 warning('off','MATLAB:table:ModifiedAndSavedVarNames')
 
 % set directories
-GD_dir = '/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/';
-% l0_dir = strcat(GD_dir,'L0/',location,'/Tag_Data/',szn,'/',tagtype,'/');
-l0_dir = strcat(GD_dir,'L0/',location,'/Tag_Data/',szn,'/',tagtype,'/dt_local/');
-L1_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/Accelerometer/Acc_Technosmart/',szn,'/');
+GD_dir = findGD(computer);
+% L0_dir = strcat(GD_dir,'L0/',location,'/Tag_Data/',szn,'/',tagtype,'/');
+L0_dir = strcat(GD_dir,'L0/',location,'/Tag_Data/',szn,'/Aux/',tagtype,'/');
+L1_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/Acc/Acc_Technosmart/',szn,'/');
 GPS_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/GPS/GPS_Catlog/',szn,'/2_buffer2km/');
 
 % Sometimes a select few individuals have been written in a different
 % timezone than the rest of the files in a given field szn. This is the
 % case for three files in Midway 2018_2019 AxyAir which were written in local
 % time, not GMT.
-l0_split = strsplit(l0_dir,"_");
-if strcmp(l0_split(end),"local/")
+L0_split = strsplit(L0_dir,"_");
+if strcmp(L0_split(end),"local/")
     written_local = true;
-elseif strcmp(l0_split(end),"GMT/")
+elseif strcmp(L0_split(end),"GMT/")
     written_local = false;
 end
 
@@ -62,7 +62,7 @@ end
 addpath(genpath('/Users/ian/Documents/GitHub/AlbatrossFlightDynamics/'))
 
 % Full_metadata sheet
-fullmeta = readtable(strcat(GD_dir,'metadata/Full_metadata.xlsx'),'Sheet',location,'TreatAsEmpty',{'NA'});
+fullmeta = readtable(strcat(GD_dir,'metadata/Full_metadata.xlsx'),'TreatAsEmpty',{'NA'});
 % Specify the field season and location you are interested in
 fullmeta = fullmeta(strcmp(fullmeta.Field_season,szn) & strcmp(fullmeta.Location,location),:);
 
@@ -71,21 +71,24 @@ cd(GPS_dir)
 GPS_fileList = exFAT_aux_remove(struct2table(dir('*.csv')));
 
 % Acc L0 file LIst
-cd(l0_dir)
-l0_fileList = exFAT_aux_remove(struct2table(dir('*.csv')));
+cd(L0_dir)
+L0_fileList = exFAT_aux_remove(struct2table(dir('*.csv')));
 
 % Prevent figures from popping up when running in the background
 set(0,'DefaultFigureVisible','off')
 
+% suppress annoying warnings when reading Acc_L0 files
+warning('off','MATLAB:table:ModifiedAndSavedVarnames')
+
 %% Initial checks
 
 % Make sure that all birds have metadata and GPS data
-for i = 1:height(l0_fileList)
+for i = 1:height(L0_fileList)
 
-    if height(l0_fileList) == 1
-        namesplit = strsplit(l0_fileList.name,'_');
+    if height(L0_fileList) == 1
+        namesplit = strsplit(L0_fileList.name,'_');
     else
-        namesplit = strsplit(l0_fileList.name{i},'_');
+        namesplit = strsplit(L0_fileList.name{i},'_');
     end
     current_bird = strcat(namesplit{1},'_',namesplit{2},'_',namesplit{3});
     bird_names{i} = current_bird;
@@ -116,7 +119,7 @@ end
 % check that there's only one file per bird
 uniquebirds = unique(bird_names);
 
-if length(uniquebirds) ~= height(l0_fileList)
+if length(uniquebirds) ~= height(L0_fileList)
     disp("There is a bird with multiple files.")
     return
 end
@@ -126,16 +129,16 @@ start_i=1;
 
 %% Loop through each unique bird
 loop_Start = tic;
-parfor(i = start_i:height(l0_fileList))
-%for i = 1:height(l0_fileList)
+parfor(i = start_i:height(L0_fileList))
+%for i = 1:height(L0_fileList)
     %% Load data
     
     meta = struct;
     
-    if height(l0_fileList) == 1
-        namesplit = strsplit(l0_fileList.name,'_');
+    if height(L0_fileList) == 1
+        namesplit = strsplit(L0_fileList.name,'_');
     else
-        namesplit = strsplit(l0_fileList.name{i},'_');
+        namesplit = strsplit(L0_fileList.name{i},'_');
     end
     current_bird = strcat(namesplit{1},'_',namesplit{2},'_',namesplit{3});
     dep_ID = current_bird;
@@ -144,11 +147,11 @@ parfor(i = start_i:height(l0_fileList))
     parsave(meta,strcat(L1_dir,'meta_structures/',dep_ID,'_meta.mat'));
     
     % Load L0 Acc data
-    cd(l0_dir)
-    if height(l0_fileList) == 1
-        m = readtable(l0_fileList.name,'Delimiter',',','ReadVariableNames',true,'TreatAsEmpty',{'NA'});
+    cd(L0_dir)
+    if height(L0_fileList) == 1
+        m = readtable(L0_fileList.name,'Delimiter',',','ReadVariableNames',true,'TreatAsEmpty',{'NA'});
     else
-        m = readtable(l0_fileList.name{i},'Delimiter',',','ReadVariableNames',true,'TreatAsEmpty',{'NA'});
+        m = readtable(L0_fileList.name{i},'Delimiter',',','ReadVariableNames',true,'TreatAsEmpty',{'NA'});
     end 
     
     % Load GPS data
@@ -168,28 +171,28 @@ parfor(i = start_i:height(l0_fileList))
     meta.s1 = s1_meta;
 
     if s1_meta.skip == 1
-        disp(strcat(dep_ID,'(',num2str(i),'/',num2str(height(l0_fileList)), '): skipped at s1.'))
+        disp(strcat(dep_ID,'(',num2str(i),'/',num2str(height(L0_fileList)), '): skipped at s1.'))
         meta.step = 1;
         parsave(meta,strcat(L1_dir,'meta_structures/',dep_ID,'_meta.mat'));
         continue
     end
 
-    disp(strcat(dep_ID,'(',num2str(i),'/',num2str(height(l0_fileList)), '): s1 complete.'))
+    disp(strcat(dep_ID,'(',num2str(i),'/',num2str(height(L0_fileList)), '): s1 complete.'))
 
     %% s2
 
     [m,s2_meta] = s2_Acc(m,dep_ID,fullmeta);
 
     meta.s2 = s2_meta;
-  %%
+  
     if s2_meta.skip == 1
-        disp(strcat(dep_ID,'(',num2str(i),'/',num2str(height(l0_fileList)), '): skipped at s2.'))
+        disp(strcat(dep_ID,'(',num2str(i),'/',num2str(height(L0_fileList)), '): skipped at s2.'))
         meta.step = 2;
         parsave(meta,strcat(L1_dir,'meta_structures/',dep_ID,'_meta.mat'));
         continue
     end
 
-    disp(strcat(dep_ID,'(',num2str(i),'/',num2str(height(l0_fileList)), '): s2 complete.'))
+    disp(strcat(dep_ID,'(',num2str(i),'/',num2str(height(L0_fileList)), '): s2 complete.'))
 
     %% s3
 
@@ -197,9 +200,9 @@ parfor(i = start_i:height(l0_fileList))
 
     meta.s3 = s3_meta;
     meta.timetbl = s3_timetbl;
-  %%  
+   
     if ~isempty(find(s3_meta.skip == 1, 1))
-        disp(strcat(dep_ID,'(',num2str(i),'/',num2str(height(l0_fileList)), '): skipped at s3.'))
+        disp(strcat(dep_ID,'(',num2str(i),'/',num2str(height(L0_fileList)), '): skipped at s3.'))
         meta.step = 3;
         parsave(meta,strcat(L1_dir,'meta_structures/',dep_ID,'_meta.mat'));
         continue
@@ -207,11 +210,11 @@ parfor(i = start_i:height(l0_fileList))
 
     %  Check to make sure the data is continuous
     if ~CheckContinuous(m,25)
-        disp(strcat(dep_ID,'(',num2str(i),'/',num2str(height(l0_fileList)), '): data is not continuous after s3.'))
+        disp(strcat(dep_ID,'(',num2str(i),'/',num2str(height(L0_fileList)), '): data is not continuous after s3.'))
         continue
     end
 
-    disp(strcat(dep_ID,'(',num2str(i),'/',num2str(height(l0_fileList)), '): s3 complete.'))
+    disp(strcat(dep_ID,'(',num2str(i),'/',num2str(height(L0_fileList)), '): s3 complete.'))
         
     %% s4
 
@@ -224,7 +227,7 @@ parfor(i = start_i:height(l0_fileList))
 
     writetable(m,strcat(L1_dir,dep_ID,'_Acc_L1.csv')) %write m data
     
-    disp(strcat(dep_ID,'(',num2str(i),'/',num2str(height(l0_fileList)), '): s4 complete.'))
+    disp(strcat(dep_ID,'(',num2str(i),'/',num2str(height(L0_fileList)), '): s4 complete.'))
 
     m = []; % to free up memory
 
