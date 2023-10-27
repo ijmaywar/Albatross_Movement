@@ -13,7 +13,7 @@ rm(list = ls())
 # User Inputed Values -----------------------------------------------------
 
 location = 'Bird_Island' # Options: 'Bird_Island', 'Midway'
-spp = "GHAL"
+spp = "BBAL"
 interps = c("300s","600s")
   
 # Set Environment ---------------------------------------------------------
