@@ -11,7 +11,7 @@ clearvars
 %%
 GD_dir = findGD("MacMini");
 ECG_dir = "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L0/Bird_Island/Tag_Data/2019_2020/Aux/HRL/L0_1_Decompressed/1_SensorData/";
-GPS_dir = "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L1/Bird_Island/Tag_Data/GPS/GPS_Catlog/2019_2020/1_onbird/";
+GPS_dir = "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L0/Bird_Island/Tag_Data/2019_2020/Pos/Catlog/";
 HPos_dir = "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L0/Bird_Island/Tag_Data/2019_2020/Aux/HRL/L0_1_Decompressed/3_HeaderPos/";
 inf_dir = "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L0/Bird_Island/Tag_Data/2019_2020/Aux/HRL/L_meta_setup_Inf_files/";
 
@@ -33,41 +33,37 @@ inf_fileList = struct2table(inf_fileList);
 fullmeta = readtable(strcat(GD_dir,'metadata/Full_metadata.xlsx'),'TreatAsEmpty',{'NA'});
 
 nfiles = height(ECG_fileList);
-% meta table
+
+%% Set up meta table
 meta_tbl = table(cell(nfiles,1),zeros(nfiles,1),zeros(nfiles,1),zeros(nfiles,1),zeros(nfiles,1),zeros(nfiles,1),zeros(nfiles,1), ...
     'VariableNames', {'dep_ID','i','tot_restarts','difference_hrs','mins_per_restart','min_diff_GPS_mins','max_diff_GPS_mins'});  
 
 %% Loop thru
 
-for i = 2:4 %height(ECG_fileList)
+for i = 15:3:27%height(ECG_fileList)
     
-    %% Load ECG data
+    %% Make sure all files are present
     cd(ECG_dir)
     namesplit = strsplit(ECG_fileList(i).name,'_');
     current_bird = strcat(namesplit{1},'_',namesplit{2},'_',namesplit{3});
 
     birdmeta = fullmeta(strcmp(string(fullmeta.Deployment_ID), current_bird),:);
 
-    ECG_data = readtable(ECG_fileList(i).name);
-
     meta_tbl(i,:).dep_ID = {current_bird};
-    meta_tbl(i,:).i = i;
-    
-    %% Locate and load GPS file
+    meta_tbl(i,:).i = i;  
+
+    % GPS
     birdGPSname = strcat(current_bird,"_Catlog_L0.csv");
     findGPS = find(strcmp(string(GPS_fileList.name),birdGPSname));
-
     if isempty(findGPS)
         disp(strcat("There is no GPS file for ", current_bird))
-        return
+        continue
     elseif length(findGPS)>1
         disp(strcat("There are multiple GPS files for ", current_bird))
         return
-    else
-        GPS_data = readtable(strcat(GPS_dir,GPS_fileList.name(findGPS)));
     end
 
-    %% Locate and load HeaderPos file
+    % HeaderPos
     birdHPosname = strcat(current_bird,"_HRL_L0_1_3_HeaderPos.txt");
     findHPos = find(strcmp(string(HPos_fileList.name),birdHPosname));
 
@@ -77,21 +73,35 @@ for i = 2:4 %height(ECG_fileList)
     elseif length(findHPos)>1
         disp(strcat("There are multiple HPos files for ", current_bird))
         return
-    else
-        HPos_data = readtable(strcat(HPos_dir,HPos_fileList.name(findHPos)));
     end
 
-    %% Locate and load inf file
+    % inf
     birdinfname = strcat(current_bird,"_HRL_L0.inf");
     findinf = find(strcmp(string(inf_fileList.name),birdinfname));
 
     if isempty(findinf)
         disp(strcat("There is no inf file for ", current_bird))
-        return
     elseif length(findinf)>1
         disp(strcat("There are multiple inf files for ", current_bird))
         return
-    else
+    end  
+    
+    %% Load ECG data
+    ECG_data = readtable(ECG_fileList(i).name);
+    
+    %% Load GPS file
+    GPS_data = readtable(strcat(GPS_dir,GPS_fileList.name(findGPS)));
+    if strcmp(GPS_data.Properties.VariableNames{2}, 'Var2')
+        disp("Can't load GPS data correctly.")
+        continue
+    end
+
+    %% Load HeaderPos file
+    HPos_data = readtable(strcat(HPos_dir,HPos_fileList.name(findHPos)));
+
+    %% Load inf file
+
+    if ~isempty(findinf)
         FName = strcat(inf_dir,inf_fileList.name(findinf));
         PatternLength = 9; %bytes
         fid = fopen(FName, 'r');
@@ -117,9 +127,9 @@ for i = 2:4 %height(ECG_fileList)
         % xlabel('Sector number');
         % ylabel('Cumulative restarts');
         % xlim([0 NSectors]);
-
+    
         tot_restarts = double(A(3,end));
-
+    
         % %%
         % V = [1 2 4:9];
         % A1 = A-repmat(A(:,1),1,NSectors); 
@@ -133,10 +143,14 @@ for i = 2:4 %height(ECG_fileList)
         % for I_t = 1:9
         %   disp([num2str(I_t) ' ' dec2bin(A(I_t,1),8)]);  
         % end    
+    
+    else
+        tot_restarts = 99999999;
+
     end
 
     meta_tbl(i,:).tot_restarts = tot_restarts;
-
+    
     %% Find ECG on datetime from fullmeta
     
     meta_startdate = num2str(birdmeta.AuxON_date_yyyymmdd);
@@ -151,23 +165,29 @@ for i = 2:4 %height(ECG_fileList)
     
     %% Find ECG duration 
 
-    ECG_SR = 75; % ECG sampling rate is 75 hz
+    ECG_SR = 74.9850; % ECG sampling rate is 75 hz
     ECG_dur_hrs = height(ECG_data) / (ECG_SR*60*60);
+
+    final_ECG_dt = meta_startdatetime + hours(ECG_dur_hrs);
 
     %% Find GPS duration and min/max diff
     
     GPS_DateTime = strcat(string(GPS_data.Date), " ", string(GPS_data.Time));
     GPS_DateTime = datetime(GPS_DateTime,'InputFormat','dd-MMM-yyyy HH:mm:ss');
+
+    % GPS_ON_idx = find(GPS_DateTime >= meta_startdatetime,1);
+    % GPS_DateTime = GPS_DateTime(GPS_ON_idx:length(GPS_DateTime));
     
     meta_tbl(i,:).min_diff_GPS_mins = minutes(min(diff(GPS_DateTime)));
     meta_tbl(i,:).max_diff_GPS_mins = minutes(max(diff(GPS_DateTime)));
 
-    GPS_dur_hrs = hours(GPS_DateTime(end) - GPS_DateTime(1));
+    % GPS_dur_hrs = hours(GPS_DateTime(end) - GPS_DateTime(1));
 
     %% Find time elapsed per break
 
-    difference_hrs = (GPS_dur_hrs - ECG_dur_hrs)
-    mins_per_restart = (GPS_dur_hrs - ECG_dur_hrs) / tot_restarts * 60
+    % difference_hrs = hours(final_ECG_dt - GPS_DateTime(end))
+    difference_hrs = hours(final_ECG_dt - temp)
+    mins_per_restart = (difference_hrs*60) / tot_restarts
 
     meta_tbl(i,:).difference_hrs = difference_hrs;
     meta_tbl(i,:).mins_per_restart = mins_per_restart;
@@ -177,8 +197,10 @@ for i = 2:4 %height(ECG_fileList)
     GPS_Fig = figure;
     plot(minutes(diff(GPS_DateTime)))
 
+    %% Save meta tbl
+    writetable(meta_tbl,strcat("/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L0/Bird_Island/Tag_Data/2019_2020/Aux/HRL/",'ECG_timings_meta.csv')) %write m data
+    
     %% Clear variables for next loop
-
     clearvars -except ECG_dir ECG_fileList fullmeta GD_dir GPS_dir GPS_fileList HPos_dir HPos_fileList inf_dir inf_fileList meta_tbl nfiles i
 
 end
