@@ -11,7 +11,7 @@ rm(list = ls())
 
 # User Inputed Values -----------------------------------------------------
 
-location = 'Midway' # Options: 'Bird_Island', 'Midway'
+location = 'Bird_Island' # Options: 'Bird_Island', 'Midway'
 
 # Set Environment ---------------------------------------------------------
 
