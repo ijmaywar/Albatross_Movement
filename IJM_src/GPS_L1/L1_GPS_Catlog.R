@@ -15,8 +15,8 @@ rm(list = ls())
 
 # User Inputed Values -----------------------------------------------------
 
-szn = '2022_2023'
-location = 'Midway' # Options: 'Bird_Island', 'Midway'
+szn = '2019_2020'
+location = 'Bird_Island' # Options: 'Bird_Island', 'Midway'
 
 # Set Environment ---------------------------------------------------------
 
@@ -32,7 +32,7 @@ library(readxl)
 library(tools)
 
 GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/"
-L0_dir <- paste0(GD_dir, "THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L0/",location,"/Tag_Data/",szn,"/Catlog/")
+L0_dir <- paste0(GD_dir, "THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L0/",location,"/Tag_Data/",szn,"/Pos/Catlog/")
 L1_dir <- paste0(GD_dir, "THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L1/",location,"/Tag_Data/GPS/GPS_Catlog/",szn,"/")
 meta_dir <- paste0(L1_dir,"GPS_Summaries/")
 
@@ -92,7 +92,8 @@ colnames(df)<-c('bird','tagid','interval_minutes','int_sd','int_max','duration_t
 ################################################################################
 # Loop Through Birds
 
-for (i in 1:length(gpsfiles)) { 
+# for (i in 1:length(gpsfiles)) { 
+for (i in 57:length(gpsfiles)) { 
 #for (i in 15:15) {   
   
   namesplit <- strsplit(gpsfiles[i],"_")[[1]]
@@ -118,7 +119,7 @@ for (i in 1:length(gpsfiles)) {
   m<-m[!is.na(m$Latitude),]
   
   # Create GPS datetime columns (GMT column and local TZ column)
-  if (substr(m$Date[1],3,3) == "/") {
+  if (substr(m$Date[1],3,3) == "/" || substr(m$Date[1],2,2) == "/") {
     m$ptime <- as.POSIXct(paste(m$Date,m$Time), format='%m/%d/%Y %H:%M:%S', tz="GMT")
   } else {
     m$ptime <- as.POSIXct(paste(m$Date,m$Time), format='%Y-%m-%d %H:%M:%S', tz="GMT")
