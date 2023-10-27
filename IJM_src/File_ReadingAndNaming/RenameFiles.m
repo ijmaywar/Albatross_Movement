@@ -14,13 +14,13 @@ clearvars
 
 %% USER INPUTED VALUES
 
-directory = "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L0/Bird_Island/Tag_Data/2019_2020/HRL/L0_0_Raw_Compressed_dat/";
-fileExt = "dat";
+directory = "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L0/Bird_Island/Tag_Data/2019_2020/Aux/HRL/L_meta_setup_Inf_files/parse_inf_restart_plot_figures/";
+fileExt = "png";
 
 szn = '2019_2020';
 location = 'Bird_Island'; % Options: 'Bird_Island', 'Midway', 'Wandering'
 % Genus = "great";
-Tag = "Aux"; % Options: "Aux", "GPS", "GLS" 
+Tag = "GPS"; % Options: "Aux", "GPS", "GLS" 
 TagType = "HRL"; % Options: 
                   % GPS: "Catlog", "iGotU"
                   % Aux: "AGM", "Axy5", "AxyAir", "GCDC", "HRL", "uMoth"
@@ -38,7 +38,8 @@ GD_dir = findGD(computer);
 
 % Full_metadata sheet
 fullmeta = readtable(strcat(GD_dir,'metadata/Full_metadata.xlsx'),'TreatAsEmpty',{'NA'});
-fullmeta = fullmeta(strcmp(fullmeta.Field_season,szn) & strcmp(fullmeta.Location,location),:); % & strcmp(fullmeta.Genus,Genus),:);
+% fullmeta = fullmeta(strcmp(fullmeta.Field_season,szn) & strcmp(fullmeta.Location,location),:); % & strcmp(fullmeta.Genus,Genus),:);
+fullmeta = fullmeta(strcmp(fullmeta.Field_season,szn) & strcmp(fullmeta.Location,location) & strcmp(fullmeta.Aux_TagType,TagType),:);
 
 cd(directory)
 fileList = exFAT_aux_remove(struct2table(dir(strcat('*.',fileExt))));
@@ -105,6 +106,7 @@ for id = 1:nfiles
     if datalvl == 0
         % rename = Dep_ID;
         rename = strcat(Dep_ID,'_',TagType,'_L0',ext); 
+        % rename = strcat(Dep_ID,'_',TagType,'_plot1',ext); 
     elseif datalvl == 1
         rename = strcat(Dep_ID,'_',datatype,'_L1',ext);
     elseif datalvl == 2
