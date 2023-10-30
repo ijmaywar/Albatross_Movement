@@ -1,0 +1,108 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%   Attach DateTimes to HRL ECG and OtherSensor data
+%
+%   Reformat data to follow a uniform format (uniformat):
+%       DateTime in GMT
+%       Ax
+%       Ay
+%       Az
+%       Pressure
+%       Temperature
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% Clear variables
+clearvars
+
+%% USER INPUTED VALUES
+
+szn = '2019_2020';
+location = "Bird_Island"; % Options: 'Bird_Island', 'Midway', 'Wandering'
+computer = "MacMini";
+
+%% Set Environment
+
+% Matlab functions toolbox
+addpath(genpath('/Users/ian/Documents/GitHub/AlbatrossFlightDynamics/'))
+
+% set directories
+GD_dir = findGD(computer);
+ECG_L0_dir = strcat(GD_dir,"/L0/",location,"/Tag_Data/",szn,"/Aux/HRL/L0_1_Decompressed/2_ECG/");
+Sensor_L0_dir = strcat(GD_dir,"/L0/",location,"/Tag_Data/",szn,"/Aux/HRL/L0_1_Decompressed/1_SensorData/");
+ECG_L1_dir = strcat(GD_dir,"/L1/",location,"/Tag_Data/Acc/Acc_HRL/",szn,"/");
+Sensor_L1_dir = strcat(GD_dir,"/L1/",location,"/Tag_Data/ECG/",szn,"/");
+
+% Matlab functions toolbox
+addpath(genpath('/Users/ian/Documents/GitHub/AlbatrossFlightDynamics/'))
+
+% Full_metadata sheet
+fullmeta = readtable(strcat(GD_dir,'metadata/Full_metadata.xlsx'),'TreatAsEmpty',{'NA'});
+% Specify the field season and location you are interested in
+fullmeta = fullmeta(strcmp(fullmeta.Field_season,szn) & strcmp(fullmeta.Location,location),:);
+
+%% Find Other Sensor (not ECG) data
+
+cd(Sensor_L0_dir)
+L0_fileList = struct2table(dir('*.txt'));
+L0_fileList = string(L0_fileList.name);
+
+%% Loop thru Other Sensor data
+
+for i = 1:height(L0_fileList)
+    namesplit = strsplit(L0_fileList(i),'_');
+    dep_ID = strcat(namesplit{1},'_',namesplit{2},'_',namesplit{3});
+
+    % Find HRL_on time from metadata
+    birdmeta = fullmeta(strcmp(fullmeta.Deployment_ID,dep_ID),:);
+    ON_DateTime = strcat(string(birdmeta.AuxON_date_yyyymmdd), " ", string(birdmeta.AuxON_time_hhmmss));
+    ON_DateTime = datetime(ON_DateTime, 'InputFormat','yyyyMMdd HHmmss');
+
+    % Read data
+    L0_data = readtable(L0_fileList(i));
+
+    %% S1
+    
+    samplingRate = 1/75; % 75 Hz
+    nSamples = height(L0_data);
+    
+    L0_data.DateTime = (ON_DateTime + seconds(0:samplingRate:(nSamples-1)*samplingRate))';
+
+    % Downsample to 25 Hz
+    L0_data = L0_data(1:3:end,:);
+
+    % Get rid of unecessary columns
+    L0_data = L0_data(:,["DateTime","Ax","Ay","Az","PRPa","TempDegC"]);
+    
+    % Format DateTime
+    L0_data.DateTime.Format = 'yyyy-MM-dd HH:mm:ss.SSS';
+    if strcmp(location,"Bird_Island")
+        L0_data.DateTime.TimeZone = "GMT";
+    elseif strcmp(loction,"Midway")
+        L0_data.DateTime.TimeZone = "Pacific/Midway";
+        % convert to GMT
+        L0_data.DateTime.TimeZone = "GMT";
+    else
+        disp("can't find location.")
+        return
+    end
+
+    % Rename columns
+    L0_data = renamevars(L0_data,"PRPa","Pressure");
+    L0_data = renamevars(L0_data,"TempDegC","Temperature");
+
+    disp(strcat(dep_ID,'(',num2str(i),'/',num2str(height(L0_fileList)), '): s1 complete.'))
+
+
+end
+
+
+
+
+%%
+
+
+
+
+
+
+
