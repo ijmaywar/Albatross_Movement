@@ -21,6 +21,8 @@ function [compiled_Accdata,timetbl,meta_tbl] = s3_Acc(Accdata,GPSdata,bird)
     compiled_Accdata = 0;
     Cutshort = 0;
 
+    Accdata.DateTime = dateshift(Accdata.DateTime,'start','minute') + seconds(round(second(Accdata.DateTime),3));
+
     for tripi = 1:ntrips
         current_trip = trips{tripi};
         timetbl.("TripID")(tripi,:) = {current_trip};

@@ -7,7 +7,6 @@
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % 
 % Reformat data to follow a uniform format (uniformat):
-%            Dep_ID
 %            DateTime in GMT
 %            Ax
 %            Ay
@@ -73,15 +72,8 @@ function [T,meta_tbl] = s1_Acc(m,ID,birdmeta,written_local)
     end
 
     % Make sure that the capture date and axyON time are correct
-    meta_startdate = num2str(birdmeta.AuxON_date_yyyymmdd);
-    meta_startdate = strcat(extractBefore(meta_startdate,5),"-",extractBetween(meta_startdate,5,6),"-",extractAfter(meta_startdate,6));
-    meta_starttime = birdmeta.AuxON_time_hhmmss;
-    if isa(meta_starttime,'double')
-        meta_starttime = sprintf('%06d',meta_starttime);
-    end
-    meta_starttime = strcat(extractBefore(meta_starttime,3),":",extractBetween(meta_starttime,3,4),":",extractAfter(meta_starttime,4));
-    meta_startdatetime = strcat(meta_startdate," ",meta_starttime);
-    meta_startdatetime = datetime(meta_startdatetime,'InputFormat','yyyy-MM-dd HH:mm:ss');
+    meta_startdatetime = strcat(string(birdmeta.AuxON_date_yyyymmdd), " ", string(birdmeta.AuxON_time_hhmmss));
+    meta_startdatetime = datetime(meta_startdatetime, 'InputFormat','yyyyMMdd HHmmss');
 
     % Find local timezone
     if strcmp(birdmeta.Location,"Midway")

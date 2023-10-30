@@ -153,15 +153,8 @@ for i = 15:3:27%height(ECG_fileList)
     
     %% Find ECG on datetime from fullmeta
     
-    meta_startdate = num2str(birdmeta.AuxON_date_yyyymmdd);
-    meta_startdate = strcat(extractBefore(meta_startdate,5),"-",extractBetween(meta_startdate,5,6),"-",extractAfter(meta_startdate,6));
-    meta_starttime = birdmeta.AuxON_time_hhmmss;
-    if isa(meta_starttime,'double')
-        meta_starttime = sprintf('%06d',meta_starttime);
-    end
-    meta_starttime = strcat(extractBefore(meta_starttime,3),":",extractBetween(meta_starttime,3,4),":",extractAfter(meta_starttime,4));
-    meta_startdatetime = strcat(meta_startdate," ",meta_starttime);
-    meta_startdatetime = datetime(meta_startdatetime,'InputFormat','yyyy-MM-dd HH:mm:ss');
+    meta_startdatetime = strcat(string(birdmeta.AuxON_date_yyyymmdd), " ", string(birdmeta.AuxON_time_hhmmss));
+    meta_startdatetime = datetime(meta_startdatetime, 'InputFormat','yyyyMMdd HHmmss');
     
     %% Find ECG duration 
 

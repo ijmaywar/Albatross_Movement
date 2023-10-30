@@ -15,19 +15,10 @@ tagtype = "AxyAir"; % Options: 'AGM', 'Axy5', 'AxyAir', 'GCDC'
 computer = "MacMini";
 
 %% Timezone
-if strcmp(location,"Midway")
-    if strcmp(szn,"2018_2019")
-        written_local = false;
-    elseif strcmp(szn,"2022_2023") && strcmp(tagtype,"Axy5")
-        written_local = false;
-    else
-        written_local = true;
-    end
-elseif strcmp(location,"Bird_Island")
-    written_local = true;
+if strcmp(location,"Midway") && (strcmp(szn,"2018_2019") || (strcmp(szn,"2022_2023") && strcmp(tagtype,"Axy5")))
+    written_local = false;
 else
-    disp("Location not found.")
-    return
+    written_local = true;
 end
 
 % Some Midway files are written in GMT rather than local time.
@@ -42,7 +33,6 @@ warning('off','MATLAB:table:ModifiedAndSavedVarNames')
 
 % set directories
 GD_dir = findGD(computer);
-% L0_dir = strcat(GD_dir,'L0/',location,'/Tag_Data/',szn,'/',tagtype,'/');
 L0_dir = strcat(GD_dir,'L0/',location,'/Tag_Data/',szn,'/Aux/',tagtype,'/');
 L1_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/Acc/Acc_Technosmart/',szn,'/');
 GPS_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/GPS/GPS_Catlog/',szn,'/2_buffer2km/');
@@ -82,54 +72,11 @@ warning('off','MATLAB:table:ModifiedAndSavedVarnames')
 
 %% Initial checks
 
-% Make sure that all birds have metadata and GPS data
-for i = 1:height(L0_fileList)
-
-    if height(L0_fileList) == 1
-        namesplit = strsplit(L0_fileList.name,'_');
-    else
-        namesplit = strsplit(L0_fileList.name{i},'_');
-    end
-    current_bird = strcat(namesplit{1},'_',namesplit{2},'_',namesplit{3});
-    bird_names{i} = current_bird;
-    
-    % meta
-    findmeta = find(strcmp(fullmeta.Deployment_ID,current_bird));
-    if isempty(findmeta)
-        disp(strcat(current_bird," cannot be found in metadata"))
-        return
-    elseif length(findmeta)>1
-        disp(strcat("There are multiple metadata entries for ",current_bird))
-        return
-    end
-
-    % GPS
-    birdGPSname = strcat(current_bird,"_GPS_L1_2.csv");
-    findGPS = find(strcmp(string(GPS_fileList.name),birdGPSname));
-
-    if isempty(findGPS)
-        disp(strcat("There is no GPS file for ", current_bird))
-        return
-    elseif length(findGPS)>1
-        disp(strcat("There are multiple GPS files for ", current_bird))
-        return
-    end
-end
-
-% check that there's only one file per bird
-uniquebirds = unique(bird_names);
-
-if length(uniquebirds) ~= height(L0_fileList)
-    disp("There is a bird with multiple files.")
-    return
-end
-
-disp('Metadata and GPS data found for each bird')
-start_i=1;
+CheckMetaGPSUnique(L0_fileList,GPS_fileList,fullmeta)
 
 %% Loop through each unique bird
 loop_Start = tic;
-parfor(i = start_i:height(L0_fileList))
+parfor(i = 1:height(L0_fileList))
 %for i = 1:height(L0_fileList)
     %% Load data
     
@@ -140,8 +87,7 @@ parfor(i = start_i:height(L0_fileList))
     else
         namesplit = strsplit(L0_fileList.name{i},'_');
     end
-    current_bird = strcat(namesplit{1},'_',namesplit{2},'_',namesplit{3});
-    dep_ID = current_bird;
+    dep_ID = strcat(namesplit{1},'_',namesplit{2},'_',namesplit{3});
     meta.bird = dep_ID;
     meta.step = 0;
     parsave(meta,strcat(L1_dir,'meta_structures/',dep_ID,'_meta.mat'));
@@ -156,12 +102,12 @@ parfor(i = start_i:height(L0_fileList))
     
     % Load GPS data
     cd(GPS_dir)
-    birdGPSname = strcat(current_bird,'_GPS_L1_2.csv'); % This will be changed to not include the explainer at the end.
+    birdGPSname = strcat(dep_ID,'_GPS_L1_2.csv'); % This will be changed to not include the explainer at the end.
     findGPS = find(strcmp(string(GPS_fileList.name),birdGPSname));
     GPSdata = readtable(char(GPS_fileList.name(findGPS)),'Delimiter',',','ReadVariableNames',true,'Format','auto','TreatAsEmpty',{'NA'});  
 
     % Load metadata
-    findmeta = find(strcmp(fullmeta.Deployment_ID,current_bird));
+    findmeta = find(strcmp(fullmeta.Deployment_ID,dep_ID));
     birdmeta = fullmeta(findmeta,:);
 
     %% s1

@@ -113,7 +113,7 @@ function [m,meta_tbl] = s2_Acc(m,birdid,fullmeta)
     end   
 
     % Identify irregular intervals:
-    out = milliseconds(diff(m.DateTime));
+    out = round(milliseconds(diff(m.DateTime)),3); % round to 3 decimal places
     glitch_idx = find(out~=40);
        
      if ~isempty(glitch_idx)
