@@ -27,7 +27,7 @@ addpath(genpath('/Users/ian/Documents/GitHub/AlbatrossFlightDynamics/'))
 
 % set directories
 GD_dir = findGD(computer);
-L0_dir = strcat(GD_dir,"/L0/",location,"/Tag_Data/",szn,"/Aux/HRL/L0_1_Decompressed/1_SensorData/");
+L0_dir = strcat(GD_dir,"/L0/",location,"/Tag_Data/",szn,"/Aux/HRL/L0_1_Decompressed/1_SensorData/bad_data/");
 L1_dir = strcat(GD_dir,"/L1/",location,"/Tag_Data/Acc/Acc_HRL/",szn,"/");
 GPS_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/GPS/GPS_Catlog/',szn,'/2_buffer2km/');
 
