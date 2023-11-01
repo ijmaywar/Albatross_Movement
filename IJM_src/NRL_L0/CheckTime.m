@@ -39,7 +39,7 @@ Timings = readtable("/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@ston
 
 %% Loop thru
 
-for i = 25:nfiles
+for i = 13:17%nfiles
     
     %% Make sure all files are present
     cd(ECG_dir)
@@ -56,7 +56,6 @@ for i = 25:nfiles
     findSensor = find(strcmp(Sensor_fileNames,birdSensorname));
     if isempty(findSensor)
         disp(strcat("there is no SensorData file for ",current_bird))
-        return
     end
 
     % GPS
@@ -71,7 +70,9 @@ for i = 25:nfiles
     ECG_data = readtable(ECG_fileNames(i));
    
     %% Load SensorData file
-    Sensor_data = readtable(strcat(Sensor_dir,Sensor_fileNames(findSensor)));
+    if ~isempty(findSensor)
+        Sensor_data = readtable(strcat(Sensor_dir,Sensor_fileNames(findSensor)));
+    end
 
     %% Load GPS file
     GPS_data = readtable(strcat(GPS_dir,GPS_fileNames(findGPS)));
@@ -130,7 +131,11 @@ for i = 25:nfiles
     Timings.capture(i) = capture_dt;
     Timings.recapture(i) = recapture_dt;
     Timings.final_ECG(i) = final_ECG_dt;
-    Timings.final_Sensor(i) = final_Sensor_dt;
+
+    if ~isempty(findSensor)
+        Timings.final_Sensor(i) = final_Sensor_dt;
+    end
+
     Timings.final_GPS(i) = final_GPS_dt;
     Timings.min_diff_GPS_mins(i) = min_diff_GPS_mins;
     Timings.max_diff_GPS_mins(i) = max_diff_GPS_mins;
