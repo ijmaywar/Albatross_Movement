@@ -39,7 +39,7 @@ Timings = readtable("/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@ston
 
 %% Loop thru
 
-for i = 13:17%nfiles
+for i = 21:nfiles
     
     %% Make sure all files are present
     cd(ECG_dir)
@@ -101,10 +101,11 @@ for i = 13:17%nfiles
 
     %% Find SensorData duration
 
-    Sensor_SR = 75; % Sensor sampling rate is 75 Hz
-    Sensor_dur_hrs = height(Sensor_data) / (Sensor_SR*60*60);
-
-    final_Sensor_dt = meta_startdatetime + hours(Sensor_dur_hrs);
+    if ~isempty(findSensor)
+        Sensor_SR = 75; % Sensor sampling rate is 75 Hz
+        Sensor_dur_hrs = height(Sensor_data) / (Sensor_SR*60*60);
+        final_Sensor_dt = meta_startdatetime + hours(Sensor_dur_hrs);
+    end
 
     %% Find GPS duration and min/max diff
     
