@@ -52,7 +52,7 @@ L0_fileNames = string(L0_fileList.name);
 
 %% Loop thru and process birds
 
-for i = 1:height(L0_fileNames)
+parfor i = 1:height(L0_fileNames)
     
     %% load data to be deteced.
 
@@ -81,9 +81,6 @@ for i = 1:height(L0_fileNames)
         m.DateTime.TimeZone = "Pacific/Midway";
         % convert to GMT
         m.DateTime.TimeZone = "GMT";
-    else
-        disp("can't find location.")
-        return
     end
 
     % Format Column names
