@@ -52,13 +52,13 @@ L1_fileNames = string(L1_fileList.name);
 
 %% Loop thru and process birds
 
-for j = 1:height(L1_fileNames)
+for i = 1:height(L1_fileNames)
     %% load data to be deteced.
 
-    namesplit = strsplit(L1_fileNames(j),'_');
+    namesplit = strsplit(L1_fileNames(i),'_');
     dep_ID = strcat(namesplit{1},'_',namesplit{2},'_',namesplit{3});
 
-    L1_data = readtable(L1_fileNames(j));
+    L1_data = readtable(L1_fileNames(i));
     x = L1_data.ECG;
     
     %% load template, template is extracted from the high SNR data .
@@ -162,8 +162,8 @@ for j = 1:height(L1_fileNames)
     %% flip the data to re-detect from right to left and get the first two peaks
     
     % flip x1_1
-    for i = 1:length(x1_1)
-        x2_1(i,1) = x1_1(end-i+1);
+    for j = 1:length(x1_1)
+        x2_1(j,1) = x1_1(end-j+1);
     end
     
     % flip s1_1
