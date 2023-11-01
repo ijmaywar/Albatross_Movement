@@ -39,8 +39,8 @@ fullmeta = readtable(strcat(GD_dir,'metadata/Full_metadata.xlsx'),'TreatAsEmpty'
 % Specify the field season and location you are interested in
 fullmeta = fullmeta(strcmp(fullmeta.Field_season,szn) & strcmp(fullmeta.Location,location),:);
 
-% Prevent figures from popping up when running in the background
-set(0,'DefaultFigureVisible','off')
+% Allow figures to be visible
+set(0,'DefaultFigureVisible','on')
 
 % suppress annoying warnings when reading Acc_L0 files
 warning('off','MATLAB:table:ModifiedAndSavedVarnames')
@@ -52,13 +52,13 @@ L1_fileNames = string(L1_fileList.name);
 
 %% Loop thru and process birds
 
-for i = 1:height(L1_fileNames)
+for j = 1:height(L1_fileNames)
     %% load data to be deteced.
 
-    namesplit = strsplit(L1_fileNames(i),'_');
+    namesplit = strsplit(L1_fileNames(j),'_');
     dep_ID = strcat(namesplit{1},'_',namesplit{2},'_',namesplit{3});
 
-    L1_data = readtable(L1_fileNames(i));
+    L1_data = readtable(L1_fileNames(j));
     x = L1_data.ECG;
     
     %% load template, template is extracted from the high SNR data .
@@ -96,7 +96,22 @@ for i = 1:height(L1_fileNames)
 
     %% Differenced data 
     [x1_1,x1_2,s1_1,s1_2] = Diff_Down(x,s);
+
+    %% Big plot to find starting point
     
+    figure
+    plot(x1_1(1:2000000))
+    disp('please click where the usable data starts')
+    [data_start,~] = ginput(1);
+    
+    %% Trim x to start where it's usable
+
+    % oh shit i should probably trim datetime as well
+
+    data_start = round(data_start*2); % multiplied by 2 because x1_1 is half the length of x
+    x = x(data_start:end);
+    [x1_1,x1_2,s1_1,s1_2] = Diff_Down(x,s);
+
     %% test statistic for first several peaks 
     % make template length = L1  differenced data
     s1_1(param.L+1:end) = [];
@@ -113,10 +128,17 @@ for i = 1:height(L1_fileNames)
             plot(x1_1(1:5000))
             peak_left = input('please input the first two peaks in the figure:e.x.:[120 200]');
         end
-    else 
+    else
         figure
         plot(x1_1(1:5000))
-        peak_left = input('please input the first two peaks:e.x.:[120 200]');
+
+        % Use findpeaks to find indices of local maxima
+        PeakThreshold = input('Please input the threshold for the first two peaks: ');                  
+        [pks, locs] = findpeaks(x1_1(1:5000),'MinPeakHeight',PeakThreshold)
+        peak_left = locs(1:2)'
+
+        % peak_left = input('please input the first two peaks (e.x.[120 200]): ');
+        close all
     end
 
     %% detect by the differenced data from left to right
@@ -162,8 +184,14 @@ for i = 1:height(L1_fileNames)
         clear peak_2 P noPeakDet
     else 
         figure
-        plot(x2_1(1:5000))
-        peak_right = input('please input the first two peaks in the figure:e.x.:[120 200]');
+        plot(x2_1(1:1000))
+
+        % Use findpeaks to find indices of local maxima
+        PeakThreshold = input('Please input the threshold for the first two peaks: ');
+        [pks, locs] = findpeaks(x2_1(1:1000),'MinPeakHeight',PeakThreshold)
+        peak_right = locs(1:2)'
+        % peak_right = input('please input the first two peaks (e.x.[120 200]): ');
+        close all
     end
 
     %% detect by the differenced data from right to left
@@ -209,7 +237,7 @@ for i = 1:height(L1_fileNames)
 
     %% Save date of the result peak and probability for each peak
     date = datestr(now);
-    save ('detectedPeak.mat','date','peak','probability');
+    save(strcat(L2_dir,dep_ID,'_detectedPeak.mat'),'date','peak','probability');
     
     %% This is all stuff from Melinda's code (below)
     
