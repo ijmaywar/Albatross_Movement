@@ -7,7 +7,7 @@
 % I. Maywar
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-function [compiled_Accdata,timetbl,meta_tbl] = s3_Acc(Accdata,GPSdata,bird)
+function [compiled_Accdata,timetbl,meta_tbl] = TripTrim(Accdata,GPSdata,bird)
      
     %% Give DT to GPS data
     GPSdata.datetime.TimeZone = "GMT";
@@ -21,7 +21,7 @@ function [compiled_Accdata,timetbl,meta_tbl] = s3_Acc(Accdata,GPSdata,bird)
     compiled_Accdata = 0;
     Cutshort = 0;
 
-    Accdata.DateTime = dateshift(Accdata.DateTime,'start','minute') + seconds(round(second(Accdata.DateTime),3));
+    Accdata.DateTime = dateshift(Accdata.DateTime,'start','minute') + seconds(round(second(Accdata.DateTime),6));
 
     for tripi = 1:ntrips
         current_trip = trips{tripi};
