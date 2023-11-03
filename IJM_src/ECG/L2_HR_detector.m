@@ -39,6 +39,9 @@ fullmeta = readtable(strcat(GD_dir,'metadata/Full_metadata.xlsx'),'TreatAsEmpty'
 % Specify the field season and location you are interested in
 fullmeta = fullmeta(strcmp(fullmeta.Field_season,szn) & strcmp(fullmeta.Location,location),:);
 
+% Start indices sheet
+idx_tbl = readtable(strcat(GD_dir,"L0/",location,"/Tag_Data/",szn,"/Aux/HRL/2019-2020_HRL_start-detection-times.csv"),'Delimiter',',');
+
 % Allow figures to be visible
 set(0,'DefaultFigureVisible','on')
 
@@ -52,15 +55,31 @@ L1_fileNames = string(L1_fileList.name);
 
 %% Loop thru and process birds
 
-for i = 1:height(L1_fileNames)
+for i = 1:1%height(L1_fileNames)
     %% load data to be deteced.
 
     namesplit = strsplit(L1_fileNames(i),'_');
     dep_ID = strcat(namesplit{1},'_',namesplit{2},'_',namesplit{3});
 
     L1_data = readtable(L1_fileNames(i));
+
+    % Find start_idx
+    start_idx = idx_tbl(strcmp(string(idx_tbl.bird),dep_ID),:).start;
+
+    %% stop idx
+    % FIND THESE VALUES BEFORE HAND BEFORE LOOPING THRU
+    og_length = height(L1_data);
+    figure
+    plot(og_length-5000000:og_length,L1_data.ECG(og_length-5000000:og_length))
+    disp('please click where the usable data ends')
+    [stop_idx,~] = ginput(1);
+    stop_idx = round(stop_idx);
+
+    %% Trim data
+
+    L1_data = L1_data(start_idx:stop_idx,:);
     x = L1_data.ECG;
-    
+
     %% load template, template is extracted from the high SNR data .
     load('meanbeat');
 
@@ -72,7 +91,6 @@ for i = 1:height(L1_fileNames)
     
     % samples frequency
     fs = 600; 
-    
     
     % L The length of the template, we do not recommend you change the length
     % of the template, this length has the best performance when 10 < L < 40
@@ -97,21 +115,6 @@ for i = 1:height(L1_fileNames)
     %% Differenced data 
     [x1_1,x1_2,s1_1,s1_2] = Diff_Down(x,s);
 
-    %% Big plot to find starting point
-    
-    figure
-    plot(x1_1(1:2000000))
-    disp('please click where the usable data starts')
-    [data_start,~] = ginput(1);
-    
-    %% Trim x to start where it's usable
-
-    % oh shit i should probably trim datetime as well
-
-    data_start = round(data_start*2); % multiplied by 2 because x1_1 is half the length of x
-    x = x(data_start:end);
-    [x1_1,x1_2,s1_1,s1_2] = Diff_Down(x,s);
-
     %% test statistic for first several peaks 
     % make template length = L1  differenced data
     s1_1(param.L+1:end) = [];
@@ -130,14 +133,14 @@ for i = 1:height(L1_fileNames)
         end
     else
         figure
-        plot(x1_1(1:5000))
+        plot(x1_1(1:1000))
 
         % Use findpeaks to find indices of local maxima
         PeakThreshold = input('Please input the threshold for the first two peaks: ');                  
-        [pks, locs] = findpeaks(x1_1(1:5000),'MinPeakHeight',PeakThreshold)
-        peak_left = locs(1:2)'
+        [pks, locs] = findpeaks(x1_1(1:1000),'MinPeakHeight',PeakThreshold)
+        % peak_left = locs(1:2)'
 
-        % peak_left = input('please input the first two peaks (e.x.[120 200]): ');
+        peak_left = input('please input the first two peaks (e.x.[120 200]): ');
         close all
     end
 
@@ -161,6 +164,9 @@ for i = 1:height(L1_fileNames)
     
     %% flip the data to re-detect from right to left and get the first two peaks
     
+    % YOU LEFT OFF TO START HERE. RUN THIS AND MAKE SURE THAT THE DTs of
+    % the HEART BEATS CAN BE SAVED THEN RUN THE FULL FILE OVERNIGHT.
+
     % flip x1_1
     for j = 1:length(x1_1)
         x2_1(j,1) = x1_1(end-j+1);
@@ -189,8 +195,8 @@ for i = 1:height(L1_fileNames)
         % Use findpeaks to find indices of local maxima
         PeakThreshold = input('Please input the threshold for the first two peaks: ');
         [pks, locs] = findpeaks(x2_1(1:1000),'MinPeakHeight',PeakThreshold)
-        peak_right = locs(1:2)'
-        % peak_right = input('please input the first two peaks (e.x.[120 200]): ');
+        % peak_right = locs(1:2)'
+        peak_right = input('please input the first two peaks (e.x.[120 200]): ');
         close all
     end
 
@@ -235,9 +241,25 @@ for i = 1:height(L1_fileNames)
     histogram(peak(2:end)-peak(1:end-1));
     title('Histogram of the interval')
 
-    %% Save date of the result peak and probability for each peak
-    date = datestr(now);
-    save(strcat(L2_dir,dep_ID,'_detectedPeak.mat'),'date','peak','probability');
+    % %% Save date of the result peak and probability for each peak
+    % date = datestr(now);
+    % save(strcat(L2_dir,dep_ID,'_detectedPeak.mat'),'date','peak','probability');
+    % 
+    %% Save datetimes of peaks and probabilities
+    
+    og_idx = peak+start_idx-1;
+
+    df_HeartBeats = cell2table(cell(length(peak),4));
+    df_HeartBeats.Properties.VariableNames = {'DateTime','idx','og_idx','probability'};
+    
+    df_HeartBeats.DateTime = L1_data.DateTime(peak);
+    df_HeartBeats.idx = peak';
+    df_HeartBeats.og_idx = og_idx';
+    df_HeartBeats.probability = probability';
+
+    writetable(df_HeartBeats,strcat(L2_dir,'/',dep_ID,'_L2.csv')); 
+
+end
     
     %% This is all stuff from Melinda's code (below)
     
@@ -335,8 +357,6 @@ for i = 1:height(L1_fileNames)
     saveas(h, strcat(dropdir,'figures/histogram_prob/',birdi,'_hist-prob.png'))
     clear h
 
-
-end
 
 
 
