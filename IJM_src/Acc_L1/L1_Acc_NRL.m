@@ -1,6 +1,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-%   Attach DateTimes to HRL ECG and OtherSensor data
+%   Attach DateTimes to NRL ECG and OtherSensor data
 %
 %   Reformat data to follow a uniform format (uniformat):
 %       DateTime in GMT
@@ -27,8 +27,8 @@ addpath(genpath('/Users/ian/Documents/GitHub/AlbatrossFlightDynamics/'))
 
 % set directories
 GD_dir = findGD(computer);
-L0_dir = strcat(GD_dir,"/L0/",location,"/Tag_Data/",szn,"/Aux/HRL/L0_1_Decompressed/1_SensorData/bad_data/");
-L1_dir = strcat(GD_dir,"/L1/",location,"/Tag_Data/Acc/Acc_HRL/",szn,"/");
+L0_dir = strcat(GD_dir,"/L0/",location,"/Tag_Data/",szn,"/Aux/NRL/L0_1_Decompressed/1_SensorData/bad_data/");
+L1_dir = strcat(GD_dir,"/L1/",location,"/Tag_Data/Acc/Acc_NRL/",szn,"/");
 GPS_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/GPS/GPS_Catlog/',szn,'/2_buffer2km/');
 
 % Matlab functions toolbox
@@ -70,7 +70,7 @@ for i = 1:height(L0_fileList)
     meta.step = 0;
     parsave(meta,strcat(L1_dir,'meta_structures/',dep_ID,'_meta.mat'));
 
-    % Find HRL_on time from metadata
+    % Find NRL_on time from metadata
     birdmeta = fullmeta(strcmp(fullmeta.Deployment_ID,dep_ID),:);
     ON_DateTime = strcat(string(birdmeta.AuxON_date_yyyymmdd), " ", string(birdmeta.AuxON_time_hhmmss));
     ON_DateTime = datetime(ON_DateTime, 'InputFormat','yyyyMMdd HHmmss');

@@ -1,5 +1,5 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Convert .dat file to .txt for HRL files
+% Convert .dat file to .txt for NRL files
 %
 % I. Maywar
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -20,8 +20,8 @@ addpath(genpath('/Users/ian/Documents/GitHub/AlbatrossFlightDynamics/'))
 
 % set directories
 GD_dir = findGD(computer);
-L0_0_dir = strcat(GD_dir,"L0/",location,"/Tag_Data/",szn,"/Aux/HRL/L0_0_Raw/");
-L0_1_dir = strcat(GD_dir,"L0/",location,"/Tag_Data/",szn,"/Aux/HRL/L0_1_Decompressed/");
+L0_0_dir = strcat(GD_dir,"L0/",location,"/Tag_Data/",szn,"/Aux/NRL/L0_0_Raw/");
+L0_1_dir = strcat(GD_dir,"L0/",location,"/Tag_Data/",szn,"/Aux/NRL/L0_1_Decompressed/");
 
 % Matlab functions toolbox
 addpath(genpath('/Users/ian/Documents/GitHub/AlbatrossFlightDynamics/'))
