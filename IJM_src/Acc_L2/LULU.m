@@ -55,6 +55,8 @@ parfor j = 1:height(L1_fileList)
     bird = strsplit(L1_fileList.name{j},"_");
     bird = strcat(bird{1},"_",bird{2},"_",bird{3});
     Acc = readtable(L1_fileList.name{j},'Delimiter',',','ReadVariableNames',true,'Format','auto','TreatAsEmpty',{'NA'}); % read bird i's file
+    Acc.DateTime.Format = 'yyyy-MM-dd HH:mm:ss.SSS';
+    
     %%% read the accelerometer 'Az' data as a list of values
     raw = [Acc.Az];
    
