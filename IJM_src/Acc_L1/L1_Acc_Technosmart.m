@@ -142,7 +142,7 @@ parfor(i = 1:height(L0_fileList))
 
     %% s3
 
-    [m,s3_timetbl,s3_meta] = s3_Acc(m,GPSdata,dep_ID);
+    [m,s3_timetbl,s3_meta] = TripTrim(m,GPSdata,dep_ID);
 
     meta.s3 = s3_meta;
     meta.timetbl = s3_timetbl;
