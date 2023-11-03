@@ -96,8 +96,8 @@ function [m,meta_tbl] = s2_Acc(m,birdid,fullmeta)
        % First convert to string:
        dts=string(m.DateTime);
        % Then convert to datetime specifying format
-       dtfix = datetime(dts,'InputFormat','yyyy-dd-MM HH:mm:ss.SSS'); % say what the format is when converting to datetime
-       dtfix.Format = 'yyyy-MM-dd HH:mm:ss.SSS'; % write to make format same as other files
+       dtfix = datetime(dts,'InputFormat','yyyy-dd-MM HH:mm:ss.SSSSSS'); % say what the format is when converting to datetime
+       dtfix.Format = 'yyyy-MM-dd HH:mm:ss.SSSSSS'; % write to make format same as other files
        m.DateTime = dtfix;
     end
     
@@ -113,7 +113,7 @@ function [m,meta_tbl] = s2_Acc(m,birdid,fullmeta)
     end   
 
     % Identify irregular intervals:
-    out = round(milliseconds(diff(m.DateTime)),3); % round to 3 decimal places
+    out = round(milliseconds(diff(m.DateTime)),6); % round to 6 decimal places
     glitch_idx = find(out~=40);
        
      if ~isempty(glitch_idx)

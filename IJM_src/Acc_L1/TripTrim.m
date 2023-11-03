@@ -21,7 +21,7 @@ function [compiled_Accdata,timetbl,meta_tbl] = TripTrim(Accdata,GPSdata,bird)
     compiled_Accdata = 0;
     Cutshort = 0;
 
-    Accdata.DateTime = dateshift(Accdata.DateTime,'start','minute') + seconds(round(second(Accdata.DateTime),6));
+    Accdata.DateTime = dateshift(Accdata.DateTime,'start','minute') + seconds(round(second(Accdata.DateTime),6)); % round to 6 millisecond places
 
     for tripi = 1:ntrips
         current_trip = trips{tripi};

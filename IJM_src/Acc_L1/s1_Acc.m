@@ -36,7 +36,7 @@ function [T,meta_tbl] = s1_Acc(m,ID,birdmeta,written_local)
         if strcmp(DTName,"Date")
           if isa(m.Date,'datetime')
             m.Date.Format = "dd-MM-yyyy";
-            DateTime = datetime(strcat(string(m.Date)," ", string(m.Time)),'InputFormat','dd-MM-yyyy HH:mm:ss.SSS');
+            DateTime = datetime(strcat(string(m.Date)," ", string(m.Time)),'InputFormat','dd-MM-yyyy HH:mm:ss.SSSSSS');
             m.Date = []; % to save memory
             m.Time = []; % to save memory
           else
@@ -51,13 +51,13 @@ function [T,meta_tbl] = s1_Acc(m,ID,birdmeta,written_local)
             if isa(m.(DTName),'datetime')
                 DateTime = m.(DTName);
             else
-                DateTime = datetime(string(m.(DTName)),'InputFormat','dd/MM/yyyy HH:mm:ss.SSS');
+                DateTime = datetime(string(m.(DTName)),'InputFormat','dd/MM/yyyy HH:mm:ss.SSSSSS');
                 m.(DTName) = []; % to save memory
             end
         end
     end
 
-    DateTime.Format = 'yyyy-MM-dd HH:mm:ss.SSS';
+    DateTime.Format = 'yyyy-MM-dd HH:mm:ss.SSSSSS';
 
     % CONFIRM DATEDATE FORMAT:
     % For some reason a handful of files being read as YYYY-dd-MM instead of YYYY-MM-dd.
@@ -66,8 +66,8 @@ function [T,meta_tbl] = s1_Acc(m,ID,birdmeta,written_local)
         % First convert to string:
         dts=string(DateTime);
         % Then convert to datetime specifying format
-        dtfix = datetime(dts,'InputFormat','yyyy-dd-MM HH:mm:ss.SSS'); % say what the format is when converting to datetime
-        dtfix.Format = 'yyyy-MM-dd HH:mm:ss.SSS'; % write to make format same as other files
+        dtfix = datetime(dts,'InputFormat','yyyy-dd-MM HH:mm:ss.SSSSSS'); % say what the format is when converting to datetime
+        dtfix.Format = 'yyyy-MM-dd HH:mm:ss.SSSSSS'; % write to make format same as other files
         DateTime = dtfix;
     end
 

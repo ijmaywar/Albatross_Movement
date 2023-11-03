@@ -98,7 +98,7 @@ for i = 1:height(L0_fileList)
     m = m(:,["DateTime","Ax","Ay","Az","PRPa","TempDegC"]);
     
     % Format DateTime
-    m.DateTime.Format = 'yyyy-MM-dd HH:mm:ss.SSS';
+    m.DateTime.Format = 'yyyy-MM-dd HH:mm:ss.SSSSSS';
     if strcmp(location,"Bird_Island")
         m.DateTime.TimeZone = "GMT";
     elseif strcmp(loction,"Midway")
