@@ -62,7 +62,7 @@ CheckMetaGPSUnique(L0_fileList,GPS_fileList,fullmeta)
 
 %% Loop thru and process birds
 
-for i = 4:height(L0_fileNames)
+for i = 8:height(L0_fileNames)
     
     %% load data to be deteced.
 
