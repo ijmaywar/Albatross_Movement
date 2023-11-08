@@ -14,23 +14,23 @@ clearvars
 
 %% USER INPUTED VALUES
 
-directory = "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L0/Bird_Island/Tag_Data/2019_2020/Aux/HRL/L_meta_setup_Inf_files/parse_inf_restart_plot_figures/";
-fileExt = "png";
+directory = "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L0/Bird_Island/Tag_Data/2019_2020/Aux/NRL/L0_1_Decompressed/3_HeaderPos/";
+fileExt = "txt";
 
 szn = '2019_2020';
 location = 'Bird_Island'; % Options: 'Bird_Island', 'Midway', 'Wandering'
 % Genus = "great";
-Tag = "GPS"; % Options: "Aux", "GPS", "GLS" 
-TagType = "HRL"; % Options: 
+Tag = "Aux"; % Options: "Aux", "GPS", "GLS" 
+TagType = "NRL"; % Options: 
                   % GPS: "Catlog", "iGotU"
-                  % Aux: "AGM", "Axy5", "AxyAir", "GCDC", "HRL", "uMoth"
+                  % Aux: "AGM", "Axy5", "AxyAir", "GCDC", "NRL", "uMoth"
                   % GLS 
                   % AxyTrek
 datalvl = 0; % Options: 0, 1, 2
 % datasublvl = 2; % Options: 1, 2, 3
 computer = "MacMini"; % Options: "MacMini", "MacBookPro"
 
-newname = false; % Options: true, false
+newname = true; % Options: true, false
 
 %% Set environment
 
@@ -79,7 +79,7 @@ for id = 1:nfiles
         end
 
     else % For names that have already been updated to the naming convention but need to be tweaked a little bit.
-        num_ = count(string(fullmeta.Deployment_ID(findmeta)),"_");
+        num_ = 2;%count(string(fullmeta.Deployment_ID(findmeta)),"_");
         Old_BirdName = findOBN(num_,nameSplit);
         findmeta = find(strcmp(fullmeta.Deployment_ID,Old_BirdName));
     end
@@ -105,8 +105,8 @@ for id = 1:nfiles
     % CHANGE THIS ACCORDINGLY
     if datalvl == 0
         % rename = Dep_ID;
-        rename = strcat(Dep_ID,'_',TagType,'_L0',ext); 
-        % rename = strcat(Dep_ID,'_',TagType,'_plot1',ext); 
+        % rename = strcat(Dep_ID,'_',TagType,'_L0',ext); 
+        rename = strcat(Dep_ID,'_',TagType,'_L0_1_3_HeaderPos',ext); 
     elseif datalvl == 1
         rename = strcat(Dep_ID,'_',datatype,'_L1',ext);
     elseif datalvl == 2

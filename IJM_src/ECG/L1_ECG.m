@@ -62,7 +62,7 @@ CheckMetaGPSUnique(L0_fileList,GPS_fileList,fullmeta)
 
 %% Loop thru and process birds
 
-for i = 8:height(L0_fileNames)
+for i = 9:height(L0_fileNames)
     
     %% load data to be deteced.
 
@@ -122,6 +122,8 @@ for i = 8:height(L0_fileNames)
         end
 
         parsave(meta,strcat(L1_dir,'meta_structures/',dep_ID,'_meta.mat'));
+
+        m = []; % Try to save space
     
     else
         disp(strcat(dep_ID, " is unusable."))

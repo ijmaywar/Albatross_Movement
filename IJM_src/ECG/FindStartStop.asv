@@ -1,6 +1,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-%   Attach DateTimes to HRL ECG and OtherSensor data
+%   Attach DateTimes to NRL ECG and OtherSensor data
 %
 %   Reformat data to follow a uniform format (uniformat):
 %       DateTime in GMT
@@ -27,8 +27,8 @@ addpath(genpath('/Users/ian/Documents/GitHub/AlbatrossFlightDynamics/'))
 
 % set directories
 GD_dir = findGD(computer);
+L0_dir = strcat(GD_dir,"L0/",location,"/Tag_Data/",szn,"/Aux/NRL/L0_1_Decompressed/2_ECG/");
 L1_dir = strcat(GD_dir,"L1/",location,"/Tag_Data/ECG/",szn,"/");
-L2_dir = strcat(GD_dir,"L2/",location,"/Tag_Data/ECG/",szn,"/");
 GPS_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/GPS/GPS_Catlog/',szn,'/2_buffer2km/');
 
 % Matlab functions toolbox
@@ -39,6 +39,9 @@ fullmeta = readtable(strcat(GD_dir,'metadata/Full_metadata.xlsx'),'TreatAsEmpty'
 % Specify the field season and location you are interested in
 fullmeta = fullmeta(strcmp(fullmeta.Field_season,szn) & strcmp(fullmeta.Location,location),:);
 
+% Start indices sheet
+idx_tbl = readtable(strcat(GD_dir,"L0/",location,"/Tag_Data/",szn,"/Aux/NRL/L0_1_Decompressed/start_stop_indices.csv"),'Delimiter',',');
+
 % Allow figures to be visible
 set(0,'DefaultFigureVisible','on')
 
@@ -46,21 +49,45 @@ set(0,'DefaultFigureVisible','on')
 warning('off','MATLAB:table:ModifiedAndSavedVarnames')
 
 %% Find data
-cd(L1_dir)
-L1_fileList = struct2table(dir('*.csv'));
-L1_fileNames = string(L1_fileList.name);
+cd(L0_dir)
+L0_fileList = struct2table(dir('*.txt'));
+L0_fileNames = string(L0_fileList.name);
 
 %% Loop thru and process birds
 
-for j = 1:height(L1_fileNames)
+for i = 1:height(L0_fileNames)
     %% load data to be deteced.
 
-    namesplit = strsplit(L1_fileNames(j),'_');
+    namesplit = strsplit(L0_fileNames(i),'_');
     dep_ID = strcat(namesplit{1},'_',namesplit{2},'_',namesplit{3});
 
-    L1_data = readtable(L1_fileNames(j));
-    x = L1_data.ECG;
+    L0_data = table2array(readtable(L0_fileNames(i)));
+
+    %% Find start_idx
+    % start_idx = idx_tbl(strcmp(string(idx_tbl.bird),dep_ID),:).start;
+
+    figure
+    plot(1:5000000,L0_data(1:5000000))
+    % plot(5000000:10000000,L0_data(5000000:10000000))
+    disp('Click where the usable data starts')
+    [start_idx,~] = ginput(1);
+    start_idx = round(start_idx);
+
+    %% Find stop_idx
+    og_length = height(L0_data);
+    stop_idx = og_length; % stop_idx is the last data point unless user finds and clicks a better value.
+    figure
+    plot(og_length-5000000:og_length,L0_data(og_length-5000000:og_length))
+    disp('Click where the usable data ends')
+    [stop_idx,~] = ginput(1);
+    stop_idx = round(stop_idx);
+
+    %% Save start and stop idx
+
+    idx_tbl(strcmp(idx_tbl.bird,dep_ID),"start") = start_idx;
+    idx_tbl(strcmp(idx_tbl.bird,dep_ID),"stop") = stop_idx;
     
+
     %% load template, template is extracted from the high SNR data .
     load('meanbeat');
 
@@ -72,7 +99,6 @@ for j = 1:height(L1_fileNames)
     
     % samples frequency
     fs = 600; 
-    
     
     % L The length of the template, we do not recommend you change the length
     % of the template, this length has the best performance when 10 < L < 40
@@ -97,23 +123,8 @@ for j = 1:height(L1_fileNames)
     %% Differenced data 
     [x1_1,x1_2,s1_1,s1_2] = Diff_Down(x,s);
 
-    %% Big plot to find starting point
-    
-    figure
-    plot(x1_1(1:2000000))
-    disp('please click where the usable data starts')
-    [data_start,~] = ginput(1);
-    
-    %% Trim x to start where it's usable
-
-    % oh shit i should probably trim datetime as well
-
-    data_start = round(data_start*2); % multiplied by 2 because x1_1 is half the length of x
-    x = x(data_start:end);
-    [x1_1,x1_2,s1_1,s1_2] = Diff_Down(x,s);
-
     %% test statistic for first several peaks 
-    % make template length = L1  differenced data
+    % make template length = L0  differenced data
     s1_1(param.L+1:end) = [];
     s1_2(param.L+1:end) = [];
     if Ini == 0
@@ -130,14 +141,14 @@ for j = 1:height(L1_fileNames)
         end
     else
         figure
-        plot(x1_1(1:5000))
+        plot(x1_1(1:1000))
 
         % Use findpeaks to find indices of local maxima
         PeakThreshold = input('Please input the threshold for the first two peaks: ');                  
-        [pks, locs] = findpeaks(x1_1(1:5000),'MinPeakHeight',PeakThreshold)
-        peak_left = locs(1:2)'
+        [pks, locs] = findpeaks(x1_1(1:1000),'MinPeakHeight',PeakThreshold)
+        % peak_left = locs(1:2)'
 
-        % peak_left = input('please input the first two peaks (e.x.[120 200]): ');
+        peak_left = input('please input the first two peaks (e.x.[120 200]): ');
         close all
     end
 
@@ -161,9 +172,12 @@ for j = 1:height(L1_fileNames)
     
     %% flip the data to re-detect from right to left and get the first two peaks
     
+    % YOU LEFT OFF TO START HERE. RUN THIS AND MAKE SURE THAT THE DTs of
+    % the HEART BEATS CAN BE SAVED THEN RUN THE FULL FILE OVERNIGHT.
+
     % flip x1_1
-    for i = 1:length(x1_1)
-        x2_1(i,1) = x1_1(end-i+1);
+    for j = 1:length(x1_1)
+        x2_1(j,1) = x1_1(end-j+1);
     end
     
     % flip s1_1
@@ -189,8 +203,8 @@ for j = 1:height(L1_fileNames)
         % Use findpeaks to find indices of local maxima
         PeakThreshold = input('Please input the threshold for the first two peaks: ');
         [pks, locs] = findpeaks(x2_1(1:1000),'MinPeakHeight',PeakThreshold)
-        peak_right = locs(1:2)'
-        % peak_right = input('please input the first two peaks (e.x.[120 200]): ');
+        % peak_right = locs(1:2)'
+        peak_right = input('please input the first two peaks (e.x.[120 200]): ');
         close all
     end
 
@@ -235,9 +249,25 @@ for j = 1:height(L1_fileNames)
     histogram(peak(2:end)-peak(1:end-1));
     title('Histogram of the interval')
 
-    %% Save date of the result peak and probability for each peak
-    date = datestr(now);
-    save(strcat(L2_dir,dep_ID,'_detectedPeak.mat'),'date','peak','probability');
+    % %% Save date of the result peak and probability for each peak
+    % date = datestr(now);
+    % save(strcat(L1_dir,dep_ID,'_detectedPeak.mat'),'date','peak','probability');
+    % 
+    %% Save datetimes of peaks and probabilities
+    
+    og_idx = peak+start_idx-1;
+
+    df_HeartBeats = cell2table(cell(length(peak),4));
+    df_HeartBeats.Properties.VariableNames = {'DateTime','idx','og_idx','probability'};
+    
+    df_HeartBeats.DateTime = L0_data.DateTime(peak);
+    df_HeartBeats.idx = peak';
+    df_HeartBeats.og_idx = og_idx';
+    df_HeartBeats.probability = probability';
+
+    writetable(df_HeartBeats,strcat(L1_dir,'/',dep_ID,'_L1.csv')); 
+
+end
     
     %% This is all stuff from Melinda's code (below)
     
@@ -335,8 +365,6 @@ for j = 1:height(L1_fileNames)
     saveas(h, strcat(dropdir,'figures/histogram_prob/',birdi,'_hist-prob.png'))
     clear h
 
-
-end
 
 
 

@@ -62,7 +62,7 @@ CheckMetaGPSUnique(L0_fileList,GPS_fileList,fullmeta)
 
 %% Loop thru and process birds
 
-parfor i = 1:height(L0_fileList)
+for i = 1:height(L0_fileList)
     
     
     namesplit = strsplit(L0_fileNames(i),'_');
@@ -117,6 +117,7 @@ parfor i = 1:height(L0_fileList)
             m.DateTime.TimeZone = "GMT";
         else
             disp("can't find location.")
+            return
         end
     
         % Rename columns
@@ -130,8 +131,7 @@ parfor i = 1:height(L0_fileList)
         [m,s2_meta] = s2_Acc(m,dep_ID,fullmeta);
     
         meta.s2 = s2_meta;
-        
-        %%
+%%      
         if s2_meta.skip == 1
             disp(strcat(dep_ID,'(',num2str(i),'/',num2str(height(L0_fileList)), '): skipped at s2.'))
             meta.step = 2;
@@ -182,7 +182,6 @@ parfor i = 1:height(L0_fileList)
     else % if not usable
         disp(strcat(dep_ID, " is unusable."))
     end
-
 end
 
 

@@ -1,0 +1,305 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%   Attach DateTimes to NRL ECG and OtherSensor data
+%
+%   Reformat data to follow a uniform format (uniformat):
+%       DateTime in GMT
+%       Ax
+%       Ay
+%       Az
+%       Pressure
+%       Temperature
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% Clear variables
+clearvars
+
+%% USER INPUTED VALUES
+
+szn = '2019_2020';
+location = "Bird_Island"; % Options: 'Bird_Island', 'Midway', 'Wandering'
+computer = "MacMini";
+
+%% Set Environment
+
+% Matlab functions toolbox
+addpath(genpath('/Users/ian/Documents/GitHub/AlbatrossFlightDynamics/'))
+
+% set directories
+GD_dir = findGD(computer);
+L0_dir = strcat(GD_dir,"L0/",location,"/Tag_Data/",szn,"/Aux/NRL/L0_1_Decompressed/2_ECG/");
+L1_dir = strcat(GD_dir,"L1/",location,"/Tag_Data/ECG/",szn,"/");
+GPS_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/GPS/GPS_Catlog/',szn,'/2_buffer2km/');
+
+% Matlab functions toolbox
+addpath(genpath('/Users/ian/Documents/GitHub/AlbatrossFlightDynamics/'))
+
+% Full_metadata sheet
+fullmeta = readtable(strcat(GD_dir,'metadata/Full_metadata.xlsx'),'TreatAsEmpty',{'NA'});
+% Specify the field season and location you are interested in
+fullmeta = fullmeta(strcmp(fullmeta.Field_season,szn) & strcmp(fullmeta.Location,location),:);
+
+% Tag timings sheet
+Tag_Timings = readtable(strcat(GD_dir,"L0/",location,"/Tag_Data/",szn,"/Aux/NRL/Tag_Meta_Timings.csv"),'Delimiter',',');
+
+% Start indices sheet
+idx_tbl = readtable(strcat(L0_dir,"start_stop_indices.csv"),'Delimiter',',');
+
+% Allow figures to be visible
+set(0,'DefaultFigureVisible','on')
+
+% suppress annoying warnings when reading Acc_L0 files
+warning('off','MATLAB:table:ModifiedAndSavedVarnames')
+
+% load template, template is extracted from the high SNR data .
+load('meanbeat');
+
+%% parameter 
+% change Ini = 1 to input the initialization by hand
+% IF the detection performance is not good, change the Ini = 1 to improve
+% the performance. WE SHOULD ALWAYS BE DOING THIS BY HAND. MUCH
+% MORE ACCURATE.
+Ini = 1;
+
+% samples frequency
+fs = 600; 
+
+% L The length of the template, we do not recommend you change the length
+% of the template, this length has the best performance when 10 < L < 40
+param.L = 31;
+
+%  N number of noise sample account into consideration when calculate the probability
+param.N = 75;
+
+% Number of the models
+% M for the detection from left to right (constant)
+% M for the detection from right to left  (constant)
+% MV is variable, will change according to the data as time goes on
+param.M = 30;
+param.MV = 30;
+
+% the low probbility peaks that you want to delete
+param.probthres = 0.2; 
+
+%% Find data
+cd(L0_dir)
+L0_fileList = struct2table(dir('*.txt'));
+L0_fileNames = string(L0_fileList.name);
+
+%% Loop thru and process birds
+
+for i = 4:height(L0_fileNames)
+    %% load data to be deteced.
+
+    namesplit = strsplit(L0_fileNames(i),'_');
+    dep_ID = strcat(namesplit{1},'_',namesplit{2},'_',namesplit{3});
+
+    % Make sure this data is usable based on Tag_Timings
+    Usable = Tag_Timings(strcmp(Tag_Timings.dep_ID,dep_ID),:).Usable;
+
+    %%
+    if Usable == 1
+        
+        %% Load data
+        L0_data = table2array(readtable(L0_fileNames(i)));
+        
+        disp("Data loaded.")
+
+        %% Find ON_DateTime
+        birdmeta = fullmeta(strcmp(fullmeta.Deployment_ID,dep_ID),:);
+        ON_DateTime = strcat(string(birdmeta.AuxON_date_yyyymmdd), " ", string(birdmeta.AuxON_time_hhmmss));
+        ON_DateTime = datetime(ON_DateTime, 'InputFormat','yyyyMMdd HHmmss');
+
+        %% Trim and detrend data
+
+        % trim data
+        start_idx = idx_tbl(strcmp(string(idx_tbl.bird),dep_ID),:).start;
+        stop_idx = idx_tbl(strcmp(string(idx_tbl.bird),dep_ID),:).stop;
+        x = L0_data(start_idx:stop_idx,:);
+    
+        % local detrend
+        x = locdetrend(x,fs,[1 .1]);
+    
+        disp("Data trimmed and detrend-ed.")
+
+        %% Differenced data 
+        [x1_1,x1_2,s1_1,s1_2] = Diff_Down(x,s);
+
+        disp("Data differenced.")
+    
+        %% test statistic for first several peaks 
+        % make template length = L0  differenced data
+        s1_1(param.L+1:end) = [];
+        s1_2(param.L+1:end) = [];
+        if Ini == 0
+            %get the frist two peaks  differenced data
+            [peak_left,P] = detFirstTwoPeakdiff(param.L,s1_1,x1_1);
+            
+            [peak_left,noPeakDet] = firstTwoPeak(peak_left,P);
+            
+            if(noPeakDet)
+                disp('The first two peak are not clearly detected')
+                figure
+                plot(x1_1(1:5000))
+                peak_left = input('Input the first two peaks in the figure:e.x.:[120 200]');
+            end
+        else
+            figure
+            plot(x1_1(1:1000))
+    
+            % Use findpeaks to find indices of local maxima
+            PeakThreshold = input('Input the threshold for the first two peaks: ');                  
+            [pks, locs] = findpeaks(x1_1(1:1000),'MinPeakHeight',PeakThreshold)
+            % peak_left = locs(1:2)'
+    
+            peak_left = input('Input the first two peaks (e.x.[120 200]): ');
+            close all
+        end
+    
+        %% detect by the differenced data from left to right
+    
+        T(1) = peak_left(2)-peak_left(1);
+        % result from sequence 1
+        % peak_left_s1 : peak detected from sequence 1
+        % prob_left_s1 : probability of the peaks
+        % interval_left_s1 : the interval between peaks
+        [peak_left_s1,prob_left_s1,interval_left_s1] = MatchDetection(peak_left,T,param,x1_1,s1_1);
+        
+        % result from sequence 2
+        [peak_left_s2,prob_left_s2,interval_left_s2] = MatchDetection(peak_left,T,param,x1_2,s1_2);
+        
+        % median Interval that will be used as a parameter in the following code
+        param.medianInter1 = round(median([ interval_left_s1 interval_left_s2 ] ));
+        
+        % combine the two sets of peaks 
+        [peak_left,prob_left] = compareTwoSetPeaks(peak_left_s1,peak_left_s2,prob_left_s1,prob_left_s2,s1_1,x1_1,param);
+
+        disp("peak left detected.")
+        
+        %% flip the data to re-detect from right to left and get the first two peaks
+        
+        % YOU LEFT OFF TO START HERE. RUN THIS AND MAKE SURE THAT THE DTs of
+        % the HEART BEATS CAN BE SAVED THEN RUN THE FULL FILE OVERNIGHT.
+    
+        % flip x1_1
+        for j = 1:length(x1_1)
+            x2_1(j,1) = x1_1(end-j+1);
+        end
+        
+        % flip s1_1
+        s2_1 = fliplr(s1_1);
+        
+        
+        if Ini ==0
+            [peak_right,P] = detFirstTwoPeakdiff(param.L,s2_1,x2_1);
+            
+            [peak_right,noPeakDet] = firstTwoPeak(peak_right,P);
+            
+            if(noPeakDet)
+                disp('The first two peak are not clearly detected')
+                figure
+                plot(x2_1(1:5000))
+                peak_right = input('Input the first two peaks:e.x.:[120 200]');
+            end
+            clear peak_2 P noPeakDet
+        else 
+            figure
+            plot(x2_1(1:1000))
+    
+            % Use findpeaks to find indices of local maxima
+            PeakThreshold = input('Input the threshold for the first two peaks: ');
+            [pks, locs] = findpeaks(x2_1(1:1000),'MinPeakHeight',PeakThreshold)
+            % peak_right = locs(1:2)'
+            peak_right = input('Input the first two peaks (e.x.[120 200]): ');
+            close all
+        end
+    
+        %% detect by the differenced data from right to left
+        
+        T(1) = peak_right(2)-peak_right(1);
+        
+        % results from right to left sequence
+        [peak_right,prob_right,interval_right] = MatchDetection2(peak_right,T,param,x2_1,s2_1);
+        
+        % update the median interval after the second time detection
+        param.medianInter1 = median(interval_right);
+
+        disp("Peak right detected.")
+        
+        %% combine the two results
+        
+        % combine the left-right & right-left result
+        [peakCom,probCom] = compareTwoSetPeaks(peak_left,peak_right,prob_left,prob_right,s1_1,x1_1,param);
+
+        disp("Peaks combined.")
+    
+        %% Visualization of the result
+    
+        % Folder to save figures
+        mkdir(strcat(L1_dir,"Figures/",dep_ID))
+        
+        % original data and peak
+        peak = peakCom*2 - 14; % peak in original data
+        probability = probCom; % probability 
+        figure
+        plot(x)
+        hold on
+        y = x(peak);
+        plot(peak,y,'*');
+        legend('original data','Detected peak')
+        title('Data and peaks')
+        saveas(gcf,strcat(L1_dir,"Figures/",dep_ID,"/",dep_ID,"_Original.png"))
+        
+        % differenced data and peaks
+        figure;
+        plot(x1_1)
+        hold on 
+        y = x1_1(peakCom);
+        plot(peakCom,y,'*')
+        title('Difference data and peaks')
+        saveas(gcf,strcat(L1_dir,"Figures/",dep_ID,"/",dep_ID,"_Differenced.png"))
+        
+        % %Histogram of the interval
+        f_hist = figure;
+        histogram(peak(2:end)-peak(1:end-1));
+        title('Histogram of the interval')
+        saveas(gcf,strcat(L1_dir,"Figures/",dep_ID,"/",dep_ID,"_Histogram.png"))
+    
+        % %% Save date of the result peak and probability for each peak
+        % date = datestr(now);
+        % save(strcat(L1_dir,dep_ID,'_detectedPeak.mat'),'date','peak','probability');
+        % 
+        %% Save datetimes of peaks and probabilities
+        
+        og_idx = peak+start_idx-1;
+        DateTime = (ON_DateTime + seconds((og_idx-1)*(1/fs)));        %seconds(0:samplingRate:(nSamples-1)*samplingRate))';
+        DateTime.Format = 'yyyy-MM-dd HH:mm:ss.SSSSSS';
+
+        df_HeartBeats = cell2table(cell(length(peak),3));
+        df_HeartBeats.Properties.VariableNames = {'DateTime','idx','probability'};
+        
+        df_HeartBeats.DateTime = DateTime';
+        df_HeartBeats.idx = og_idx';
+        df_HeartBeats.probability = probability';
+    
+        writetable(df_HeartBeats,strcat(L1_dir,'/',dep_ID,'_L1.csv')); 
+
+        disp("File saved.")
+
+        %% clear things
+
+        close all
+        clearvars -except computer fs fullmeta GD_dir GPS_dir idx_tbl Ini L0_dir L0_fileList L0_fileNames L1_dir location param s szn Tag_Timings i
+
+    else
+        disp(strcat(dep_ID, " is unusable."))
+    
+    end
+end
+        
+
+
+
+
+
+
