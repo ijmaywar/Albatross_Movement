@@ -9,8 +9,8 @@ clearvars
 
 %% USER INPUTED VALUES
 
-szn = '2022_2023';
-location = "Midway"; % Options: 'Bird_Island', 'Midway', 'Wandering'
+szn = '2019_2020';
+location = "Bird_Island"; % Options: 'Bird_Island', 'Midway', 'Wandering'
 tagtype = "AxyAir"; % Options: 'AGM', 'Axy5', 'AxyAir', 'GCDC'
 computer = "MacMini";
 

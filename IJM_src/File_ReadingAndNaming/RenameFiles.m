@@ -14,19 +14,20 @@ clearvars
 
 %% USER INPUTED VALUES
 
-directory = "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L0/Bird_Island/Tag_Data/2019_2020/Aux/NRL/L0_1_Decompressed/3_HeaderPos/";
-fileExt = "txt";
+directory = "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L3/Midway/Tag_Data/GPS/600s/BFAL/";
+fileExt = "csv";
 
 szn = '2019_2020';
 location = 'Bird_Island'; % Options: 'Bird_Island', 'Midway', 'Wandering'
 % Genus = "great";
-Tag = "Aux"; % Options: "Aux", "GPS", "GLS" 
-TagType = "NRL"; % Options: 
+Tag = "GPS"; % Options: "Aux", "GPS", "GLS" 
+datatype = "GPS";
+TagType = "Catlog"; % Options: 
                   % GPS: "Catlog", "iGotU"
                   % Aux: "AGM", "Axy5", "AxyAir", "GCDC", "NRL", "uMoth"
                   % GLS 
                   % AxyTrek
-datalvl = 0; % Options: 0, 1, 2
+datalvl = 3; % Options: 0, 1, 2
 % datasublvl = 2; % Options: 1, 2, 3
 computer = "MacMini"; % Options: "MacMini", "MacBookPro"
 
@@ -39,7 +40,7 @@ GD_dir = findGD(computer);
 % Full_metadata sheet
 fullmeta = readtable(strcat(GD_dir,'metadata/Full_metadata.xlsx'),'TreatAsEmpty',{'NA'});
 % fullmeta = fullmeta(strcmp(fullmeta.Field_season,szn) & strcmp(fullmeta.Location,location),:); % & strcmp(fullmeta.Genus,Genus),:);
-fullmeta = fullmeta(strcmp(fullmeta.Field_season,szn) & strcmp(fullmeta.Location,location) & strcmp(fullmeta.Aux_TagType,TagType),:);
+% fullmeta = fullmeta(strcmp(fullmeta.Field_season,szn) & strcmp(fullmeta.Location,location),:); % & strcmp(fullmeta.Aux_TagType,TagType),:);
 
 cd(directory)
 fileList = exFAT_aux_remove(struct2table(dir(strcat('*.',fileExt))));
@@ -105,12 +106,15 @@ for id = 1:nfiles
     % CHANGE THIS ACCORDINGLY
     if datalvl == 0
         % rename = Dep_ID;
-        % rename = strcat(Dep_ID,'_',TagType,'_L0',ext); 
-        rename = strcat(Dep_ID,'_',TagType,'_L0_1_3_HeaderPos',ext); 
+        rename = strcat(Dep_ID,'_',TagType,'_L0',ext); 
+        % rename = strcat(Dep_ID,'_',TagType,'_L0_1_3_HeaderPos',ext); 
     elseif datalvl == 1
         rename = strcat(Dep_ID,'_',datatype,'_L1',ext);
     elseif datalvl == 2
         rename = strcat(Dep_ID,'_',datatype,'_L2',ext);
+    elseif datalvl == 3
+        % rename = strcat(Dep_ID,'_',datatype,'_L3',ext);
+        rename = strcat(Dep_ID,'_',datatype,'_L3_600s',ext);
     else
         disp("Data level not found.")
         return
@@ -146,6 +150,14 @@ for id = 1:height(rename_table)
     end
 end
 
+disp("Files renamed.")
+
+%%
+
+
+
+
+
 
 
 
@@ -160,7 +172,8 @@ function Old_BirdName = findOBN(num_,nameSplit)
     elseif num_ == 1
         Old_BirdName = strcat(nameSplit{1},"_",nameSplit{2});
     elseif num_ == 2
-        Old_BirdName = strcat(nameSplit{1},"_",nameSplit{2},"_",nameSplit{3}(1:4));
+        % Old_BirdName = strcat(nameSplit{1},"_",nameSplit{2},"_",nameSplit{3}(1:4));
+        Old_BirdName = strcat(nameSplit{1},"_",nameSplit{2},"_",nameSplit{3});
     else
         disp("Cannot figure out Old_BirdName.")
     end

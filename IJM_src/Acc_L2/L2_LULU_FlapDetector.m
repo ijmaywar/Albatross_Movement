@@ -15,22 +15,23 @@ clearvars
 
 %% USER INPUTED VALUES
 
-szn = '2019_2020';
-location = 'Bird_Island'; % Options: 'Bird_Island', 'Midway', 'Wandering'
+szn = '2022_2023';
+location = 'Midway'; % Options: 'Bird_Island', 'Midway', 'Wandering'
 computer = 'MacMini'; % Options: "MacMini," "MacBookPro"
+AccType = 'Technosmart';
 
 %% Set envrionment
 
 % set directories
 GD_dir = findGD(computer);
-L1_dir = NavigateGD(computer,"L1",location,szn,tagtype,datatype);
-L2_dir = NavigateGD(computer,"L2",location,szn,tagtype,datatype);
+L1_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/Acc/Acc_',AccType,'/',szn,'/');
+L2_dir = strcat(GD_dir,'L2/',location,'/Tag_Data/Acc/',szn,'/');
 
 % Matlab functions toolbox
 addpath(genpath('/Users/ian/Documents/GitHub/AlbatrossFlightDynamics/'))
 
 % Full_metadata sheet
-fullmeta = readtable(strcat(GD_dir,'metadata/Full_metadata.xlsx'),'Sheet',location,'TreatAsEmpty',{'NA'});
+fullmeta = readtable(strcat(GD_dir,'metadata/Full_metadata.xlsx'),'TreatAsEmpty',{'NA'});
 % Specify the field season and location you are interested in
 fullmeta = fullmeta(strcmp(fullmeta.Field_season,szn) & strcmp(fullmeta.Location,location),:);
 
@@ -67,7 +68,7 @@ parfor j = 1:height(L1_fileList)
     
     %% Choosing values
     m = 8; % Should be 25/3 so that it's 3 Hz. But this is equivalent to m = 8 (can't get finer than one sample).
-    k = 0; % Remove downward signals of one sample.
+    k = 0; % 0 or 1. If set to 1 we can remove single point errors but data might be too coarse to do this. Using 0 for now.
     minPk = 4; % Guess that peaks 4 samples or less apart are not flaps. Kind of arbitrary but most movingslope almost always returns 4.
 
     filtered = Ukm(raw,k,m); % 1 is 25 Hz and (25/3) is 3 Hz.
