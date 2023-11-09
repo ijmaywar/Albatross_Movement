@@ -13,7 +13,7 @@ rm(list = ls())
 # User Inputed Values -----------------------------------------------------
 
 location = 'Bird_Island' # Options: 'Bird_Island', 'Midway'
-spp = "BBAL"
+spp = "WAAL"
 interps = c("300s","600s")
   
 # Set Environment ---------------------------------------------------------
@@ -21,6 +21,16 @@ interps = c("300s","600s")
 library(moveHMM)
 library(dplyr)
 library(ggplot2)
+library(stringr)
+
+# User functions ----------------------------------------------------------
+
+wrapCor = function(cor) {corWrap<-ifelse(cor>180,cor-360,cor);return(corWrap)}
+
+wrap360 = function(lon) {lon360<-ifelse(lon<0,lon+360,lon);return(lon360)}
+
+
+# Loop thru and process ---------------------------------------------------
 
 for (ii in 1:length(interps)) {
   interp_interval = interps[ii]
@@ -28,10 +38,6 @@ for (ii in 1:length(interps)) {
   GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/"
   compile_dir <- paste0(GD_dir, "THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L2/",location,"/Tag_Data/GPS/compiled/",interp_interval)
   L3_dir <- paste0(GD_dir, "THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L3/",location,"/Tag_Data/GPS/",interp_interval,"/")
-  
-  # User functions ----------------------------------------------------------
-  
-  wrapCor = function(cor) {corWrap<-ifelse(cor>180,cor-360,cor);return(corWrap)}
   
   # Load data ---------------------------------------------------------------
   
@@ -99,28 +105,25 @@ for (ii in 1:length(interps)) {
   
   # Create a df with all of the important info -----------------------------------------------------------
   HMMdf <- cbind(df,hmmdata$step,hmmdata$angle,states,state_probs)
-  names(HMMdf) <- c("birdID", "datetime", "lon",  "lat", "tripID",
+  names(HMMdf) <- c("dep_ID", "datetime", "lon",  "lat", "trip_ID",
                     "step_length", "angle", "state", "prob_1", "prob_2")
   HMMdf$state <- factor(HMMdf$state)
+  HMMdf$datetime <- as.character(format(HMMdf$datetime)) # safer for writing csv in character format
   
-  GPS_commuting <- HMMdf %>% filter(state==2)
-  GPS_commuting <- GPS_commuting %>% select("birdID", "datetime", "lon", "lat", "tripID")
-  
-  # Save plots and data I NEED TO BREAK THESE UP INTO FIELD SZNs
-  birdIDs = unique(substr(hmmdata$ID,1,18))
+  # Save plots and dataframes -----------------------------------------------
+  birdIDs = unique(str_sub(hmmdata$ID,1,-3))
   tripIDs = unique(hmmdata$ID)
   for (i in 1:length(birdIDs)) {
     current_bird = birdIDs[i]
-    trips = tripIDs[substr(tripIDs,1,18) == birdIDs[i]]
+    trips = tripIDs[str_sub(tripIDs,1,-3) == birdIDs[i]]
     
-    bird_commuting_df <- GPS_commuting %>% filter(birdID == current_bird)
-    bird_commuting_df$datetime <- as.character(format(bird_commuting_df$datetime)) # safer for writing csv in character format
-    write.csv(bird_commuting_df, file=paste0(L3_dir,spp,"/",current_bird,"_L1_3_",interp_interval,".csv"), row.names=FALSE)
+    bird_HMMdf <- HMMdf %>% filter(dep_ID == current_bird)
+    write.csv(bird_HMMdf, file=paste0(L3_dir,spp,"/",current_bird,"_GPS_L3_",interp_interval,".csv"), row.names=FALSE)
     
     for (j in 1:length(trips)) {
       current_trip = trips[j]
-      trip_df <- HMMdf %>% filter(tripID == current_trip)
-      ggplot(data = trip_df, aes(x=lon, y=lat)) + 
+      trip_df <- HMMdf %>% filter(trip_ID == current_trip)
+      ggplot(data = trip_df, aes(x=wrap360(lon), y=lat)) + 
         geom_point(size = 1, aes(color = state)) +
         ggtitle(current_trip) + 
         geom_point(size = 3, x = colony_coords[1], y = colony_coords[2])
@@ -129,7 +132,6 @@ for (ii in 1:length(interps)) {
     
   }
 }
-
 
 
 
