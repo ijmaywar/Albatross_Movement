@@ -37,7 +37,9 @@ library(viridisLite)
 library(colorspace)
 library(DescTools) #closest
 library(imputeTS) #na.interpolation
-library(swfscMisc)
+# library(swfscMisc)
+library(geosphere)
+library(foehnix)
 require(ggplot2)
 require(RColorBrewer)
 
@@ -51,7 +53,8 @@ wind_dir <- paste0(GD_dir,"L1/",location,"/Wind_Data/",szn,"/",interp,"/")
 
 # User Functions ----------------------------------------------------------
 
-wrap360 = function(lon) {lon360<-ifelse(lon<0,lon+360,lon);return(lon360)}
+wrap360 <- function(lon) {lon360<-ifelse(lon<0,lon+360,lon);return(lon360)}
+
 Lon360to180 <- function(lon){
   ((lon + 180) %% 360) - 180
 }
@@ -136,7 +139,9 @@ for ( j in 1:length(m$id)) {
   timej <- as.POSIXct(m$datetime[j], format = "%Y-%m-%d %H:%M:%S" , tz = "UTC")
   timej_num <- as.numeric(timej)
   # Find index of current_time in all times. Use that index to pull out relevant raster layer. 
-  raster_dt_index <- which(abs(all_times_num-timej_num) == min(abs(all_times_num-timej_num))) # taking difference between all gps points and take the min: tells which layer to pull out and isolate 
+  timej_diff <- abs(all_times_num-timej_num) # taking difference between all gps points
+  raster_dt_index <- which.min(timej_diff)  # Find the min: tells which layer to pull out and isolate. 
+                                            # DateTimes in the exact middle will be assigned to the first index
   
   # Isolate u and v rasters at time j
   ustack_timej <- subset(u_stack, raster_dt_index) 
@@ -150,6 +155,11 @@ for ( j in 1:length(m$id)) {
   # Extract u and v components for time j at location x and y
   u_j <- extract(ustack_timej, xy_j, ID=FALSE)
   v_j <- extract(vstack_timej, xy_j, ID=FALSE)
+  
+  if (length(u_j) != 1) {
+    break
+  }
+  
   m$u[j]<- u_j
   m$v[j]<- v_j
   
@@ -159,6 +169,125 @@ for ( j in 1:length(m$id)) {
 # Save compiled GPS data with wind U and V --------------------------------
 
 write_csv(m,file=paste0(wind_dir,szn,"_allbirds_GPS_with_wind.csv"))
+
+
+
+# ADD BIRD BEHAVIOR -------------------------------------------------------
+
+# If already in environment 
+wind_mat <- m
+bird_list <- unique(wind_mat$id)
+
+## If you need to load it
+# ind_mat <- read.csv(paste0(wind_dir,szn,"_allbirds_GPS_with_wind.csv"))
+for (i in 1:length(m$id)) {
+  
+  # Isolate bird
+  mi <- wind_mat %>% filter(id==bird_list[i])
+  
+  # Loop through individual trips (most birds just have one.)
+  trips<-unique(mi$tripID)
+  
+  # IGNORE SHORT TRIPS??????????????????????????????????????????????????????????
+  
+  for (j in 1:length(trips)) {
+    
+    mij <- mi %>% filter(tripID==trips[j])
+    # wind_mii <-wind_mat[wind_mat$id == birdi,]
+    
+    mij$wind_vel <- NA
+    mij$wind_dir <- NA # m/s
+    mij$bird_dir <-NA
+    mij$bird_vel <-NA  # km/hr
+    mij$bwa <- NA
+    mij$bwa_class <- NA
+    
+    
+    # Add bird speed and bearing ----------------------------------------------
+
+    if (interp=="600s") {
+      int_now <- 600 
+    }
+    
+    hour_int<- int_now/3600 # int_now is in seconds (3600 seconds in one hour)
+    
+    mij$lon <- Lon360to180(mij$lon)
+    mij$bird_vel <- c(distHaversine(mij %>% dplyr::select(lon,lat))/(1000*hour_int),NA)
+    mij$bird_dir <- geosphere::bearing(mij %>% dplyr::select(lon,lat))
+  
+    ddff <- uv2ddff(mij)
+    mij$wind_vel <- ddff$ff # m/s
+    mij$wind_dir <- ddff$dd # 360 degrees
+    
+    # NEED TO CHECK IF WIND_DIR AND BIRD_DIR BEING 360 AND 180 IS OK.
+    
+    # bird-wind angle
+    mij$bwa <-abs(Lon360to180(mij$bird_dir-mij$wind_dir)) 
+    
+    # # # Loop Through Each Line in mii
+    for (k in 1:length(mii$id)) {
+      
+      # -----------------------------------------------------------------------------
+      # Calculate Wind Speed and Direction
+      # -----------------------------------------------------------------------------
+      ddff <- uv2ddff(mii$u[k],mii$v[k])
+      mii$wind_vel[k] <- ddff$ff # m/s
+      mii$wind_dir[k]<-ddff$dd # 360 degrees
+      
+      
+      # -----------------------------------------------------------------------------
+      # Calculate bird-wind-angle 
+      # -----------------------------------------------------------------------------
+      mii$bwa[k] <-abs(Lon360to180(mii$bird_dir[k]-mii$wind_dir[k])) 
+      
+      
+      # -----------------------------------------------------------------------------
+      # Classify bird-wind-angle Class
+      # -----------------------------------------------------------------------------
+      # Definitions from Spear and Ainley 1997
+      # Headwind  = abs(bird-wind): 0-59 
+      # Crosswind = abs(bird-wind): 60-119 
+      # Tailwind =  abs(bird-wind): 120-180 
+      
+      if (is.na(mii$bwa[k])) {
+        mii$bwa_class[k] <- NA
+      }else{
+        if (mii$bwa[k] < 50) {
+          mii$bwa_class[k] <- "Head-Wind"
+        }else if (mii$bwa[k] > 130) {
+          mii$bwa_class[k] <- "Tail-Wind"
+        }else{
+          mii$bwa_class[k] <- "Cross-Wind"
+        }
+      }
+    }
+    
+    
+    # -----------------------------------------------------------------------------
+    # Save Bird i , trip_i, 30-s dataset 
+    # -----------------------------------------------------------------------------
+    
+    
+    filename_chunk_id <- as.character(mii$tripID[1])
+    filenamej<-paste0(dropdir, filename_chunk_id, '_30s_bwa.csv')
+    write_csv(mii, filenamej)
+    
+    rm(list=ls()[! ls() %in% c("mi", "birdi", "trips","files", "wind_mat", "i", "j", "dropdir", "uv2ddff", "wrap360", "Lon360to180")])
+    
+  }
+}
+
+  
+
+
+
+
+
+
+
+
+
+
 
 
 ################################################################################
