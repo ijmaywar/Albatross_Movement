@@ -14,32 +14,32 @@ rm(list = ls())
 # User Inputed Values -----------------------------------------------------
 
 location = 'Bird_Island' # Options: 'Bird_Island', 'Midway'
-szn = "2020_2021"
+szn = "2021_2022"
 interp = "600s"
 
 # Packages  ---------------------------------------------------------
 
-require(sf)
+# require(sf)
 require(tidyverse)
-require(raster)
-library(nngeo)
+# require(raster)
+# library(nngeo)
 library(lubridate)
 library(terra)
-library(stars)
-library(ncmeta)
-library(ncdf4)
-library(RNetCDF)
-library(lattice)
-library(rasterVis) #vectorplot
-library(colorRamps) #matlab.like
-library(viridisLite)
-library(colorspace)
-library(DescTools) #closest
-library(imputeTS) #na.interpolation
+# library(stars)
+# library(ncmeta)
+# library(ncdf4)
+# library(RNetCDF)
+# library(lattice)
+# library(rasterVis) #vectorplot
+# library(colorRamps) #matlab.like
+# library(viridisLite)
+# library(colorspace)
+# library(DescTools) #closest
+# library(imputeTS) #na.interpolation
 library(geosphere)
 library(foehnix)
-require(ggplot2)
-require(RColorBrewer)
+# require(ggplot2)
+# require(RColorBrewer)
 
 # Set Environment ---------------------------------------------------------
 
@@ -65,86 +65,105 @@ bearingAngle <- function(bird_bearing,wind_bearing) {
   return(pmin(LHturn,RHturn))
 }
 
-# Note: Important: Run code at bottom of script for uv2ddff function
+# Get compiled GPS data of all birds in szn ------
 
-########################################################################
-# 1. Precursor to Analysis
-# Obtain wind dataset from ECMWF ERA5 at sea level (1000 hPa)        <- why does this say sea level, shouldn't it be 10 m? (IJM)
-# Grid Extent: -30N -70S -80E -20E
-# Here: https://cds.climate.copernicus.eu/cdsapp#!/dataset/reanalysis-era5-pressure-levels?tab=form
-########################################################################
+setwd(GPS_dir)
+files <- list.files(pattern='*.csv') # GPS files 
+
+# Create compiled file
+for (i in 1:length(files)) {
+  mi <- read.csv(files[i])
+  if (i==1) {
+    m <- mi
+  } else {
+    m<- rbind(m,mi)
+  }
+}
+
+# Save compiled file
+# m$datetime <- as.character(format(m$datetime)) # safer for writing csv in character format
+# write.csv(m, file=paste0(GPS_dir,"compiled/",szn,"_compiled.csv"), row.names=FALSE)
+
+# Make sure all birds are found within the grid extent
+# Bird Island grid extent: -30N -70S -120W -10E (big range due to Wandering!)
+# Midway grid extent: 50N 20S 140W -140E
+  # NOTE: Midway data must be downloaded in two parts because you cannot cross the 
+  # 180 lon line when specifying grid extent: latN latS lonW 180 and latN latS -180 latE
+
+max(m$lat)
+min(m$lat)
+Lon360to180(max(m$lon))
+Lon360to180(min(m$lon))
+min(m$datetime)
+max(m$datetime)
 
 
-# Import Wind data --------------------------------------------------------
-# (Downloaded as NetCDF grids from ECMWF)
-# Stack all wind datasets.
-# Each stack will be associated with a date and hourly timestamp (24 per day)
+# Download the netcdf files from https://cds.climate.copernicus.eu/cdsapp#!/dataset/reanalysis-era5-single-levels?tab=form
+
 setwd(nc_dir)
-
 wind_files <- list.files(pattern='*.nc') 
 
-wind_t1 <- rast(wind_files[3])
+# For Midway wind data --------------------------------------------------------------
+
+# COMBINE E AND W COMPONENTS OF NETCDF FILES for Midway
+wind_E_t1 <- rast(wind_files[1])
+wind_W_t1 <- rast(wind_files[2])
+wind_t1 <- merge(wind_W_t1,wind_E_t1)
+
+# Create data vectors
 wind_t1 # Make sure you got the right stuff!
 times_t1 <- time(wind_t1)  # stores times from each file 
 times_t1 <- unique(times_t1) # find unique values because there should be two of every datetime (for u and v)
 wind_t1_u <- subset(wind_t1, 1:(nlyr(wind_t1)/2)) 
 wind_t1_v <- subset(wind_t1, (nlyr(wind_t1)/2)+1:nlyr(wind_t1))
 
-wind_t2 <- rast(wind_files[4])
+u_stack <- c(wind_t1_u)
+v_stack <- c(wind_t1_v)
+all_times <- c(times_t1)
+all_times_num <- as.numeric(all_times)
+
+# For Bird Island wind data -----------------------------------------------
+
+# Load netcdf file directly for Bird Island
+wind_t1 <- rast(wind_files[6])
+# Create data vectors
+wind_t1 # Make sure you got the right stuff!
+times_t1 <- time(wind_t1)  # stores times from each file 
+times_t1 <- unique(times_t1) # find unique values because there should be two of every datetime (for u and v)
+wind_t1_u <- subset(wind_t1, 1:(nlyr(wind_t1)/2)) 
+wind_t1_v <- subset(wind_t1, (nlyr(wind_t1)/2)+1:nlyr(wind_t1))
+
+# Load netcdf file directly for Bird Island
+wind_t2 <- rast(wind_files[7])
+# Create data vectors
 wind_t2 # Make sure you got the right stuff!
 times_t2 <- time(wind_t2)  # stores times from each file 
 times_t2 <- unique(times_t2) # find unique values because there should be two of every datetime (for u and v)
 wind_t2_u <- subset(wind_t2, 1:(nlyr(wind_t2)/2)) 
 wind_t2_v <- subset(wind_t2, (nlyr(wind_t2)/2)+1:nlyr(wind_t2))
 
-
-# Stack rasters  ....................
+# Stack rasters
 u_stack <- c(wind_t1_u, wind_t2_u)
 v_stack <- c(wind_t1_v, wind_t2_v)
-
 all_times <- c(times_t1, times_t2)
 all_times_num <- as.numeric(all_times)
-
-# all_times <- rbind(as_tibble(times_t1), as_tibble(times_t2))
-# all_times_num <- as.numeric(unlist(all_times)) # append times: one big columns of time
-
-
-# Read in bird locations and gather wind data ----------------------
-
-setwd(GPS_dir)
-files <- list.files() # GPS files 
-
-# Get compiled GPS data of all birds in szn ------
-
-# Create compiled file
-for (i in 1:length(files)) {
-  mi<-read.csv(files[i])
-  if (i==1) {
-    m<-mi
-  }else{
-    m<-rbind(m,mi)
-  }
-}
-
-# Save compiled file
-m$datetime <- as.character(format(m$datetime)) # safer for writing csv in character format
-write.csv(m, file=paste0(GPS_dir,"/compiled/",szn,"_compiled.csv"), row.names=FALSE)
-
-# # OR load compiled file
-# m <- read.csv(paste0(GPS_dir,"/compiled/",szn,"_compiled.csv"))
 
 # Loop through m and add wind information: u, v ---------------------------
 
 # create u and v wind vectors
-
-for ( j in 1:length(m$id)) {
+for (j in 1:nrow(m)) {
   
   timej <- as.POSIXct(m$datetime[j], format = "%Y-%m-%d %H:%M:%S" , tz = "UTC")
   timej_num <- as.numeric(timej)
-  # Find index of current_time in all times. Use that index to pull out relevant raster layer. 
+  
+  # Find index of current_time in all times. Use that index to pull out relevant raster layer.
   timej_diff <- abs(all_times_num-timej_num) # taking difference between all gps points
   raster_dt_index <- which.min(timej_diff)  # Find the min: tells which layer to pull out and isolate. 
                                             # DateTimes in the exact middle will be assigned to the first index
+   if (min(timej_diff) > 1800) {
+    print("Current datetime is outside of the data provided by NETCDF files.")
+    break
+  }
   
   # Isolate u and v rasters at time j
   ustack_timej <- subset(u_stack, raster_dt_index) 
@@ -160,7 +179,10 @@ for ( j in 1:length(m$id)) {
   v_j <- extract(vstack_timej, xy_j, ID=FALSE)
   
   if (length(u_j) != 1) {
-    disp("Number of wind measurements chosen != 1.")
+    print("Number of wind measurements chosen != 1.")
+    break
+  } else if (is.na(u_j[[1]]) || is.na(v_j[[1]])) {
+    print("Wind data for this coordinate cannot be found.")
     break
   }
   
@@ -177,7 +199,7 @@ for ( j in 1:length(m$id)) {
 # wind_mat <- m
 
 # If "_allbirds_GPS_with_wind.csv" already exists then load it instead
-wind_mat <- read.csv(paste0(wind_L1_dir,szn,"_allbirds_GPS_with_wind.csv"))
+# wind_mat <- read.csv(paste0(wind_L1_dir,szn,"_allbirds_GPS_with_wind.csv"))
 
 # ADD BIRD BEHAVIOR -------------------------------------------------------
 
@@ -209,8 +231,6 @@ for (i in 1:length(bird_list)) {
       mij$bird_vel <-NA  # km/hr, THE DIRECTION THE BIRD IS HEADING IN
       mij$bwa <- NA
       mij$w_rel <- NA # wind bearing relative to bird heading
-      mij$bwa_class <- NA
-      
       
       # Add bird speed and bearing ----------------------------------------------
       
@@ -231,13 +251,6 @@ for (i in 1:length(bird_list)) {
       # In a 360 degree plot which direction is the bird traveling relative to 
       # the wind? 
       mij$w_rel <- (mij$bird_dir+(360-mij$wind_dir)) %% 360
-      
-      # bwa class
-      # Definitions from Spear and Ainley 1997
-      # Headwind  = abs(bird-wind): 0-59 
-      # Crosswind = abs(bird-wind): 60-119 
-      # Tailwind =  abs(bird-wind): 120-180 
-      mij$bwa_class <- ifelse(mij$bwa<60,"Head-Wind",ifelse(mij$bwa<120,"Cross-Wind","Tail-Wind"))
       
       # Save file
       mij$datetime <- as.character(format(mij$datetime)) # safer for writing csv in character format
