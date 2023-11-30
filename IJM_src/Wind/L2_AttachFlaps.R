@@ -10,8 +10,8 @@ rm(list = ls())
 
 # User Inputed Values -----------------------------------------------------
 
-location = 'Bird_Island' # Options: 'Bird_Island', 'Midway'
-szn = "2019_2020"
+location = 'Midway' # Options: 'Bird_Island', 'Midway'
+szn = "2018_2019"
 interp = "600s"
 
 # Load Packages -----------------------------------------------------------
@@ -19,6 +19,8 @@ interp = "600s"
 library(dplyr)
 library(stringr)
 library(readxl)
+library(foreach)
+
 
 # Set Environment ---------------------------------------------------------
 
@@ -34,9 +36,17 @@ setwd(wind_L2_dir)
 files <- list.files(pattern='*.csv')
 all_trips <- sub("_bwa.csv$","",files)
 
-if (interp=="600s") {
+if (interp == "600s") {
   interval <- 600
 }
+
+
+
+
+
+
+
+# Add flaps ---------------------------------------------------------------
 
 for (i in 1:length(files)) {
   m <- read.csv(files[i])
