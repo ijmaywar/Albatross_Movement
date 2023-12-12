@@ -15,8 +15,8 @@ clearvars
 
 %% USER INPUTED VALUES
 
-szn = '2022_2023';
-location = 'Midway'; % Options: 'Bird_Island', 'Midway', 'Wandering'
+szn = '2019_2020';
+location = 'Bird_Island'; % Options: 'Bird_Island', 'Midway', 'Wandering'
 computer = 'MacMini'; % Options: "MacMini," "MacBookPro"
 AccType = 'Technosmart';
 
@@ -24,6 +24,7 @@ AccType = 'Technosmart';
 
 % set directories
 GD_dir = findGD(computer);
+% L1_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/Acc/Acc_',AccType,'/',szn,'/dt_local/');
 L1_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/Acc/Acc_',AccType,'/',szn,'/');
 L2_dir = strcat(GD_dir,'L2/',location,'/Tag_Data/Acc/',szn,'/');
 
