@@ -9,8 +9,8 @@ clearvars
 
 %% USER INPUTED VALUES
 
-szn = '2019_2020';
-location = "Bird_Island"; % Options: 'Bird_Island', 'Midway', 'Wandering'
+szn = '2018_2019';
+location = "Midway"; % Options: 'Bird_Island', 'Midway', 'Wandering'
 tagtype = "AxyAir"; % Options: 'AGM', 'Axy5', 'AxyAir', 'GCDC'
 computer = "MacMini";
 
@@ -23,8 +23,10 @@ end
 
 % Some Midway files are written in GMT rather than local time.
 % This is the case for .csv files sent to us from 2018_2019 Midway. 
-% The files I converted from that szn were written in local time.
-% 2022_2023 Midway Axy5 tags are also in GMT. 
+% The files I converted from that szn were written in local time:
+% (BFAL_20190130_1, LAAL_20190203_345, LAAL_20190203_R142)
+% 2022_2023 Midway Axy5 tags are also in GMT.
+
 
 %% Set envrionment
 
@@ -34,6 +36,7 @@ warning('off','MATLAB:table:ModifiedAndSavedVarNames')
 % set directories
 GD_dir = findGD(computer);
 L0_dir = strcat(GD_dir,'L0/',location,'/Tag_Data/',szn,'/Aux/',tagtype,'/');
+% L0_dir = strcat(GD_dir,'L0/',location,'/Tag_Data/',szn,'/Aux/',tagtype,'/dt_local/');
 L1_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/Acc/Acc_Technosmart/',szn,'/');
 GPS_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/GPS/GPS_Catlog/',szn,'/2_buffer2km/');
 
@@ -77,7 +80,7 @@ CheckMetaGPSUnique(L0_fileList,GPS_fileList,fullmeta)
 %% Loop through each unique bird
 loop_Start = tic;
 parfor(i = 1:height(L0_fileList))
-%for i = 1:height(L0_fileList)
+% for i = 1:height(L0_fileList)
     %% Load data
     
     meta = struct;
