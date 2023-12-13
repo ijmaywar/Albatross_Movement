@@ -230,11 +230,14 @@ end
 
 
 
+%% Plot raw data
 
-
-
-
-
+figure
+temp_range = 8221500:8222500; 
+plot(raw(temp_range))
+hold on
+% plot(filtered(temp_range))
+yline(th)
 
 
 
