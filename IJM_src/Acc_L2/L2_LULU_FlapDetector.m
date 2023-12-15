@@ -79,7 +79,7 @@ parfor j = 1:height(L1_fileList)
     
     % find th
 
-    th_range = (-1.5:0.05:-0.5);
+    th_range = (-1.0:0.05:-0.5);
     num_flaps_th = [];
     mean_pk_th = [];
 
