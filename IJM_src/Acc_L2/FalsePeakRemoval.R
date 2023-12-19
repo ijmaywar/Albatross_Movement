@@ -7,7 +7,12 @@ for (i in 1:length(acc_files)) {
   m <- read.csv(acc_files[i])
   
   # Explore histogram of flap heights
-  hist(m$pks)
+  hist(m$pks, breaks=seq(-10,0,by=0.2))
+  
+  
+  
+  # quantiles
+  quantile(m$pks,probs=c(0.05,0.95))
   
   # This might not be too useful because this is filtered data.
   # I should be looking at raw data to remove single point errors right? 
