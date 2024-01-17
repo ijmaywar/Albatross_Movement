@@ -88,7 +88,7 @@ L0_fileNames = string(L0_fileList.name);
 
 %% Loop thru and process birds
 
-for i = 4:height(L0_fileNames)
+for i = 9:height(L0_fileNames)
     %% load data to be deteced.
 
     namesplit = strsplit(L0_fileNames(i),'_');
@@ -115,6 +115,10 @@ for i = 4:height(L0_fileNames)
         % trim data
         start_idx = idx_tbl(strcmp(string(idx_tbl.bird),dep_ID),:).start;
         stop_idx = idx_tbl(strcmp(string(idx_tbl.bird),dep_ID),:).stop;
+
+        figure
+        plot(og_length-HFB:og_length,L0_data(og_length-HFB:og_length))
+        
         x = L0_data(start_idx:stop_idx,:);
     
         % local detrend
