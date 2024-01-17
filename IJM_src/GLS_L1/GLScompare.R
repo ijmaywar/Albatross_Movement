@@ -22,7 +22,7 @@ library(ggplot2)
 
 GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/"
 GLS_dir <- paste0(GD_dir, "THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L1/Bird_Island/Tag_Data/GLS/", szn, "/")
-HMM_dir <- paste0(GD_dir, "THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L3/Bird_Island/Tag_Data/GPS/", interp, "/", spp, "/")
+HMM_dir <- paste0(GD_dir, "THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L3/Bird_Island/Tag_Data/GPS/", interp, "/3_states/", spp, "/")
 
 setwd(HMM_dir)
 allGPSfiles <- list.files(pattern='*.csv')
@@ -103,10 +103,20 @@ for (i in 1:length(confusion_matrix_list)) {
   if (is.null(cm)) {
     next
   }
-  tp <- cm[1,2]
-  fp <- cm[1,1]
-  fn <- cm[2,2]
-  tn <- cm[2,1]
+  
+  # "Positive" refers to the bird being wet
+  
+  # 2 states
+  # tp <- cm[1,2]
+  # fp <- cm[1,1]
+  # fn <- cm[2,2]
+  # tn <- cm[2,1]
+  
+  # 3 states
+  tp <- cm[1,2] + cm[2,2]
+  fp <- cm[1,1] + cm[2,1]
+  fn <- cm[3,2]
+  tn <- cm[3,1]
   
   stats_scores$accuracy[i] <- (tp+tn) / (sum(cm))
   precision <- tp / (tp+fp)
