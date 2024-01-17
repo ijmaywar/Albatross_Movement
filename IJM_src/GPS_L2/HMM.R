@@ -12,9 +12,10 @@ rm(list = ls())
 
 # User Inputed Values -----------------------------------------------------
 
-location = 'Bird_Island' # Options: 'Bird_Island', 'Midway'
-spp = "WAAL"
-interps = c("300s","600s")
+location = 'Midway' # Options: 'Bird_Island', 'Midway'
+spp = "LAAL"
+interps = c("600s") # c("300s","600s")
+numstates = "3_states" # "2_states"
   
 # Set Environment ---------------------------------------------------------
   
@@ -36,8 +37,8 @@ for (ii in 1:length(interps)) {
   interp_interval = interps[ii]
   
   GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/"
-  compile_dir <- paste0(GD_dir, "THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L2/",location,"/Tag_Data/GPS/compiled/",interp_interval)
-  L3_dir <- paste0(GD_dir, "THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L3/",location,"/Tag_Data/GPS/",interp_interval,"/")
+  compile_dir <- paste0(GD_dir, "THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L2/",location,"/Tag_Data/GPS/compiled_by_spp/",interp_interval)
+  L3_dir <- paste0(GD_dir, "THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L3/",location,"/Tag_Data/GPS/",interp_interval,"/",numstates,"/")
   
   # Load data ---------------------------------------------------------------
   
@@ -60,9 +61,15 @@ for (ii in 1:length(interps)) {
   df$datetime <- as.POSIXct(df$datetime, format = "%Y-%m-%d %H:%M:%S", tz = "GMT")
   df$lon <- wrapCor(df$lon)
   
-  names(df) <- c("", "date", "lon",  "lat", "ID" )
+  names(df) <- c("bird", "date", "lon",  "lat", "ID" )
   
-  df$ID =factor(df$ID)
+  df$ID = factor(df$ID)
+  
+  # filter out trips less than two hours
+  df <- df %>%
+    group_by(ID) %>%
+    filter(n() > 12) %>%
+    ungroup()
   
   hmmdata = prepData(
     df,
@@ -81,18 +88,37 @@ for (ii in 1:length(interps)) {
   
   # 2-state model -----------------------------------------------------------
   
-  # Set up initial params
-  stepMean0 <- c(0.1,4) #(state1,state2)
-  stepSD0 <- c(0.1,4) #(state1,state2)
+  # # Set up initial params
+  # stepMean0 <- c(0.1,4) #(state1,state2)
+  # stepSD0 <- c(0.1,4) #(state1,state2)
+  # stepPar0 <- c(stepMean0,stepSD0)
+  # 
+  # angleMean0 <- c(pi,0)
+  # angleCon0 <- c(1,5)
+  # anglePar0 <- c(angleMean0,angleCon0)
+  # 
+  # # fit the HMM
+  # m <- fitHMM(data = hmmdata, 
+  #             nbStates = 2, 
+  #             stepPar0 = stepPar0, 
+  #             anglePar0 = anglePar0)
+  
+
+  # 3-state model -----------------------------------------------------------
+  
+  # The 3 proposed states are 1. on-water, 2. foraging, 3. commuting
+  
+  stepMean0 <- c(0.1,1,4) #(state1,state2,state3)
+  stepSD0 <- c(0.1,1,4) #(state1,state2,state3)
   stepPar0 <- c(stepMean0,stepSD0)
   
-  angleMean0 <- c(pi,0)
-  angleCon0 <- c(1,5)
+  angleMean0 <- c(0,pi,0)
+  angleCon0 <- c(5,1,5)
   anglePar0 <- c(angleMean0,angleCon0)
   
   # fit the HMM
   m <- fitHMM(data = hmmdata, 
-              nbStates = 2, 
+              nbStates = 3, 
               stepPar0 = stepPar0, 
               anglePar0 = anglePar0)
   
@@ -106,7 +132,7 @@ for (ii in 1:length(interps)) {
   # Create a df with all of the important info -----------------------------------------------------------
   HMMdf <- cbind(df,hmmdata$step,hmmdata$angle,states,state_probs)
   names(HMMdf) <- c("dep_ID", "datetime", "lon",  "lat", "trip_ID",
-                    "step_length", "angle", "state", "prob_1", "prob_2")
+                    "step_length", "angle", "state", "prob_1", "prob_2","prob_3")
   HMMdf$state <- factor(HMMdf$state)
   HMMdf$datetime <- as.character(format(HMMdf$datetime)) # safer for writing csv in character format
   
