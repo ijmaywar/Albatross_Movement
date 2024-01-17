@@ -223,7 +223,7 @@ for (i in 1:length(bird_list)) {
     
     mij <- mi %>% filter(tripID==trips[j])
     
-    if (nrow(mij) >= 10*2) { # If file is so short that it's less than 2 hours , don't do anything.
+    if (nrow(mij) >= 6*2) { # If file is so short that it's less than 2 hours , don't do anything.
     
       mij$wind_vel <- NA
       mij$wind_dir <- NA # m/s, THE DIRECTION THE WIND IS COMING FROM
