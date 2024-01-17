@@ -51,7 +51,7 @@ mkdir(strcat(L2_dir,"Parameters/"))
 
 %% Loop thru birds
 parfor j = 1:height(L1_fileList)
-% for j=1:1
+% for j = 4:7
 
     %% Read bird 
     bird = strsplit(L1_fileList.name{j},"_");
@@ -79,7 +79,7 @@ parfor j = 1:height(L1_fileList)
     
     % find th
 
-    th_range = (-1.0:0.05:-0.5);
+    th_range = (-1.0:0.05:-0.3);
     num_flaps_th = [];
     mean_pk_th = [];
 
@@ -95,11 +95,20 @@ parfor j = 1:height(L1_fileList)
 
     mvSlp_th = abs(movingslope(num_flaps_th));
     [~,th_idx] = min(mvSlp_th);
+
+    % The threshold can get stuck where barely any "flaps" are being
+    % detected. Push past the local maximum to find the true th.
+    % if th_idx == 1
+    %     loc_max = find(islocalmax(mvSlp_th),1,'first');
+    %     [~,th_idx] = min(mvSlp_th(loc_max:length(mvSlp_th)));
+    %     th_idx = loc_max + th_idx - 1;
+    % end
+
     th = th_range(th_idx);
 
     % find m
 
-    m_range = (5:13); % Flaps typically appear to be 8-10 samples.
+    m_range = (7:11); % Flaps typically appear to be 8-10 samples.
     num_flaps_m = [];
     mean_pk_m = [];
 
@@ -233,11 +242,11 @@ end
 %% Plot raw data
 
 figure
-temp_range = 8221500:8222500; 
+temp_range = 62000:64000; 
 plot(raw(temp_range))
 hold on
-% plot(filtered(temp_range))
-yline(th)
+plot(filtered(temp_range))
+yline(-1)
 
 
 
