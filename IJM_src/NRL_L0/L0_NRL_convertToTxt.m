@@ -9,7 +9,7 @@ clearvars
 
 %% USER INPUTED VALUES
 
-szn = '2019_2020';
+szn = '2021_2022';
 location = "Bird_Island"; % Options: 'Bird_Island', 'Midway', 'Wandering'
 computer = "MacMini";
 

@@ -115,14 +115,10 @@ for i = 9:height(L0_fileNames)
         % trim data
         start_idx = idx_tbl(strcmp(string(idx_tbl.bird),dep_ID),:).start;
         stop_idx = idx_tbl(strcmp(string(idx_tbl.bird),dep_ID),:).stop;
-
-        figure
-        plot(og_length-HFB:og_length,L0_data(og_length-HFB:og_length))
+        L0_trimmed = L0_data(start_idx:stop_idx,:);
         
-        x = L0_data(start_idx:stop_idx,:);
-    
         % local detrend
-        x = locdetrend(x,fs,[1 .1]);
+        x = locdetrend(L0_trimmed,fs,[1 .1]);
     
         disp("Data trimmed and detrend-ed.")
 
@@ -303,7 +299,39 @@ end
         
 
 
+%% plot start of differenced data
 
+figure
+plot(x1_1(1:1000000))
+ylim([-1.5 1.5])
+
+%% reverse data
+
+for j = 1:length(x1_1)
+    x2_1(j,1) = x1_1(end-j+1);
+end
+
+
+%% plot differenced data (in reverse)
+
+figure
+plot(x2_1(1:1000000))
+ylim([-1.5 1.5])
+
+
+% flip x1_1
+        
+
+
+
+        %% plot start
+        figure
+        plot(1:10000000,L0_trimmed(1:10000000))
+         
+        %% plot end 
+        figure
+        x_end = length(L0_trimmed);
+        plot(x_end-10000000:x_end,L0_trimmed(x_end-10000000:x_end))
 
 
 

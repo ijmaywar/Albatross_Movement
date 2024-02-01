@@ -15,7 +15,7 @@ clearvars
 
 %% USER INPUTED VALUES
 
-szn = '2019_2020';
+szn = '2020_2021';
 location = 'Bird_Island'; % Options: 'Bird_Island', 'Midway', 'Wandering'
 computer = 'MacMini'; % Options: "MacMini," "MacBookPro"
 AccType = 'Technosmart';
@@ -242,15 +242,16 @@ end
 %% Plot raw data
 
 figure
-temp_range = 62000:64000; 
+temp_range = hr_start:hr_stop; 
 plot(raw(temp_range))
 hold on
 plot(filtered(temp_range))
 yline(-1)
 
-
-
-
+%% Find a specific datetime
+spec_idx = find(Acc.DateTime=="2021-01-07 14:59:02.000000")
+hr_start = spec_idx - (30*60*25);
+hr_stop = spec_idx + (30*60*25);
 
 
 

@@ -44,7 +44,6 @@ library(foehnix)
 # Set Environment ---------------------------------------------------------
 
 GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/"
-# nc_dir <- paste0(GD_dir,"L0/",location,"/Wind_Data/ERA5_SingleLevels_10m/")
 nc_dir <- paste0(GD_dir,"L0/",location,"/Wind_Data/ERA5_Monthly_Avg_10m/")
 
 GPS_dir <- paste0(GD_dir,"L2/",location,"/Tag_Data/GPS/",szn,"/")
@@ -89,9 +88,9 @@ for (i in 1:length(files)) {
 # Make sure all birds are found within the grid extent
 # Bird Island grid extent: -30N -70S -120W -10E (big range due to Wandering!)
 # Midway grid extent: 50N 20S 140W -140E
-  # NOTE: Midway data must be downloaded in two parts because you cannot cross the 
-  # 180 lon line when specifying grid extent: latN latS lonW 180 (E_Midway) and 
-  # latN latS -180 latE (W_Midway)
+# NOTE: Midway data must be downloaded in two parts because you cannot cross the 
+# 180 lon line when specifying grid extent: latN latS lonW 180 (E_Midway) and 
+# latN latS -180 latE (W_Midway)
 
 max(m$lat)
 min(m$lat)                         
@@ -139,22 +138,6 @@ times_t1 <- unique(times_t1) # find unique values because there should be two of
 wind_t1_u <- subset(wind_t1, 1:(nlyr(wind_t1)/2)) 
 wind_t1_v <- subset(wind_t1, (nlyr(wind_t1)/2)+1:nlyr(wind_t1))
 
-# Load netcdf file directly for Bird Island
-wind_t2 <- rast(wind_files[7])
-# Create data vectors
-wind_t2 # Make sure you got the right stuff!
-times_t2 <- time(wind_t2)  # stores times from each file 
-times_t2 <- unique(times_t2) # find unique values because there should be two of every datetime (for u and v)
-wind_t2_u <- subset(wind_t2, 1:(nlyr(wind_t2)/2)) 
-wind_t2_v <- subset(wind_t2, (nlyr(wind_t2)/2)+1:nlyr(wind_t2))
-
-# Stack rasters
-u_stack <- c(wind_t1_u, wind_t2_u)
-v_stack <- c(wind_t1_v, wind_t2_v)
-all_times <- c(times_t1, times_t2)
-all_times_num <- as.numeric(all_times)
-
-
 # For monthly data, you don't need to stack rasters
 u_stack <- wind_t1_u
 v_stack <- wind_t1_v
@@ -169,46 +152,41 @@ all_times_num <- as.numeric(all_times)
 # create u and v wind vectors
 for (j in 1:nrow(m)) {
   
-  timej <- as.POSIXct(m$datetime[j], format = "%Y-%m-%d %H:%M:%S" , tz = "UTC")
-  timej_num <- as.numeric(timej)
+  # Using the year of a given datetime, find the yearly average by averaging monthly values
+  year_idxs <- which(year(all_times)==year(m$datetime[j]))
+  year_times <- all_times[year_idxs]
   
-  # Find index of current_time in all times. Use that index to pull out relevant raster layer.
-  timej_diff <- abs(all_times_num-timej_num) # taking difference between all gps points
-  raster_dt_index <- which.min(timej_diff)  # Find the min: tells which layer to pull out and isolate. 
-                                            # DateTimes in the exact middle will be assigned to the first index
-  # 1800 seconds is 30 minutes
-  min_time_diff <- 1800
-  # 1341600 seconds is 15.5 days
-  # min_time_diff <- 1341600
-  
-  if (min(timej_diff) > min_time_diff) {
-    print("Current datetime is outside of the data provided by NETCDF files.")
-    break
+  monthly_avgs <- matrix(nrow=12,ncol=2)
+  colnames(monthly_avgs) <- c("u", "v")
+  for (mth in 1:12) {
+    raster_dt_index <- year_idxs[mth]
+    # Isolate u and v rasters at time j
+    ustack_timej <- subset(u_stack, raster_dt_index) 
+    vstack_timej <- subset(v_stack, raster_dt_index)
+    
+    # isolate coordinates
+    xy_j <- as.data.frame(cbind(m$lon[j], m$lat[j]))
+    colnames(xy_j) <- c("lon","lat")
+    xy_j$lon <- Lon360to180(xy_j$lon) 
+    
+    # Extract u and v components for time j at location x and y
+    u_j <- extract(ustack_timej, xy_j, ID=FALSE)
+    v_j <- extract(vstack_timej, xy_j, ID=FALSE)
+    
+    if (length(u_j) != 1) {
+      print("Number of wind measurements chosen != 1.")
+      break
+    } else if (is.na(u_j[[1]]) || is.na(v_j[[1]])) {
+      print("Wind data for this coordinate cannot be found.")
+      break
+    }
+    
+    monthly_avgs[mth,1]<- u_j[[1]]
+    monthly_avgs[mth,2]<- v_j[[1]]
   }
   
-  # Isolate u and v rasters at time j
-  ustack_timej <- subset(u_stack, raster_dt_index) 
-  vstack_timej <- subset(v_stack, raster_dt_index)
-  
-  # isolate coordinates
-  xy_j <- as.data.frame(cbind(m$lon[j], m$lat[j]))
-  colnames(xy_j) <- c("lon","lat")
-  xy_j$lon <- Lon360to180(xy_j$lon) 
-  
-  # Extract u and v components for time j at location x and y
-  u_j <- extract(ustack_timej, xy_j, ID=FALSE)
-  v_j <- extract(vstack_timej, xy_j, ID=FALSE)
-  
-  if (length(u_j) != 1) {
-    print("Number of wind measurements chosen != 1.")
-    break
-  } else if (is.na(u_j[[1]]) || is.na(v_j[[1]])) {
-    print("Wind data for this coordinate cannot be found.")
-    break
-  }
-  
-  m$u[j]<- u_j[[1]]
-  m$v[j]<- v_j[[1]]
+  m$u[j] <- mean(monthly_avgs[,1])
+  m$v[j] <- mean(monthly_avgs[,2])
   
 }
 
@@ -245,7 +223,7 @@ for (i in 1:length(bird_list)) {
     mij <- mi %>% filter(tripID==trips[j])
     
     if (nrow(mij) >= 6*2) { # If file is so short that it's less than 2 hours , don't do anything.
-    
+      
       mij$wind_vel <- NA # m/s
       mij$wind_dir <- NA # THE DIRECTION THE WIND IS COMING FROM
       mij$bird_dir <-NA # THE DIRECTION THE BIRD IS HEADING IN

@@ -14,24 +14,24 @@ clearvars
 
 %% USER INPUTED VALUES
 
-directory = "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L3/Midway/Tag_Data/GPS/600s/BFAL/";
-fileExt = "csv";
+directory = "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L0/Bird_Island/Tag_Data/2021_2022/Aux/NRL/L0_0_Raw/";
+fileExt = "dat";
 
-szn = '2019_2020';
+szn = '2021_2022';
 location = 'Bird_Island'; % Options: 'Bird_Island', 'Midway', 'Wandering'
 % Genus = "great";
-Tag = "GPS"; % Options: "Aux", "GPS", "GLS" 
-datatype = "GPS";
-TagType = "Catlog"; % Options: 
+Tag = "Aux"; % Options: "Aux", "GPS", "GLS" 
+datatype = "Aux";
+TagType = "NRL"; % Options: 
                   % GPS: "Catlog", "iGotU"
                   % Aux: "AGM", "Axy5", "AxyAir", "GCDC", "NRL", "uMoth"
                   % GLS 
                   % AxyTrek
-datalvl = 3; % Options: 0, 1, 2
+datalvl = 0; % Options: 0, 1, 2
 % datasublvl = 2; % Options: 1, 2, 3
 computer = "MacMini"; % Options: "MacMini", "MacBookPro"
 
-newname = true; % Options: true, false
+newname = false; % Options: true, false
 
 %% Set environment
 
@@ -40,7 +40,7 @@ GD_dir = findGD(computer);
 % Full_metadata sheet
 fullmeta = readtable(strcat(GD_dir,'metadata/Full_metadata.xlsx'),'TreatAsEmpty',{'NA'});
 % fullmeta = fullmeta(strcmp(fullmeta.Field_season,szn) & strcmp(fullmeta.Location,location),:); % & strcmp(fullmeta.Genus,Genus),:);
-% fullmeta = fullmeta(strcmp(fullmeta.Field_season,szn) & strcmp(fullmeta.Location,location),:); % & strcmp(fullmeta.Aux_TagType,TagType),:);
+fullmeta = fullmeta(strcmp(fullmeta.Field_season,szn) & strcmp(fullmeta.Location,location) & strcmp(fullmeta.Aux_TagType,TagType),:);
 
 cd(directory)
 fileList = exFAT_aux_remove(struct2table(dir(strcat('*.',fileExt))));

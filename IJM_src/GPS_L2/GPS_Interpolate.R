@@ -1,5 +1,5 @@
 ################################################################################
-# Ian's GPS L1 to L2 code
+# Ian's GPS L1 to L2 code. Interpolates GPS data to 10 min (600s) intervals
 ################################################################################
 
 
@@ -27,10 +27,6 @@ L2_dir <- paste0(GD_dir, "THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L2/",location,
 # Find GPS files
 setwd(L1_dir)
 gpsfiles<-list.files(pattern='*.csv')
-
-# Create Write Directories
-dir.create(paste0(L2_dir,'300s/'))
-dir.create(paste0(L2_dir,'600s/'))
 
 # User Functions ----------------------------------------------------------
 
@@ -63,16 +59,9 @@ for (i in 1:length(gpsfiles)) {
       traj_m<-as.ltraj(xy[1:nrow(xy)-1,], date=ptime[1:length(ptime)-1], id=mi$tripID[1:nrow(mi)-1], typeII=TRUE, proj4string = CRS("+proj=longlat +ellps=WGS84"))
     }
     
-    traj_300s<-redisltraj(traj_m,300,type="time") 
     traj_600s<-redisltraj(traj_m,600,type="time") 
     
     # Convert to Dataframes
-    df300<-ld(traj_300s) 
-    df300_keep <- df300 %>% 
-      mutate(birdid=mi$id[1]) %>% 
-      dplyr::select(birdid, date, x, y, id)
-    colnames(df300_keep) <- c("id","datetime","lon","lat","tripID")
-    
     df600<-ld(traj_600s) 
     df600_keep <- df600 %>% 
       mutate(birdid=mi$id[1]) %>% 
@@ -80,9 +69,7 @@ for (i in 1:length(gpsfiles)) {
     colnames(df600_keep) <- c("id","datetime","lon","lat","tripID")
     
     # And Save
-    df300_keep$datetime <- as.character(format(df300_keep$datetime)) # safer for writing csv in character format
     df600_keep$datetime <- as.character(format(df600_keep$datetime)) # safer for writing csv in character format
-    write.csv(df300_keep, file=paste0(L2_dir,'300s/', mi$id[1], "_L2_interp300s.csv"), row.names=FALSE)
     write.csv(df600_keep, file=paste0(L2_dir,'600s/', mi$id[1], "_L2_interp600s.csv"), row.names=FALSE)
     
   }

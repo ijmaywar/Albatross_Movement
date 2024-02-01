@@ -7,7 +7,7 @@ close all; clear all; clc
 %FName = 'L5';
 %FName = 'L6';
 %FName = 'L7';
-FName = 'ghalTEST1_Dec52019';
+FName = 'L8';
 %FName = 'L1_Saft100uF_1800uF';  %OK, GPS OK
 %FName = 'L2_Saft100uF_1800uF';  %OK, GPS OK
 %FName = 'L3_Saft100uF_1800uF';  %OK, GPS OK
@@ -18,8 +18,11 @@ FName = 'ghalTEST1_Dec52019';
 %FName = 'L7_Saft100uF_1800uF_c'; %OK, GPS OK
 %FName = 'L8_Saft100uF_1800uF_c'; %OK, GPS OK
 
-DataSubdirectory = 'Data';
-PDFSubdirectory = 'PDFs';
+FName = 'BBAL_86_RB86_HRL4_Jan132020';  %good signal
+FName = 'BBAL_99_NA41_HRL2_Jan172020';  %39 "sessions" instead of 1, 19 headers detected, good signal
+
+DataSubdirectory = 'Data_Albatross';%'Data';
+PDFSubdirectory = 'PDFs_Albatross'; %'PDFs';
 
 CurrentFolder = pwd;
 DataFolder = [CurrentFolder filesep DataSubdirectory];

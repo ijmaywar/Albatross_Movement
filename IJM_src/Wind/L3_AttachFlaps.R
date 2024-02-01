@@ -26,9 +26,9 @@ library(foreach)
 
 GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/"
 Acc_dir <- paste0(GD_dir, "L2/",location,"/Tag_Data/Acc/",szn,"/")
-HMM_dir <- paste0(GD_dir, "L3/",location,"/Tag_Data/GPS/",interp,"/3_states/")
-wind_L2_dir <- paste0(GD_dir,"L2/",location,"/Wind_Data/",szn,"/",interp,"/")
-wind_L3_dir <- paste0(GD_dir,"L3/",location,"/Wind_Data/",szn,"/",interp,"/")
+HMM_dir <- paste0(GD_dir, "L3/",location,"/Tag_Data/GPS/3_states/")
+wind_L2_dir <- paste0(GD_dir,"L2/",location,"/Wind_Data/",szn,"/")
+wind_L3_dir <- paste0(GD_dir,"L3/",location,"/Wind_Data/",szn,"/")
 
 setwd(Acc_dir)
 acc_files <- list.files(pattern='*.csv')
