@@ -9,10 +9,10 @@
 clearvars
 
 %%
-GD_dir = findGD("MacMini");
-Sensor_dir = "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L0/Bird_Island/Tag_Data/2019_2020/Aux/HRL/L0_1_Decompressed/1_SensorData/";
-ECG_dir = "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L0/Bird_Island/Tag_Data/2019_2020/Aux/HRL/L0_1_Decompressed/2_ECG/";
-GPS_dir = "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L0/Bird_Island/Tag_Data/2019_2020/Pos/Catlog/";
+GD_dir = "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/";
+Sensor_dir = "/Volumes/LaCie/L0/Bird_Island/Tag_Data/2021_2022/Aux/NRL/L0_1_Decompressed/1_SensorData/";
+ECG_dir = "/Volumes/LaCie/L0/Bird_Island/Tag_Data/2021_2022/Aux/NRL/L0_1_Decompressed/2_ECG/";
+GPS_dir = "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L0/Bird_Island/Tag_Data/2021_2022/Pos/Catlog/";
 
 cd(Sensor_dir)
 Sensor_fileList = dir("*.txt");
@@ -35,11 +35,11 @@ nfiles = height(ECG_fileList);
 
 %% Load timings table
 
-Timings = readtable("/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L0/Bird_Island/Tag_Data/2019_2020/Aux/HRL/Tag_Meta_Timings.csv");
+% Timings = readtable("/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L0/Bird_Island/Tag_Data/2019_2020/Aux/NRL/Tag_Meta_Timings.csv");
 
 %% Loop thru
 
-for i = 21:nfiles
+for i = 22:nfiles
     
     %% Make sure all files are present
     cd(ECG_dir)
@@ -52,7 +52,7 @@ for i = 21:nfiles
     % Timings(i,:).i = i;  
 
     % SensorData
-    birdSensorname = strcat(current_bird,"_HRL_L0_1_1_SensorData.txt");
+    birdSensorname = strcat(current_bird,"_SensorData.txt");
     findSensor = find(strcmp(Sensor_fileNames,birdSensorname));
     if isempty(findSensor)
         disp(strcat("there is no SensorData file for ",current_bird))
@@ -145,7 +145,7 @@ for i = 21:nfiles
         % 'VariableNames',["dep_ID","i","meta_start","first_GPS","capture","recapture","final_ECG","final_Sensor","final_GPS","min_diff_GPS_mins","max_diff_GPS_mins"]);
     
     %% Save meta tbl
-    writetable(Timings,strcat("/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L0/Bird_Island/Tag_Data/2019_2020/Aux/HRL/",'Tag_Meta_Timings.csv')) %write m data
+    writetable(Timings,"/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L0/Bird_Island/Tag_Data/2021_2022/Aux/NRL/Tag_Meta_Timings.csv") %write m data
   
     % %% Find time elapsed per break
     % 

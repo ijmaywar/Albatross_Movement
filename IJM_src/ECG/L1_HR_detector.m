@@ -16,7 +16,7 @@ clearvars
 
 %% USER INPUTED VALUES
 
-szn = '2019_2020';
+szn = '2021_2022';
 location = "Bird_Island"; % Options: 'Bird_Island', 'Midway', 'Wandering'
 computer = "MacMini";
 
@@ -26,9 +26,10 @@ computer = "MacMini";
 addpath(genpath('/Users/ian/Documents/GitHub/AlbatrossFlightDynamics/'))
 
 % set directories
-GD_dir = findGD(computer);
-L0_dir = strcat(GD_dir,"L0/",location,"/Tag_Data/",szn,"/Aux/NRL/L0_1_Decompressed/2_ECG/");
-L1_dir = strcat(GD_dir,"L1/",location,"/Tag_Data/ECG/",szn,"/");
+GD_dir = "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/NEW_STRUCTURE/";
+HD_dir = "/Volumes/LaCie/";
+L0_dir = strcat(HD_dir,"L0/",location,"/Tag_Data/",szn,"/Aux/NRL/L0_1_Decompressed/2_ECG/");
+L1_dir = strcat(HD_dir,"L1/",location,"/Tag_Data/ECG/",szn,"/");
 GPS_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/GPS/GPS_Catlog/',szn,'/2_buffer2km/');
 
 % Matlab functions toolbox
@@ -40,7 +41,7 @@ fullmeta = readtable(strcat(GD_dir,'metadata/Full_metadata.xlsx'),'TreatAsEmpty'
 fullmeta = fullmeta(strcmp(fullmeta.Field_season,szn) & strcmp(fullmeta.Location,location),:);
 
 % Tag timings sheet
-Tag_Timings = readtable(strcat(GD_dir,"L0/",location,"/Tag_Data/",szn,"/Aux/NRL/Tag_Meta_Timings.csv"),'Delimiter',',');
+Tag_Timings = readtable(strcat(GD_dir,"L0/",location,"/Tag_Data/",szn,"/Aux/NRL/Tag_Meta_Timings_",szn,".csv"),'Delimiter',',');
 
 % Start indices sheet
 idx_tbl = readtable(strcat(L0_dir,"start_stop_indices.csv"),'Delimiter',',');
@@ -88,7 +89,7 @@ L0_fileNames = string(L0_fileList.name);
 
 %% Loop thru and process birds
 
-for i = 9:height(L0_fileNames)
+for i = 5:5%height(L0_fileNames)
     %% load data to be deteced.
 
     namesplit = strsplit(L0_fileNames(i),'_');

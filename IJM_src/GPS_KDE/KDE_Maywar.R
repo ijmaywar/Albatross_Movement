@@ -75,14 +75,20 @@ library(tidyverse)
 library(adehabitatHR)
 library(sp)
 library(readxl)
-# library(sf)
+library(sf)
+library(raster)
 # library(ggplot2)
 # library(leaflet)
 
 
 # Set environment --------------------------------------------------------------
-fullmeta <- read_excel("/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/metadata/Full_Metadata.xlsx")
-GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/"
+
+# GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/"
+GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/NEW_STRUCTURE/"
+HD_dir <- "/Volumes/LaCie/"
+write_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L4/Bird_Island/Tag_Data/GPS/"
+
+fullmeta <- read_excel(paste0(GD_dir,"/metadata/Full_Metadata.xlsx"))
 
 GPS_dir <- paste0(GD_dir,"L2/",loc,"/Tag_Data/GPS/compiled_by_spp/")
 setwd(GPS_dir)
@@ -90,6 +96,7 @@ files <- list.files(pattern='*.csv')
 
 for (i in 1:length(files)) {
   m <- read_csv(files[i])
+  
   if (i==1) {
     all_data <- m
   } else {
@@ -106,6 +113,33 @@ for (i in 1:length(alltrips)) {
   }
 }
 
+allbirds <- unique(all_data$id)
+
+# If metadata says that GPS data is incomplete, remove the bird
+for (i in 1:length(allbirds)) {
+  current_bird <- allbirds[i]
+  birdmeta <- fullmeta %>% filter(Deployment_ID == current_bird)
+  
+  if (is.na(birdmeta$Pos_complete)) {
+    all_data <- all_data %>% filter(id!=allbirds[i])
+  } else if (birdmeta$Pos_complete==FALSE) {
+    all_data <- all_data %>% filter(id!=allbirds[i])
+  }
+}
+
+#update alltrips and allbirds
+alltrips <- unique(all_data$tripID)
+allbirds <- unique(all_data$id)
+
+# all_data$id <- as.factor(all_data$id)
+# all_data$tripID <- as.factor(all_data$tripID)
+
+all_data <- na.omit(all_data)
+
+BBAL_data <- all_data %>% filter(substr(all_data$id,1,4)=="BBAL")
+GHAL_data <- all_data %>% filter(substr(all_data$id,1,4)=="GHAL")
+WAAL_data <- all_data %>% filter(substr(all_data$id,1,4)=="WAAL")
+
 if (loc=="Bird_Island") {
   utmzone <- "24"
 } else if (loc == "Midway") {
@@ -114,17 +148,173 @@ if (loc=="Bird_Island") {
 
 # Calculate grid value ----------------------------------------------------
 
-# all_data_1<-all_data[,c(28,3,4)] #selecting totalid, lat, long (this is different for all_MS and all_YI)
-# all_data_1 <- na.omit(all_data_1) #remove NAs
+BBAL.sp <- BBAL_data %>% dplyr::select(tripID,lon,lat)
+sp::coordinates(BBAL.sp) <- c("lon","lat")
+sp::proj4string(BBAL.sp) <- sp::CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+BBAL.sp <- spTransform(BBAL.sp,CRS(paste0("+proj=utm +zone=",utmzone," +ellps=WGS84 +datum=WGS84 +units=m +no_defs")))
+BBAL.kernel.ref <- kernelUD(BBAL.sp, h="href", same4all = TRUE, grid=150)
 
-xy <- all_data %>% dplyr::select(lon,lat)
-xy.spdf <- sp::SpatialPointsDataFrame(coords = xy, data = all_data, proj4string = CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"))
-xy.spdf <- spTransform(xy.spdf, CRSobj = CRS(paste0("+proj=utm +zone=",utmzone," +ellps=WGS84 +datum=WGS84 +units=m +no_defs")))
-all_data_UTM <- as.data.frame(xy.spdf)
-all_data_1 <- all_data_UTM %>% dplyr::select(tripID,lon.1,lat.1) #selecting out animal id, UTM long, and UTM lat
+# save reference bandwiths into a vector
+ref_h <- c()
+for (i in 1:length(BBAL.kernel.ref)) {
+  ref_h[i] <- BBAL.kernel.ref[[i]]@h[[1]]
+}
+hist(ref_h, breaks=50)
+mean(ref_h)
 
-sp::coordinates(all_data_1) <- c("lon.1", "lat.1") #coordinates function makes an sp object; sf has replaced sp right now, but adeHabitatHR is not compatible with sf
-sp::proj4string(all_data_1) <- sp::CRS(paste0("+proj=utm +zone=",utmzone," +datum=WGS84 +no_defs")) # assigning it the WGS84 projection
+mcp_obj <- mcp(BBAL.sp,percent=100)
+
+radii_df <- as.data.frame(unique(BBAL_data$tripID))
+colnames(radii_df) <- c("tripID")
+radii_df["radius"] <- NA
+
+# TO FIND MAX LENGTH. DIVIDE THIS BY 2 TO FIND RADIUS...
+for (i in 1:length(mcp_obj)) {
+  # Subset a single minimum convex polygon
+  current_obj <- mcp_obj[mcp_obj$id==mcp_obj$id[i],]
+  # convert sp object into sf object
+  current_obj_sf <- as(current_obj,"sf")
+  # Find max distance between two points in the mcp
+  max_dist <- as.numeric(current_obj_sf %>% st_cast('MULTIPOINT') %>% st_cast('POINT') %>% st_distance %>% max())
+  # Divide this distance by 2 to find the "radius" of the mcp
+  radius <- max_dist/2
+  # Store radius value
+  radii_df[i,]$radius <- radius
+}
+
+# What's the mean mcp radius? 
+mean_radius <- mean(radii_df$radius)
+mean_radius
+
+# 
+# plot(mcp(BBAL.sp,percent=100))
+# plot(BBAL.sp,pch=1,cex=0.25,add=TRUE)
+# BBAL.kernel.ref <- kernelUD(BBAL.sp,h="href")
+
+
+
+################################################################################
+# plot one of the ranges
+trip_no <- 2
+
+which_trip <- alltrips[trip_no]
+idxs <- which(BBAL.sp$tripID==which_trip)
+# plot(mcp(BBAL.sp[idxs,],percent=100))
+# plot(BBAL.sp[idxs,],pch=1,cex=0.025,add=TRUE)
+
+BBAL.kernel.ref.1 <- kernelUD(BBAL.sp[idxs,],h="href",grid=100)
+href <- BBAL.kernel.ref.1[[which_trip]]@h$h
+
+par(mfrow=c(1,2),mar=c(1,1,1,1))
+
+plot(getverticeshr(BBAL.kernel.ref.1,percent=95),main=paste0("href = ",href))
+plot(getverticeshr(BBAL.kernel.ref.1,percent=50),col='red',add=TRUE)
+plot(mcp(BBAL.sp[idxs,],percent=100),add=TRUE)
+plot(BBAL.sp[idxs,],pch=1,cex=0.025,add=TRUE)
+
+hcustom <- mean_radius
+BBAL.kernel.custom.1 <- kernelUD(BBAL.sp[idxs,],h=hcustom,grid=100)
+
+plot(getverticeshr(BBAL.kernel.custom.1,percent=95),main=paste0("custom = ",hcustom))
+plot(getverticeshr(BBAL.kernel.custom.1,percent=50),col='red',add=TRUE)
+plot(mcp(BBAL.sp[idxs,],percent=100),add=TRUE)
+plot(BBAL.sp[idxs,],pch=1,cex=0.025,add=TRUE)
+
+mtext(which_trip,side=3,line=-21,outer=TRUE)
+
+################################################################################
+
+# Average KDE -------------------------------------------------------------
+# average KDE of individuals within a species at a study site#
+
+BBAL_holder <- numeric(length = nrow(BBAL.kernel.ref[[1]])) #length = number of rows on the gridcell
+for (i in 1:length(unique(BBAL_data$tripID))) {
+  
+  if (sum(is.na(BBAL.kernel.ref[[i]]@data$ud)) > 0) {
+    print("there na values!")
+    BBAL.kernel.ref[[i]]@data$ud[is.na(BBAL.kernel.ref[[i]]@data$ud)] <- 0
+  }
+
+  add <- BBAL.kernel.ref[[i]]@data$ud
+  BBAL_holder <- BBAL_holder+add
+}
+BBAL_holder <- BBAL_holder/length(BBAL.kernel.ref)
+BBAL_holder
+
+##### modify existing estUD object with averaged values, then rename
+BBAL_averaged_estUD <- BBAL.kernel.ref[[1]]
+BBAL_averaged_estUD@data$ud <- BBAL_holder
+
+if (sum(is.na(BBAL_averaged_estUD@data$ud)) > 0) {
+  print("there na values!")
+  BBAL_averaged_estUD@data$ud[is.na(BBAL_averaged_estUD@data$ud)] <- 0 # ok if it sums to >1!
+}
+
+# Plot average KDE
+KDE_95 <- getverticeshr(BBAL_averaged_estUD,percent=95)
+plot(KDE_95,add=TRUE)
+summary(KDE_95)
+
+# Extract pixel values
+KDE_95_longlat <- spTransform(KDE_95, CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"))
+poly_1 <- KDE_95_longlat@polygons[[1]]@Polygons[[1]]
+poly_2 <- KDE_95_longlat@polygons[[1]]@Polygons[[2]]
+poly_3 <- KDE_95_longlat@polygons[[1]]@Polygons[[3]]
+poly_4 <- KDE_95_longlat@polygons[[1]]@Polygons[[4]]
+
+# Coordinates in Lon, Lat
+poly_1@coords
+poly_2@coords
+poly_3@coords
+poly_4@coords
+
+# Combine coordinates into a single df
+df_coords <- data.frame(c(rep(1,nrow(poly_1@coords)),rep(2,nrow(poly_2@coords)),rep(3,nrow(poly_3@coords)),rep(4,nrow(poly_4@coords))),
+           rbind(poly_1@coords,poly_2@coords,poly_3@coords,poly_4@coords))
+colnames(df_coords) <- c("Polygon","lon","lat")
+
+# write df as csv
+write.csv(df_coords, file=paste0(write_dir,"KDE_95_polygons.csv"), row.names=FALSE)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# image(BBAL.kernel.ref.1)
+
+BBAL.spdf <- sp:BBAL.spBBAL.spdf <- sp::SpatialPointsDataFrame(coords=BBAL_data %>% dplyr::select(lon,lat), data=BBAL_data, proj4string = CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"))
+BBAL.spdf <- sp::spTransform(BBAL.spdf, CRSobj = CRS(paste0("+proj=utm +zone=",utmzone," +ellps=WGS84 +datum=WGS84 +units=m +no_defs")))
+BBAL. <- as.data.frame(BBAL.spdf) %>% dplyr::select(tripID,lon,lat)
+sp::coordinates() <- c("coords.x1", "coords.x2")
+mcp(BBAL.spdf,percent=100)
+BBAL_homerange <- mcp(BBAL.spdf,percent=100)$area
+BBAL_homerange
+plot(mcp(BBAL.spdf,percent=100))
+plot(BBAL.spdf,pch=1,cex=0.25,add=TRUE)
+
+
+sp::coordinates(BBAL.sp) <- c("lon","lat")
+sp::proj4string(BBAL.sp) <- sp::CRS(paste0("+proj=utm +zone=",utmzone," +datum=WGS84 +units=m +no_defs"))
+
+# xy.spdf <- sp::SpatialPointsDataFrame(coords = xy, data = all_data, proj4string = CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"))
+# xy.spdf <- sp::spTransform(xy.spdf, CRSobj = CRS(paste0("+proj=utm +zone=",utmzone," +ellps=WGS84 +datum=WGS84 +units=m +no_defs")))
+# all_data_UTM <- as.data.frame(xy.spdf)
+# all_data_1 <- all_data_UTM %>% dplyr::select(tripID,coords.x1,coords.x2) #selecting out animal id, UTM long, and UTM lat
+# 
+# sp::coordinates(all_data_1) <- c("coords.x1", "coords.x2") #coordinates function makes an sp object; sf has replaced sp right now, but adeHabitatHR is not compatible with sf
+# sp::proj4string(all_data_1) <- sp::CRS(paste0("+proj=utm +zone=",utmzone," +datum=WGS84 +no_defs")) # assigning it the WGS84 projection
 
 #xy <- all_data_1
 #spTransform(nest.spdf, CRSobj = CRS("+proj=utm +zone=18 +ellps=WGS84 +datum=WGS84 +units=m +no_defs"))
@@ -144,7 +334,7 @@ sp::proj4string(all_data_1) <- sp::CRS(paste0("+proj=utm +zone=",utmzone," +datu
 # kernelUD output currently is probability density: absolute density (events per unit area) divided by total number of events
 # results <- kernelUD(xy = all_data_1, grid=grid_input,same4all=T,extent=0.1,h=150000)# grid-input guarantees AT LEAST 300km x 300km - in actuality, it is very slightly more than 300km x 300km.
 
-kernel.ref <- kernelUD(xy = all_data_1[1:10000,], h = "href", same4all=TRUE, grid=100) #use href to figure out initial grid size and extent value
+kernel.ref <- kernelUD(xy = tracks.sp, h = "href", same4all=TRUE, grid=100) #use href to figure out initial grid size and extent value
 image(kernel.ref)
 
 # save reference bandwiths into a vector
@@ -154,15 +344,15 @@ for (i in 1:length(kernel.ref)) {
 }
 hist(ref_h, breaks=50)
 
-# kernel.lscv <- kernelUD(xy = all_data_1, h = "LSCV", same4all = TRUE) #didn't converge
-# plotLSCV(kernel.lscv[[1]])
+# kernel.lscv <- kernelUD(xy = tracks.sp[1:10000,], h = "LSCV", same4all = TRUE, grid=100) #didn't converge
+# plotLSCV(kernel.lscv[[3]])
 # image(kernel.lscv[[2]])
 
 # we don't want to use the href bandwidth with fine scale data, as it tend to oversmooth (https://www.jstor.org/stable/1938423#metadata_info_tab_contents)
 # to manually select the bandwidth, start with an initial high bandwidth and incrementally decrease until you start to see bimodality (https://royalsocietypublishing.org/doi/full/10.1098/rsos.200649)
 # results3 <- kernelUD(xy = all_data_1, h = 1600, same4all = TRUE, grid = 100, extent = 0.8) #for YI, had to increase extent to calculate hr 
 
-kernel_150 <- kernelUD(xy = all_data_1[1:10000,], h = 1500000, same4all = TRUE, grid=100) #for MS
+kernel_150 <- kernelUD(xy = tracks.sp[1:10000,], h = 1.5, same4all = TRUE, grid=100) #for MS
 image(kernel_150)
 
 kernel_temp <- kernelUD(xy = all_data_1[1:10000,], h = 250000, same4all = TRUE, grid=100) #for MS
@@ -175,13 +365,13 @@ image(kernel_temp) #try to futz with grid parameters here to make visualization 
 # https://lists.faunalia.it/pipermail/animov/2006-May/000137.html
 # GRID JUST CHANGES HOW THE RASTER LOOKS - THE SEARCH WINDOW/BANDWIDTH/K IS WHAT CONTROLS BIOLOGICAL RELEVANCE
 
-names <- names(kernel_temp)
+names <- names(kernel.ref)
 if (loc=="Bird_Island") {
-  BBAL_kde <- results3[grep("BBAL",names)] #collate of all species from all sites into one object
-  GHAL_kde <- results3[grep("GHAL",names)] #GBBG on MS
+  BBAL_kde <- kernel.ref[grep("BBAL",names)] #collate of all species from all sites into one object
+  GHAL_kde <- kernel.ref[grep("GHAL",names)] #GBBG on MS
 } else if (loc=="Midway") {
-  BFAL_kde <- results3[grep("BFAL",names)] 
-  LAAL_kde <- results3[grep("LAAL",names)]
+  BFAL_kde <- kernel.ref[grep("BFAL",names)] 
+  LAAL_kde <- kernel.ref[grep("LAAL",names)]
 }
 
 #all_gbbg <- append(yig_kde, msg_kde)
@@ -197,14 +387,21 @@ if (loc=="Bird_Island") {
 kernel.ref.poly <- getverticeshr(kernel.ref, percent=95)
 print(kernel.ref.poly)
 
-
+color <- rep("white", nrow(tracks.sp@data))
+  color[(tracks.sp@data$tripID == "BBAL_20191130_O596_1")] <- "red"
+  color[(tracks.sp@data$tripID == "BBAL_20191202_O874_1")] <- "green"
+  color[(tracks.sp@data$tripID == "BBAL_20191203_B221_1")] <- "blue"
+  color[(tracks.sp@data$tripID == "BBAL_20191208_B282_1")] <- "cyan"
+  color[(tracks.sp@data$tripID == "BBAL_20191208_B290_1")] <- "grey"
+plot(kernel.ref.poly, col = kernel.ref.poly@data$tripID)
+  plot(tracks.sp, add = TRUE, col = color, pch = 21)
 
 
 
 # Average KDE -------------------------------------------------------------
 # average KDE of individuals within a species at a study site#
 
-BBAL_holder <- numeric(length = nrow(kernel_temp[[1]])) #length = number of rows on the gridcell
+BBAL_holder <- numeric(length = nrow(kernel.ref[[1]])) #length = number of rows on the gridcell
 for (i in 1:length(BBAL_kde)) {
   BBAL_kde[[i]]@data$ud[is.na(BBAL_kde[[i]]@data$ud)] <- 0
   add <- BBAL_kde[[i]]@data$ud
@@ -313,6 +510,9 @@ image(msh_averaged_estUD)
 #     all_herg_averaged_estUD@data$ud[is.na(all_herg_averaged_estUD@data$ud)] <- 0 # ok if it sums to >1!
 #     image(all_herg[[1]])
 #     image(all_herg_averaged_estUD)
+
+
+
 # Generate class KDE ------------------------------------------------------
 
 # reminder for converting into a spatial pixel dataframe if needed: 
@@ -390,16 +590,16 @@ yi_UDOI_95 <- kerneloverlaphr(yiHERG_v_yiGBBG, method="UDOI", percent=95, condit
 yi_UDOI_50 <- kerneloverlaphr(yiHERG_v_yiGBBG, method="UDOI", percent=50, conditional=T)
 
 #plots to check
-plot(getverticeshr(msGBBG, percent = 50)) #ave this as an object and can plot in ggplot
-plot(getverticeshr(msHERG, percent = 50), add = TRUE, lty = 2)
+plot(getverticeshr(BBAL_averaged_estUD, percent = 50)) #ave this as an object and can plot in ggplot
+plot(getverticeshr(BBAL_averaged_estUD, percent = 50), add = TRUE, lty = 2)
 
 #plotting points over the vertices
-image(msg_averaged_estUD)
-plot(getverticeshr(msGBBG, percent = 95), add = T)
-points(all_data_1, pch = 1, cex = 0.1)
+image(BBAL_averaged_estUD)
+plot(getverticeshr(BBAL_averaged_estUD, percent = 95), add = T)
+points(tracks.sp[1:10000,], pch = 1, cex = 0.1)
 
 #use plotverticeshr to get the actual area of the contours 
-g <- getverticeshr(msGBBG, percent = 95, unout = "km2")
+g <- getverticeshr(BBAL_averaged_estUD, percent = 95, unout = "km2")
 h <- getverticeshr(msHERG, percent = 95, unout = "km2")
 g5 <- getverticeshr(msGBBG, percent = 50, unout = "km2")
 h5 <- getverticeshr(msHERG, percent = 50, unout = "km2")

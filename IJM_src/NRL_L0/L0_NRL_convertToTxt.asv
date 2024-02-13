@@ -33,7 +33,7 @@ fileList = dir('*.dat');
 
 %% Unpack Raw Neurologger .dat files
 
-for i = 47:length(fileList)
+for i = 48:length(fileList)
     
     %% Make sure that ._ files (created by HD) are skipped
     if startsWith(fileList(i).name,'._')

@@ -16,7 +16,7 @@ clearvars
 
 %% USER INPUTED VALUES
 
-szn = '2019_2020';
+szn = '2021_2022';
 location = "Bird_Island"; % Options: 'Bird_Island', 'Midway', 'Wandering'
 computer = "MacMini";
 
@@ -26,9 +26,10 @@ computer = "MacMini";
 addpath(genpath('/Users/ian/Documents/GitHub/AlbatrossFlightDynamics/'))
 
 % set directories
-GD_dir = findGD(computer);
-L0_dir = strcat(GD_dir,"L0/",location,"/Tag_Data/",szn,"/Aux/NRL/L0_1_Decompressed/2_ECG/");
-L1_dir = strcat(GD_dir,"L1/",location,"/Tag_Data/ECG/",szn,"/");
+GD_dir = "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/";
+HD_dir = "/Volumes/LaCie/";
+L0_dir = strcat(HD_dir,"L0/",location,"/Tag_Data/",szn,"/Aux/NRL/L0_1_Decompressed/2_ECG/");
+L1_dir = strcat(HD_dir,"L1/",location,"/Tag_Data/ECG/",szn,"/");
 GPS_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/GPS/GPS_Catlog/',szn,'/2_buffer2km/');
 
 % Matlab functions toolbox
@@ -71,7 +72,7 @@ L0_fileNames = string(L0_fileList.name);
 
     %% Find start_idx
     fig_start = 1;
-    HFF = 100000000; % How Far Forward (How much of the head is plotted)
+    HFF = 10000000; % How Far Forward (How much of the head is plotted)
     figure
     plot(fig_start:HFF,L0_data(fig_start:HFF))
     ylim([-6 6])
