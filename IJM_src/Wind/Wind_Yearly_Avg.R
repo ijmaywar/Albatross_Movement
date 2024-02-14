@@ -33,14 +33,17 @@ library(terra)
 # library(DescTools) #closest
 # library(imputeTS) #na.interpolation
 library(geosphere)
-library(foehnix)
+# library(foehnix)
 # require(ggplot2)
 # require(RColorBrewer)
 
 # Set Environment ---------------------------------------------------------
 
-GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/"
-nc_dir <- paste0(GD_dir,"L0/",location,"/Wind_Data/ERA5_Monthly_Avg_10m/")
+# GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/"
+GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/NEW_STRUCTURE/"
+
+# nc_dir <- paste0(GD_dir,"L0/",location,"/Wind_Data/ERA5_Monthly_Avg_10m/")
+nc_dir <- "/Users/ian/Desktop/TEMPDATA/"
 
 GPS_dir <- paste0(GD_dir,"L4/",location,"/Tag_Data/GPS/")
 
@@ -64,6 +67,7 @@ bearingAngle <- function(bird_bearing,wind_bearing) {
 setwd(GPS_dir)
 files <- list.files(pattern='*.csv') # GPS files 
 m <- read.csv(files[1])
+m_list <- as.list(m)
 
 max(m$lat)
 min(m$lat)                         
@@ -75,161 +79,69 @@ Lon360to180(min(m$lon))
 setwd(nc_dir)
 wind_files <- list.files(pattern='*.nc') 
 
-# For Midway wind data --------------------------------------------------------------
-
-# COMBINE E AND W COMPONENTS OF NETCDF FILES for Midway
-wind_E_t1 <- rast(wind_files[5])
-wind_W_t1 <- rast(wind_files[6])
-wind_t1 <- merge(wind_W_t1,wind_E_t1)
-
-# Create data vectors
-wind_t1 # Make sure you got the right stuff!
-times_t1 <- time(wind_t1)  # stores times from each file 
-times_t1 <- unique(times_t1) # find unique values because there should be two of every datetime (for u and v)
-wind_t1_u <- subset(wind_t1, 1:(nlyr(wind_t1)/2)) 
-wind_t1_v <- subset(wind_t1, (nlyr(wind_t1)/2)+1:nlyr(wind_t1))
-
-u_stack <- c(wind_t1_u)
-v_stack <- c(wind_t1_v)
-all_times <- c(times_t1)
-all_times_num <- as.numeric(all_times)
-
-
-
-
-# For Bird Island wind data -----------------------------------------------
+# Extract wind data -----------------------------------------------
 
 # Load netcdf file directly for Bird Island
 wind_t1 <- rast(wind_files[1])
 # Create data vectors
 wind_t1 # Make sure you got the right stuff!
 times_t1 <- time(wind_t1)  # stores times from each file 
-times_t1 <- unique(times_t1) # find unique values because there should be two of every datetime (for u and v)
-wind_t1_u <- subset(wind_t1, 1:(nlyr(wind_t1)/2)) 
-wind_t1_v <- subset(wind_t1, (nlyr(wind_t1)/2)+1:nlyr(wind_t1))
-
-# For monthly data, you don't need to stack rasters
-u_stack <- wind_t1_u
-v_stack <- wind_t1_v
-all_times <- times_t1
+all_times <- unique(times_t1) # find unique values because there should be two of every datetime (for u and v)
 all_times_num <- as.numeric(all_times)
-
-
 
 
 # Loop through m and add wind information: u, v ---------------------------
 
 # create u and v wind vectors
-for (j in 1:nrow(m)) {
+
+for (j in 1:length(m[[1]])) {
   
-  # Using the year of a given datetime, find the yearly average by averaging monthly values
-  year_idxs <- which(year(all_times)==year(m$datetime[j]))
-  year_times <- all_times[year_idxs]
+  # isolate coordinates
+  xy_j <- as.data.frame(cbind(m$lon[j], m$lat[j]))
+  colnames(xy_j) <- c("lon","lat")
   
-  monthly_avgs <- matrix(nrow=12,ncol=2)
-  colnames(monthly_avgs) <- c("u", "v")
-  for (mth in 1:12) {
-    raster_dt_index <- year_idxs[mth]
-    # Isolate u and v rasters at time j
-    ustack_timej <- subset(u_stack, raster_dt_index) 
-    vstack_timej <- subset(v_stack, raster_dt_index)
-    
-    # isolate coordinates
-    xy_j <- as.data.frame(cbind(m$lon[j], m$lat[j]))
-    colnames(xy_j) <- c("lon","lat")
-    xy_j$lon <- Lon360to180(xy_j$lon) 
-    
-    # Extract u and v components for time j at location x and y
-    u_j <- extract(ustack_timej, xy_j, ID=FALSE)
-    v_j <- extract(vstack_timej, xy_j, ID=FALSE)
-    
-    if (length(u_j) != 1) {
-      print("Number of wind measurements chosen != 1.")
-      break
-    } else if (is.na(u_j[[1]]) || is.na(v_j[[1]])) {
-      print("Wind data for this coordinate cannot be found.")
-      break
-    }
-    
-    monthly_avgs[mth,1]<- u_j[[1]]
-    monthly_avgs[mth,2]<- v_j[[1]]
-  }
+  # Extract u and v components for time j at location x and y
+  speed_j <- extract(wind_t1, xy_j, ID=FALSE)
   
-  m$u[j] <- mean(monthly_avgs[,1])
-  m$v[j] <- mean(monthly_avgs[,2])
+  monthly_avgs <- as.data.frame(t(speed_j))
+  colnames(monthly_avgs) <- c("speed")
+  monthly_avgs$datetime <- time(wind_t1)
+  
+  # Create yearly avg dataframe
+  yr_avg <- monthly_avgs %>% 
+    group_by(year(datetime)) %>% 
+    summarise(Average = mean(speed))
+    
+  yearly_avgs <- as.data.frame(yr_avg)
+  colnames(yearly_avgs) <- c("year","speed")
+  
+  # add to list
+  m_list$monthly[j] <- list(monthly_avgs)
+  m_list$yearly[j] <- list(yearly_avgs)
   
 }
 
 
-# Save compiled GPS data with wind U and V --------------------------------
 
-# m$datetime <- as.character(format(m$datetime)) # safer for writing csv in character format
-# write_csv(m,file=paste0(wind_L1_dir,szn,"_allbirds_GPS_with_wind.csv"))
-# wind_mat <- m
+# Now that I have all of the wind data for each location what do i do?
+# I could find the average of the yearly averages for 2018_2022 for the entirety of the area
+# covered by the KDE
 
-# If "_allbirds_GPS_with_wind.csv" already exists then load it instead
-# wind_mat <- read.csv(paste0(wind_L1_dir,szn,"_allbirds_GPS_with_wind.csv"))
+poly1_idx <- which(m_list$Polygon==1)
+poly2_idx <- which(m_list$Polygon==2)
+poly3_idx <- which(m_list$Polygon==3)
+poly4_idx <- which(m_list$Polygon==4)
 
-# ADD BIRD BEHAVIOR -------------------------------------------------------
+# wait. even if i have average monthly measurements for u and v components of wind
+# THis doesn't necessarily make sense when im concerned with average windspeed. 
+# Do I look for a different source? 
 
-bird_list <- unique(wind_mat$id)
 
-if (interp=="600s") {
-  int_now <- 600 
-}
 
-hour_int<- int_now/3600 # int_now is in seconds (3600 seconds in one hour)
 
-for (i in 1:length(bird_list)) {
-  
-  # Isolate bird
-  mi <- wind_mat %>% filter(id==bird_list[i])
-  
-  # Loop through individual trips (most birds just have one.)
-  trips<-unique(mi$tripID)
-  
-  for (j in 1:length(trips)) {
-    
-    mij <- mi %>% filter(tripID==trips[j])
-    
-    if (nrow(mij) >= 6*2) { # If file is so short that it's less than 2 hours , don't do anything.
-      
-      mij$wind_vel <- NA # m/s
-      mij$wind_dir <- NA # THE DIRECTION THE WIND IS COMING FROM
-      mij$bird_dir <-NA # THE DIRECTION THE BIRD IS HEADING IN
-      mij$bird_vel <-NA  # km/hr 
-      mij$bwa <- NA # Bird-wind angle [0,180) degrees
-      mij$w_rel <- NA # wind bearing relative to bird heading
-      
-      # Add bird speed and bearing ----------------------------------------------
-      
-      # Bird velocity and heading
-      mij$lon <- Lon360to180(mij$lon)
-      mij$bird_vel <- c(distHaversine(mij %>% dplyr::select(lon,lat))/(1000*hour_int),NA)
-      mij$bird_dir <- geosphere::bearing(mij %>% dplyr::select(lon,lat))
-      mij$bird_dir <- wrap360(mij$bird_dir) # set bearing to [0,360)
-      
-      # Wind velocity and heading
-      ddff <- uv2ddff(mij)
-      mij$wind_vel <- ddff$ff # m/s
-      mij$wind_dir <- ddff$dd # [0,360) degrees
-      
-      # bird-wind angle
-      mij$bwa <- bearingAngle(mij$bird_dir,mij$wind_dir) # [0,180) degrees
-      
-      # In a 360 degree plot which direction is the bird traveling relative to 
-      # the wind? 
-      mij$w_rel <- (mij$bird_dir+(360-mij$wind_dir)) %% 360
-      
-      # Save file
-      mij$datetime <- as.character(format(mij$datetime)) # safer for writing csv in character format
-      filename_chunk_id <- as.character(mij$tripID[1])
-      write_csv(mij, paste0(wind_L2_dir, filename_chunk_id, "_bwa.csv"))
-      
-      rm("mij")
-    }
-  }
-}
+
+
+
 
 
 
