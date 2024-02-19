@@ -18,7 +18,6 @@ clearvars
 
 szn = '2021_2022';
 location = "Bird_Island"; % Options: 'Bird_Island', 'Midway', 'Wandering'
-computer = "MacMini";
 
 %% Set Environment
 
@@ -52,10 +51,14 @@ warning('off','MATLAB:table:ModifiedAndSavedVarnames')
 % samples frequency
 fs = 600;
 
+% Read start_stop_indices .csv if a version of it already exists
+idx_tbl = readtable("/Volumes/LaCie/L0/Bird_Island/Tag_Data/2021_2022/Aux/NRL/L0_1_Decompressed/2_ECG/start_stop_indices.csv");
+
 %% Find data
 cd(L0_dir)
-L0_fileList = struct2table(dir('*.txt'));
-L0_fileNames = string(L0_fileList.name);
+L0_fileList = dir('*.txt');
+L0_fileList(startsWith({L0_fileList.name},'._')) = [];
+L0_fileNames = string({L0_fileList.name});
 
 % Manually work thru all birds
 
@@ -93,10 +96,16 @@ L0_fileNames = string(L0_fileList.name);
 
     %% Save start and stop idx
 
-    idx_tbl.bird{i} = dep_ID;
-    idx_tbl.start(i) = start_idx;
-    idx_tbl.stop(i) = stop_idx;
-    idx_tbl.length(i) = og_length;
+    tbl_idx = find(string(idx_tbl.bird) == dep_ID);
+
+    if length(tbl_idx)==1
+        idx_tbl.bird{tbl_idx} = dep_ID;
+        idx_tbl.start(tbl_idx) = start_idx;
+        idx_tbl.stop(tbl_idx) = stop_idx;
+        idx_tbl.length(tbl_idx) = og_length;
+    else
+        disp("Manually set the index of the table in which this data should be recorded.")
+    end
 
     disp("Table updated.")
 

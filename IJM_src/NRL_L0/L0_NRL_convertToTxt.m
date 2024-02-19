@@ -11,7 +11,6 @@ clearvars
 
 szn = '2021_2022';
 location = "Bird_Island"; % Options: 'Bird_Island', 'Midway', 'Wandering'
-computer = "MacMini";
 
 %% Set Environment
 
@@ -29,17 +28,13 @@ addpath(genpath('/Users/ian/Documents/GitHub/AlbatrossFlightDynamics/'))
 
 cd(L0_0_dir)
 fileList = dir('*.dat');
-
+% Remove artifacts that start with '._' (which are created by using an external HD)
+fileList(startsWith({fileList.name},'._')) = [];
 
 %% Unpack Raw Neurologger .dat files
 
-for i = 47:length(fileList)
+for i = 1:length(fileList)
     
-    %% Make sure that ._ files (created by HD) are skipped
-    if startsWith(fileList(i).name,'._')
-        continue
-    end
-
     %%
     namesplit = strsplit(fileList(i).name,'_');
     current_bird = strcat(namesplit{1},'_',namesplit{2},'_',namesplit{3});
@@ -116,7 +111,7 @@ for i = 47:length(fileList)
     
 
     %%
-    clearvars -except computer fileList GD_dir L0_0_dir L0_1_dir location szn i
+    clearvars -except fileList GD_dir L0_0_dir L0_1_dir location szn i
 
 end
 

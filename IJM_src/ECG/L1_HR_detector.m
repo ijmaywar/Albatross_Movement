@@ -18,7 +18,6 @@ clearvars
 
 szn = '2021_2022';
 location = "Bird_Island"; % Options: 'Bird_Island', 'Midway', 'Wandering'
-computer = "MacMini";
 
 %% Set Environment
 
@@ -84,12 +83,13 @@ param.probthres = 0.2;
 
 %% Find data
 cd(L0_dir)
-L0_fileList = struct2table(dir('*.txt'));
-L0_fileNames = string(L0_fileList.name);
+L0_fileList = dir('*.txt');
+L0_fileList(startsWith({L0_fileList.name},'._')) = [];
+L0_fileNames = string({L0_fileList.name});
 
 %% Loop thru and process birds
 
-for i = 5:5%height(L0_fileNames)
+for i = 1:1%height(L0_fileNames)
     %% load data to be deteced.
 
     namesplit = strsplit(L0_fileNames(i),'_');
@@ -290,7 +290,7 @@ for i = 5:5%height(L0_fileNames)
         %% clear things
 
         close all
-        clearvars -except computer fs fullmeta GD_dir GPS_dir idx_tbl Ini L0_dir L0_fileList L0_fileNames L1_dir location param s szn Tag_Timings i
+        clearvars -except fs fullmeta GD_dir GPS_dir idx_tbl Ini L0_dir L0_fileList L0_fileNames L1_dir location param s szn Tag_Timings i
 
     else
         disp(strcat(dep_ID, " is unusable."))

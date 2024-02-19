@@ -43,8 +43,8 @@ for (loc_idx in 1:length(locations)) {
 
   # Set Environment ---------------------------------------------------------
   
-  GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/NEW_STRUCTURE/"
-  nc_dir <- "/Users/ian/Desktop/TEMPDATA/"
+  GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/"
+  nc_dir <- paste0(GD_dir,"L0/",location,"/Wind_Data/ERA5_Monthly_Avg_10m/")
   GPS_dir <- paste0(GD_dir,"L4/",location,"/Tag_Data/GPS/")
   
   # Get wind data raster ---------------------------------------------------------
@@ -67,8 +67,8 @@ for (loc_idx in 1:length(locations)) {
   } else if (location == "Midway") {
     
     # Load netcdf file directly for Midway
-    wind_neg_t1 <- rast(wind_files[2]) # negative longitudinal coordinates
-    wind_pos_t1 <- rast(wind_files[3]) # positive longitudinal coordinates
+    wind_neg_t1 <- rast(wind_files[1]) # negative longitudinal coordinates
+    wind_pos_t1 <- rast(wind_files[2]) # positive longitudinal coordinates
     wind_t1 <- merge(wind_neg_t1,wind_pos_t1)
     
     # Create data vectors
