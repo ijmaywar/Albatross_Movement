@@ -83,10 +83,9 @@ library(raster)
 
 # Set environment --------------------------------------------------------------
 
-# GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/"
 GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/NEW_STRUCTURE/"
-HD_dir <- "/Volumes/LaCie/"
-write_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L4/Bird_Island/Tag_Data/GPS/"
+
+write_dir <- paste0("/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L4/",loc,"/Tag_Data/GPS/")
 
 fullmeta <- read_excel(paste0(GD_dir,"/metadata/Full_Metadata.xlsx"))
 
@@ -116,6 +115,8 @@ for (i in 1:length(alltrips)) {
 allbirds <- unique(all_data$id)
 
 # If metadata says that GPS data is incomplete, remove the bird
+# Also, add metadata for trip type
+all_data$TripType <- NA
 for (i in 1:length(allbirds)) {
   current_bird <- allbirds[i]
   birdmeta <- fullmeta %>% filter(Deployment_ID == current_bird)
@@ -124,47 +125,508 @@ for (i in 1:length(allbirds)) {
     all_data <- all_data %>% filter(id!=allbirds[i])
   } else if (birdmeta$Pos_complete==FALSE) {
     all_data <- all_data %>% filter(id!=allbirds[i])
+  } else {
+    all_data <- all_data %>% mutate(TripType = if_else(id==allbirds[i],birdmeta$Trip_Type,TripType))
   }
 }
 
-#update alltrips and allbirds
+# update alltrips and allbirds
 alltrips <- unique(all_data$tripID)
 allbirds <- unique(all_data$id)
 
-# all_data$id <- as.factor(all_data$id)
-# all_data$tripID <- as.factor(all_data$tripID)
+# Reclassify E_pip as BG
+all_data <- all_data %>% mutate(TripType = if_else(TripType %in% c("E_pip","2BEP","Ep"),"BG",TripType))
 
+# remove any na values
 all_data <- na.omit(all_data)
 
-BBAL_data <- all_data %>% filter(substr(all_data$id,1,4)=="BBAL")
-GHAL_data <- all_data %>% filter(substr(all_data$id,1,4)=="GHAL")
-WAAL_data <- all_data %>% filter(substr(all_data$id,1,4)=="WAAL")
+# Split all_data into spp and Trip Types
+if (loc == "Bird_Island") {
+  BBAL_Inc_data <- all_data %>% filter((substr(all_data$id,1,4)=="BBAL") & (TripType=="Inc"))
+  BBAL_BG_data <- all_data %>% filter((substr(all_data$id,1,4)=="BBAL") & (TripType=="BG"))
+  GHAL_Inc_data <- all_data %>% filter((substr(all_data$id,1,4)=="GHAL") & (TripType=="Inc"))
+  GHAL_BG_data <- all_data %>% filter((substr(all_data$id,1,4)=="GHAL") & (TripType=="BG"))
+} else if (loc == "Midway") {
+  BFAL_Inc_data <- all_data %>% filter((substr(all_data$id,1,4)=="BFAL") & (TripType=="Inc"))
+  BFAL_BG_data <- all_data %>% filter((substr(all_data$id,1,4)=="BFAL") & (TripType=="BG"))
+  LAAL_Inc_data <- all_data %>% filter((substr(all_data$id,1,4)=="LAAL") & (TripType=="Inc"))
+  LAAL_BG_data <- all_data %>% filter((substr(all_data$id,1,4)=="LAAL") & (TripType=="BG"))
+}
 
+# Set utmzone depending on location
 if (loc=="Bird_Island") {
   utmzone <- "24"
 } else if (loc == "Midway") {
   utmzone <- "1"
 }
 
-# Calculate grid value ----------------------------------------------------
+# Create estUDm objects --------------------------------------------------------
 
-BBAL.sp <- BBAL_data %>% dplyr::select(tripID,lon,lat)
-sp::coordinates(BBAL.sp) <- c("lon","lat")
-sp::proj4string(BBAL.sp) <- sp::CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
-BBAL.sp <- spTransform(BBAL.sp,CRS(paste0("+proj=utm +zone=",utmzone," +ellps=WGS84 +datum=WGS84 +units=m +no_defs")))
-BBAL.kernel.ref <- kernelUD(BBAL.sp, h="href", same4all = TRUE, grid=150)
+if (loc == "Bird_Island") {
+  
+  # Create BBAL Inc Href Kernel
+  BBAL_Inc.sp <- BBAL_Inc_data %>% dplyr::select(tripID,lon,lat)
+  sp::coordinates(BBAL_Inc.sp) <- c("lon","lat")
+  sp::proj4string(BBAL_Inc.sp) <- sp::CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+  BBAL_Inc.sp <- spTransform(BBAL_Inc.sp,CRS(paste0("+proj=utm +zone=",utmzone," +ellps=WGS84 +datum=WGS84 +units=m +no_defs")))
+  BBAL_Inc.Href.kernel <- kernelUD(BBAL_Inc.sp, h="href", same4all = TRUE, grid=250)
+  
+  # Create BBAL BG Href Kernel
+  BBAL_BG.sp <- BBAL_BG_data %>% dplyr::select(tripID,lon,lat)
+  sp::coordinates(BBAL_BG.sp) <- c("lon","lat")
+  sp::proj4string(BBAL_BG.sp) <- sp::CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+  BBAL_BG.sp <- spTransform(BBAL_BG.sp,CRS(paste0("+proj=utm +zone=",utmzone," +ellps=WGS84 +datum=WGS84 +units=m +no_defs")))
+  BBAL_BG.Href.kernel <- kernelUD(BBAL_BG.sp, h="href", same4all = TRUE, grid=250)
+  
+  # Create GHAL Inc Href Kernel
+  GHAL_Inc.sp <- GHAL_Inc_data %>% dplyr::select(tripID,lon,lat)
+  sp::coordinates(GHAL_Inc.sp) <- c("lon","lat")
+  sp::proj4string(GHAL_Inc.sp) <- sp::CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+  GHAL_Inc.sp <- spTransform(GHAL_Inc.sp,CRS(paste0("+proj=utm +zone=",utmzone," +ellps=WGS84 +datum=WGS84 +units=m +no_defs")))
+  GHAL_Inc.Href.kernel <- kernelUD(GHAL_Inc.sp, h="href", same4all = TRUE, grid=250)
+  
+  # Create GHAL BG Href Kernel
+  GHAL_BG.sp <- GHAL_BG_data %>% dplyr::select(tripID,lon,lat)
+  sp::coordinates(GHAL_BG.sp) <- c("lon","lat")
+  sp::proj4string(GHAL_BG.sp) <- sp::CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+  GHAL_BG.sp <- spTransform(GHAL_BG.sp,CRS(paste0("+proj=utm +zone=",utmzone," +ellps=WGS84 +datum=WGS84 +units=m +no_defs")))
+  GHAL_BG.Href.kernel <- kernelUD(GHAL_BG.sp, h="href", same4all = TRUE, grid=250)
+  
+} else if (loc == "Midway") {
+  
+  # Create BFAL Inc Href Kernel
+  BFAL_Inc.sp <- BFAL_Inc_data %>% dplyr::select(tripID,lon,lat)
+  sp::coordinates(BFAL_Inc.sp) <- c("lon","lat")
+  sp::proj4string(BFAL_Inc.sp) <- sp::CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+  BFAL_Inc.sp <- spTransform(BFAL_Inc.sp,CRS(paste0("+proj=utm +zone=",utmzone," +ellps=WGS84 +datum=WGS84 +units=m +no_defs")))
+  BFAL_Inc.Href.kernel <- kernelUD(BFAL_Inc.sp, h="href", same4all = TRUE, grid=250)
+  
+  # Create BFAL BG Href Kernel
+  BFAL_BG.sp <- BFAL_BG_data %>% dplyr::select(tripID,lon,lat)
+  sp::coordinates(BFAL_BG.sp) <- c("lon","lat")
+  sp::proj4string(BFAL_BG.sp) <- sp::CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+  BFAL_BG.sp <- spTransform(BFAL_BG.sp,CRS(paste0("+proj=utm +zone=",utmzone," +ellps=WGS84 +datum=WGS84 +units=m +no_defs")))
+  BFAL_BG.Href.kernel <- kernelUD(BFAL_BG.sp, h="href", same4all = TRUE, grid=250)
+  
+  # Create LAAL Inc Href Kernel
+  LAAL_Inc.sp <- LAAL_Inc_data %>% dplyr::select(tripID,lon,lat)
+  sp::coordinates(LAAL_Inc.sp) <- c("lon","lat")
+  sp::proj4string(LAAL_Inc.sp) <- sp::CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+  LAAL_Inc.sp <- spTransform(LAAL_Inc.sp,CRS(paste0("+proj=utm +zone=",utmzone," +ellps=WGS84 +datum=WGS84 +units=m +no_defs")))
+  LAAL_Inc.Href.kernel <- kernelUD(LAAL_Inc.sp, h="href", same4all = TRUE, grid=250)
+  
+  # Create LAAL BG Href Kernel
+  LAAL_BG.sp <- LAAL_BG_data %>% dplyr::select(tripID,lon,lat)
+  sp::coordinates(LAAL_BG.sp) <- c("lon","lat")
+  sp::proj4string(LAAL_BG.sp) <- sp::CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+  LAAL_BG.sp <- spTransform(LAAL_BG.sp,CRS(paste0("+proj=utm +zone=",utmzone," +ellps=WGS84 +datum=WGS84 +units=m +no_defs")))
+  LAAL_BG.Href.kernel <- kernelUD(LAAL_BG.sp, h="href", same4all = TRUE, grid=250)
+}
+
+# Average KDE ------------------------------------------------------------------
+# average KDE of individuals within a species at a study site#
+
+if (loc=="Bird_Island") {
+
+  # Average KDE of BBAL_Inc
+  BBAL_Inc_holder <- numeric(length = nrow(BBAL_Inc.Href.kernel[[1]])) #length = number of rows on the gridcell
+  for (i in 1:length(unique(BBAL_Inc_data$tripID))) {
+    if (sum(is.na(BBAL_Inc.Href.kernel[[i]]@data$ud)) > 0) {
+      print("there na values!")
+      BBAL_Inc.Href.kernel[[i]]@data$ud[is.na(BBAL_Inc.Href.kernel[[i]]@data$ud)] <- 0
+    }
+    add <- BBAL_Inc.Href.kernel[[i]]@data$ud
+    BBAL_Inc_holder <- BBAL_Inc_holder+add
+  }
+  BBAL_Inc_holder <- BBAL_Inc_holder/length(BBAL_Inc.Href.kernel)
+  
+  BBAL_Inc_avg_estUD <- BBAL_Inc.Href.kernel[[1]]
+  BBAL_Inc_avg_estUD@data$ud <- BBAL_Inc_holder
+  
+  if (sum(is.na(BBAL_Inc_avg_estUD@data$ud)) > 0) {
+    print("there na values!")
+    BBAL_Inc_avg_estUD@data$ud[is.na(BBAL_Inc_avg_estUD@data$ud)] <- 0 # ok if it sums to >1!
+  }
+  
+  # Average KDE of BBAL_BG
+  BBAL_BG_holder <- numeric(length = nrow(BBAL_BG.Href.kernel[[1]])) #length = number of rows on the gridcell
+  for (i in 1:length(unique(BBAL_BG_data$tripID))) {
+    if (sum(is.na(BBAL_BG.Href.kernel[[i]]@data$ud)) > 0) {
+      print("there na values!")
+      BBAL_BG.Href.kernel[[i]]@data$ud[is.na(BBAL_BG.Href.kernel[[i]]@data$ud)] <- 0
+    }
+    add <- BBAL_BG.Href.kernel[[i]]@data$ud
+    BBAL_BG_holder <- BBAL_BG_holder+add
+  }
+  BBAL_BG_holder <- BBAL_BG_holder/length(BBAL_BG.Href.kernel)
+  
+  BBAL_BG_avg_estUD <- BBAL_BG.Href.kernel[[1]]
+  BBAL_BG_avg_estUD@data$ud <- BBAL_BG_holder
+  
+  if (sum(is.na(BBAL_BG_avg_estUD@data$ud)) > 0) {
+    print("there na values!")
+    BBAL_BG_avg_estUD@data$ud[is.na(BBAL_BG_avg_estUD@data$ud)] <- 0 # ok if it sums to >1!
+  }
+  
+  # Average KDE of GHAL_Inc
+  GHAL_Inc_holder <- numeric(length = nrow(GHAL_Inc.Href.kernel[[1]])) #length = number of rows on the gridcell
+  for (i in 1:length(unique(GHAL_Inc_data$tripID))) {
+    if (sum(is.na(GHAL_Inc.Href.kernel[[i]]@data$ud)) > 0) {
+      print("there na values!")
+      GHAL_Inc.Href.kernel[[i]]@data$ud[is.na(GHAL_Inc.Href.kernel[[i]]@data$ud)] <- 0
+    }
+    add <- GHAL_Inc.Href.kernel[[i]]@data$ud
+    GHAL_Inc_holder <- GHAL_Inc_holder+add
+  }
+  GHAL_Inc_holder <- GHAL_Inc_holder/length(GHAL_Inc.Href.kernel)
+  
+  GHAL_Inc_avg_estUD <- GHAL_Inc.Href.kernel[[1]]
+  GHAL_Inc_avg_estUD@data$ud <- GHAL_Inc_holder
+  
+  if (sum(is.na(GHAL_Inc_avg_estUD@data$ud)) > 0) {
+    print("there na values!")
+    GHAL_Inc_avg_estUD@data$ud[is.na(GHAL_Inc_avg_estUD@data$ud)] <- 0 # ok if it sums to >1!
+  }
+  
+  # Average KDE of GHAL_BG
+  GHAL_BG_holder <- numeric(length = nrow(GHAL_BG.Href.kernel[[1]])) #length = number of rows on the gridcell
+  for (i in 1:length(unique(GHAL_BG_data$tripID))) {
+    if (sum(is.na(GHAL_BG.Href.kernel[[i]]@data$ud)) > 0) {
+      print("there na values!")
+      GHAL_BG.Href.kernel[[i]]@data$ud[is.na(GHAL_BG.Href.kernel[[i]]@data$ud)] <- 0
+    }
+    add <- GHAL_BG.Href.kernel[[i]]@data$ud
+    GHAL_BG_holder <- GHAL_BG_holder+add
+  }
+  GHAL_BG_holder <- GHAL_BG_holder/length(GHAL_BG.Href.kernel)
+  
+  GHAL_BG_avg_estUD <- GHAL_BG.Href.kernel[[1]]
+  GHAL_BG_avg_estUD@data$ud <- GHAL_BG_holder
+  
+  if (sum(is.na(GHAL_BG_avg_estUD@data$ud)) > 0) {
+    print("there na values!")
+    GHAL_BG_avg_estUD@data$ud[is.na(GHAL_BG_avg_estUD@data$ud)] <- 0 # ok if it sums to >1!
+  }
+  
+} else if (loc=="Midway") {
+  
+  # Average KDE of BFAL_Inc
+  BFAL_Inc_holder <- numeric(length = nrow(BFAL_Inc.Href.kernel[[1]])) #length = number of rows on the gridcell
+  for (i in 1:length(unique(BFAL_Inc_data$tripID))) {
+    if (sum(is.na(BFAL_Inc.Href.kernel[[i]]@data$ud)) > 0) {
+      print("there na values!")
+      BFAL_Inc.Href.kernel[[i]]@data$ud[is.na(BFAL_Inc.Href.kernel[[i]]@data$ud)] <- 0
+    }
+    add <- BFAL_Inc.Href.kernel[[i]]@data$ud
+    BFAL_Inc_holder <- BFAL_Inc_holder+add
+  }
+  BFAL_Inc_holder <- BFAL_Inc_holder/length(BFAL_Inc.Href.kernel)
+  
+  BFAL_Inc_avg_estUD <- BFAL_Inc.Href.kernel[[1]]
+  BFAL_Inc_avg_estUD@data$ud <- BFAL_Inc_holder
+  
+  if (sum(is.na(BFAL_Inc_avg_estUD@data$ud)) > 0) {
+    print("there na values!")
+    BFAL_Inc_avg_estUD@data$ud[is.na(BFAL_Inc_avg_estUD@data$ud)] <- 0 # ok if it sums to >1!
+  }
+  
+  # Average KDE of BFAL_BG
+  BFAL_BG_holder <- numeric(length = nrow(BFAL_BG.Href.kernel[[1]])) #length = number of rows on the gridcell
+  for (i in 1:length(unique(BFAL_BG_data$tripID))) {
+    if (sum(is.na(BFAL_BG.Href.kernel[[i]]@data$ud)) > 0) {
+      print("there na values!")
+      BFAL_BG.Href.kernel[[i]]@data$ud[is.na(BFAL_BG.Href.kernel[[i]]@data$ud)] <- 0
+    }
+    add <- BFAL_BG.Href.kernel[[i]]@data$ud
+    BFAL_BG_holder <- BFAL_BG_holder+add
+  }
+  BFAL_BG_holder <- BFAL_BG_holder/length(BFAL_BG.Href.kernel)
+  
+  BFAL_BG_avg_estUD <- BFAL_BG.Href.kernel[[1]]
+  BFAL_BG_avg_estUD@data$ud <- BFAL_BG_holder
+  
+  if (sum(is.na(BFAL_BG_avg_estUD@data$ud)) > 0) {
+    print("there na values!")
+    BFAL_BG_avg_estUD@data$ud[is.na(BFAL_BG_avg_estUD@data$ud)] <- 0 # ok if it sums to >1!
+  }
+  
+  # Average KDE of LAAL_Inc
+  LAAL_Inc_holder <- numeric(length = nrow(LAAL_Inc.Href.kernel[[1]])) #length = number of rows on the gridcell
+  for (i in 1:length(unique(LAAL_Inc_data$tripID))) {
+    if (sum(is.na(LAAL_Inc.Href.kernel[[i]]@data$ud)) > 0) {
+      print("there na values!")
+      LAAL_Inc.Href.kernel[[i]]@data$ud[is.na(LAAL_Inc.Href.kernel[[i]]@data$ud)] <- 0
+    }
+    add <- LAAL_Inc.Href.kernel[[i]]@data$ud
+    LAAL_Inc_holder <- LAAL_Inc_holder+add
+  }
+  LAAL_Inc_holder <- LAAL_Inc_holder/length(LAAL_Inc.Href.kernel)
+  
+  LAAL_Inc_avg_estUD <- LAAL_Inc.Href.kernel[[1]]
+  LAAL_Inc_avg_estUD@data$ud <- LAAL_Inc_holder
+  
+  if (sum(is.na(LAAL_Inc_avg_estUD@data$ud)) > 0) {
+    print("there na values!")
+    LAAL_Inc_avg_estUD@data$ud[is.na(LAAL_Inc_avg_estUD@data$ud)] <- 0 # ok if it sums to >1!
+  }
+  
+  # Average KDE of LAAL_BG
+  LAAL_BG_holder <- numeric(length = nrow(LAAL_BG.Href.kernel[[1]])) #length = number of rows on the gridcell
+  for (i in 1:length(unique(LAAL_BG_data$tripID))) {
+    if (sum(is.na(LAAL_BG.Href.kernel[[i]]@data$ud)) > 0) {
+      print("there na values!")
+      LAAL_BG.Href.kernel[[i]]@data$ud[is.na(LAAL_BG.Href.kernel[[i]]@data$ud)] <- 0
+    }
+    add <- LAAL_BG.Href.kernel[[i]]@data$ud
+    LAAL_BG_holder <- LAAL_BG_holder+add
+  }
+  LAAL_BG_holder <- LAAL_BG_holder/length(LAAL_BG.Href.kernel)
+  
+  LAAL_BG_avg_estUD <- LAAL_BG.Href.kernel[[1]]
+  LAAL_BG_avg_estUD@data$ud <- LAAL_BG_holder
+  
+  if (sum(is.na(LAAL_BG_avg_estUD@data$ud)) > 0) {
+    print("there na values!")
+    LAAL_BG_avg_estUD@data$ud[is.na(LAAL_BG_avg_estUD@data$ud)] <- 0 # ok if it sums to >1!
+  }
+  
+}
+
+
+################################################################################
+# THESE ARE FOR BIRD_ISLAND
+
+# Plot BBAL Inc KDEs and extract coordinates of polygons -----------------------
+
+# BBAL Inc
+BBAL_Inc_KDE_95 <- getverticeshr(BBAL_Inc_avg_estUD,percent=95)
+plot(BBAL_Inc_KDE_95)
+summary(BBAL_Inc_KDE_95)
+
+# Extract pixel values
+BBAL_Inc_KDE_95_longlat <- spTransform(BBAL_Inc_KDE_95, CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"))
+length(BBAL_Inc_KDE_95_longlat@polygons[[1]]@Polygons)
+BBAL_Inc_poly_1 <- BBAL_Inc_KDE_95_longlat@polygons[[1]]@Polygons[[1]]
+BBAL_Inc_poly_2 <- BBAL_Inc_KDE_95_longlat@polygons[[1]]@Polygons[[2]]
+BBAL_Inc_poly_3 <- BBAL_Inc_KDE_95_longlat@polygons[[1]]@Polygons[[3]]
+
+# Combine coordinates into a single df
+BBAL_Inc_df_coords <- data.frame(c(rep(1,nrow(BBAL_Inc_poly_1@coords)),rep(2,nrow(BBAL_Inc_poly_2@coords)),
+                          rep(3,nrow(BBAL_Inc_poly_3@coords))),
+           rbind(BBAL_Inc_poly_1@coords,BBAL_Inc_poly_2@coords,
+                 BBAL_Inc_poly_3@coords))
+colnames(BBAL_Inc_df_coords) <- c("Polygon","lon","lat")
+
+# write df as csv
+write.csv(BBAL_Inc_df_coords, file=paste0(write_dir,"BBAL_Inc_KDE_95_polygons.csv"), row.names=FALSE)
+
+
+
+# Plot BBAL BG KDEs and extract coordinates of polygons -----------------------
+
+# BBAL BG
+BBAL_BG_KDE_95 <- getverticeshr(BBAL_BG_avg_estUD,percent=95)
+plot(BBAL_BG_KDE_95)
+summary(BBAL_BG_KDE_95)
+
+# Extract pixel values
+BBAL_BG_KDE_95_longlat <- spTransform(BBAL_BG_KDE_95, CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"))
+length(BBAL_BG_KDE_95_longlat@polygons[[1]]@Polygons)
+BBAL_BG_poly_1 <- BBAL_BG_KDE_95_longlat@polygons[[1]]@Polygons[[1]]
+
+# Combine coordinates into a single df
+BBAL_BG_df_coords <- data.frame(c(rep(1,nrow(BBAL_BG_poly_1@coords))),
+                                 rbind(BBAL_BG_poly_1@coords))
+colnames(BBAL_BG_df_coords) <- c("Polygon","lon","lat")
+
+# write df as csv
+write.csv(BBAL_BG_df_coords, file=paste0(write_dir,"BBAL_BG_KDE_95_polygons.csv"), row.names=FALSE)
+
+
+
+# Plot GHAL Inc KDEs and extract coordinates of polygons -----------------------
+
+# GHAL Inc
+GHAL_Inc_KDE_95 <- getverticeshr(GHAL_Inc_avg_estUD,percent=95)
+plot(GHAL_Inc_KDE_95)
+summary(GHAL_Inc_KDE_95)
+
+# Extract pixel values
+GHAL_Inc_KDE_95_longlat <- spTransform(GHAL_Inc_KDE_95, CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"))
+length(GHAL_Inc_KDE_95_longlat@polygons[[1]]@Polygons)
+GHAL_Inc_poly_1 <- GHAL_Inc_KDE_95_longlat@polygons[[1]]@Polygons[[1]]
+GHAL_Inc_poly_2 <- GHAL_Inc_KDE_95_longlat@polygons[[1]]@Polygons[[2]]
+GHAL_Inc_poly_3 <- GHAL_Inc_KDE_95_longlat@polygons[[1]]@Polygons[[3]]
+
+# Combine coordinates into a single df
+GHAL_Inc_df_coords <- data.frame(c(rep(1,nrow(GHAL_Inc_poly_1@coords)),rep(2,nrow(GHAL_Inc_poly_2@coords)),
+                                   rep(3,nrow(GHAL_Inc_poly_3@coords))),
+                                 rbind(GHAL_Inc_poly_1@coords,GHAL_Inc_poly_2@coords,
+                                       GHAL_Inc_poly_3@coords))
+colnames(GHAL_Inc_df_coords) <- c("Polygon","lon","lat")
+
+# write df as csv
+write.csv(GHAL_Inc_df_coords, file=paste0(write_dir,"GHAL_Inc_KDE_95_polygons.csv"), row.names=FALSE)
+
+
+
+# Plot GHAL BG KDEs and extract coordinates of polygons -----------------------
+
+# GHAL BG
+GHAL_BG_KDE_95 <- getverticeshr(GHAL_BG_avg_estUD,percent=95)
+plot(GHAL_BG_KDE_95)
+summary(GHAL_BG_KDE_95)
+
+# Extract pixel values
+GHAL_BG_KDE_95_longlat <- spTransform(GHAL_BG_KDE_95, CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"))
+length(GHAL_BG_KDE_95_longlat@polygons[[1]]@Polygons)
+GHAL_BG_poly_1 <- GHAL_BG_KDE_95_longlat@polygons[[1]]@Polygons[[1]]
+GHAL_BG_poly_2 <- GHAL_BG_KDE_95_longlat@polygons[[1]]@Polygons[[2]]
+
+# Combine coordinates into a single df
+GHAL_BG_df_coords <- data.frame(c(rep(1,nrow(GHAL_BG_poly_1@coords)),rep(2,nrow(GHAL_BG_poly_2@coords))),
+                                rbind(GHAL_BG_poly_1@coords,GHAL_BG_poly_2@coords))
+colnames(GHAL_BG_df_coords) <- c("Polygon","lon","lat")
+
+# write df as csv
+write.csv(GHAL_BG_df_coords, file=paste0(write_dir,"GHAL_BG_KDE_95_polygons.csv"), row.names=FALSE)
+
+################################################################################
+
+
+
+
+################################################################################
+# THESE ARE FOR MIDWAY
+
+# Plot BFAL Inc KDEs and extract coordinates of polygons -----------------------
+
+# BFAL Inc
+BFAL_Inc_KDE_95 <- getverticeshr(BFAL_Inc_avg_estUD,percent=95)
+plot(BFAL_Inc_KDE_95)
+summary(BFAL_Inc_KDE_95)
+
+# Extract pixel values
+BFAL_Inc_KDE_95_longlat <- spTransform(BFAL_Inc_KDE_95, CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"))
+length(BFAL_Inc_KDE_95_longlat@polygons[[1]]@Polygons)
+BFAL_Inc_poly_1 <- BFAL_Inc_KDE_95_longlat@polygons[[1]]@Polygons[[1]]
+BFAL_Inc_poly_2 <- BFAL_Inc_KDE_95_longlat@polygons[[1]]@Polygons[[2]]
+BFAL_Inc_poly_3 <- BFAL_Inc_KDE_95_longlat@polygons[[1]]@Polygons[[3]]
+BFAL_Inc_poly_4 <- BFAL_Inc_KDE_95_longlat@polygons[[1]]@Polygons[[4]]
+
+# Combine coordinates into a single df
+BFAL_Inc_df_coords <- data.frame(c(rep(1,nrow(BFAL_Inc_poly_1@coords)),rep(2,nrow(BFAL_Inc_poly_2@coords)),
+                                   rep(3,nrow(BFAL_Inc_poly_3@coords)),rep(4,nrow(BFAL_Inc_poly_4@coords))),
+                                 rbind(BFAL_Inc_poly_1@coords,BFAL_Inc_poly_2@coords,
+                                       BFAL_Inc_poly_3@coords,BFAL_Inc_poly_4@coords))
+colnames(BFAL_Inc_df_coords) <- c("Polygon","lon","lat")
+
+# write df as csv
+write.csv(BFAL_Inc_df_coords, file=paste0(write_dir,"BFAL_Inc_KDE_95_polygons.csv"), row.names=FALSE)
+
+
+
+# Plot BFAL BG KDEs and extract coordinates of polygons -----------------------
+
+# BFAL BG
+BFAL_BG_KDE_95 <- getverticeshr(BFAL_BG_avg_estUD,percent=95)
+plot(BFAL_BG_KDE_95)
+summary(BFAL_BG_KDE_95)
+
+# Extract pixel values
+BFAL_BG_KDE_95_longlat <- spTransform(BFAL_BG_KDE_95, CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"))
+length(BFAL_BG_KDE_95_longlat@polygons[[1]]@Polygons)
+BFAL_BG_poly_1 <- BFAL_BG_KDE_95_longlat@polygons[[1]]@Polygons[[1]]
+BFAL_BG_poly_2 <- BFAL_BG_KDE_95_longlat@polygons[[1]]@Polygons[[2]]
+BFAL_BG_poly_3 <- BFAL_BG_KDE_95_longlat@polygons[[1]]@Polygons[[3]]
+BFAL_BG_poly_4 <- BFAL_BG_KDE_95_longlat@polygons[[1]]@Polygons[[4]]
+
+# Combine coordinates into a single df
+BFAL_BG_df_coords <- data.frame(c(rep(1,nrow(BFAL_BG_poly_1@coords)),rep(2,nrow(BFAL_BG_poly_2@coords)),
+                                   rep(3,nrow(BFAL_BG_poly_3@coords)),rep(4,nrow(BFAL_BG_poly_4@coords))),
+                                 rbind(BFAL_BG_poly_1@coords,BFAL_BG_poly_2@coords,
+                                       BFAL_BG_poly_3@coords,BFAL_BG_poly_4@coords))
+colnames(BFAL_BG_df_coords) <- c("Polygon","lon","lat")
+
+# write df as csv
+write.csv(BFAL_BG_df_coords, file=paste0(write_dir,"BFAL_BG_KDE_95_polygons.csv"), row.names=FALSE)
+
+
+
+# Plot LAAL Inc KDEs and extract coordinates of polygons -----------------------
+
+# LAAL Inc
+LAAL_Inc_KDE_95 <- getverticeshr(LAAL_Inc_avg_estUD,percent=95)
+plot(LAAL_Inc_KDE_95)
+summary(LAAL_Inc_KDE_95)
+
+# Extract pixel values
+LAAL_Inc_KDE_95_longlat <- spTransform(LAAL_Inc_KDE_95, CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"))
+length(LAAL_Inc_KDE_95_longlat@polygons[[1]]@Polygons)
+LAAL_Inc_poly_1 <- LAAL_Inc_KDE_95_longlat@polygons[[1]]@Polygons[[1]]
+
+# Combine coordinates into a single df
+LAAL_Inc_df_coords <- data.frame(c(rep(1,nrow(LAAL_Inc_poly_1@coords))),
+                                 rbind(LAAL_Inc_poly_1@coords))
+colnames(LAAL_Inc_df_coords) <- c("Polygon","lon","lat")
+
+# write df as csv
+write.csv(LAAL_Inc_df_coords, file=paste0(write_dir,"LAAL_Inc_KDE_95_polygons.csv"), row.names=FALSE)
+
+
+
+# Plot LAAL BG KDEs and extract coordinates of polygons -----------------------
+
+# LAAL BG
+LAAL_BG_KDE_95 <- getverticeshr(LAAL_BG_avg_estUD,percent=95)
+plot(LAAL_BG_KDE_95)
+summary(LAAL_BG_KDE_95)
+
+# Extract pixel values
+LAAL_BG_KDE_95_longlat <- spTransform(LAAL_BG_KDE_95, CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"))
+length(LAAL_BG_KDE_95_longlat@polygons[[1]]@Polygons)
+LAAL_BG_poly_1 <- LAAL_BG_KDE_95_longlat@polygons[[1]]@Polygons[[1]]
+LAAL_BG_poly_2 <- LAAL_BG_KDE_95_longlat@polygons[[1]]@Polygons[[2]]
+LAAL_BG_poly_3 <- LAAL_BG_KDE_95_longlat@polygons[[1]]@Polygons[[3]]
+
+# Combine coordinates into a single df
+LAAL_BG_df_coords <- data.frame(c(rep(1,nrow(LAAL_BG_poly_1@coords)),rep(2,nrow(LAAL_BG_poly_2@coords)),
+                                  rep(3,nrow(LAAL_BG_poly_3@coords))),
+                                rbind(LAAL_BG_poly_1@coords,LAAL_BG_poly_2@coords,
+                                      LAAL_BG_poly_3@coords))
+colnames(LAAL_BG_df_coords) <- c("Polygon","lon","lat")
+
+# write df as csv
+write.csv(LAAL_BG_df_coords, file=paste0(write_dir,"LAAL_BG_KDE_95_polygons.csv"), row.names=FALSE)
+
+################################################################################
+
+
+
+
+
+
+
+
+
+
+
+
+
+# PLAYING AROUND WITH H
+################################################################################
 
 # save reference bandwiths into a vector
-ref_h <- c()
-for (i in 1:length(BBAL.kernel.ref)) {
-  ref_h[i] <- BBAL.kernel.ref[[i]]@h[[1]]
+BBAL_BG_RefH <- c()
+for (i in 1:length(BBAL_BG.Href.kernel)) {
+  BBAL_BG_RefH[i] <- BBAL_BG.Href.kernel[[i]]@h[[1]]
 }
-hist(ref_h, breaks=50)
-mean(ref_h)
+hist(BBAL_BG_RefH, breaks=50)
+mean(BBAL_BG_RefH)
 
-mcp_obj <- mcp(BBAL.sp,percent=100)
+mcp_obj <- mcp(BBAL_BG.sp,percent=100)
 
-radii_df <- as.data.frame(unique(BBAL_data$tripID))
+radii_df <- as.data.frame(unique(BBAL_BG_data$tripID))
 colnames(radii_df) <- c("tripID")
 radii_df["radius"] <- NA
 
@@ -185,13 +647,6 @@ for (i in 1:length(mcp_obj)) {
 # What's the mean mcp radius? 
 mean_radius <- mean(radii_df$radius)
 mean_radius
-
-# 
-# plot(mcp(BBAL.sp,percent=100))
-# plot(BBAL.sp,pch=1,cex=0.25,add=TRUE)
-# BBAL.kernel.ref <- kernelUD(BBAL.sp,h="href")
-
-
 
 ################################################################################
 # plot one of the ranges
@@ -221,72 +676,6 @@ plot(mcp(BBAL.sp[idxs,],percent=100),add=TRUE)
 plot(BBAL.sp[idxs,],pch=1,cex=0.025,add=TRUE)
 
 mtext(which_trip,side=3,line=-21,outer=TRUE)
-
-################################################################################
-
-# Average KDE -------------------------------------------------------------
-# average KDE of individuals within a species at a study site#
-
-BBAL_holder <- numeric(length = nrow(BBAL.kernel.ref[[1]])) #length = number of rows on the gridcell
-for (i in 1:length(unique(BBAL_data$tripID))) {
-  
-  if (sum(is.na(BBAL.kernel.ref[[i]]@data$ud)) > 0) {
-    print("there na values!")
-    BBAL.kernel.ref[[i]]@data$ud[is.na(BBAL.kernel.ref[[i]]@data$ud)] <- 0
-  }
-
-  add <- BBAL.kernel.ref[[i]]@data$ud
-  BBAL_holder <- BBAL_holder+add
-}
-BBAL_holder <- BBAL_holder/length(BBAL.kernel.ref)
-BBAL_holder
-
-##### modify existing estUD object with averaged values, then rename
-BBAL_averaged_estUD <- BBAL.kernel.ref[[1]]
-BBAL_averaged_estUD@data$ud <- BBAL_holder
-
-if (sum(is.na(BBAL_averaged_estUD@data$ud)) > 0) {
-  print("there na values!")
-  BBAL_averaged_estUD@data$ud[is.na(BBAL_averaged_estUD@data$ud)] <- 0 # ok if it sums to >1!
-}
-
-# Plot average KDE
-KDE_95 <- getverticeshr(BBAL_averaged_estUD,percent=95)
-plot(KDE_95,add=TRUE)
-summary(KDE_95)
-
-# Extract pixel values
-KDE_95_longlat <- spTransform(KDE_95, CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"))
-poly_1 <- KDE_95_longlat@polygons[[1]]@Polygons[[1]]
-poly_2 <- KDE_95_longlat@polygons[[1]]@Polygons[[2]]
-poly_3 <- KDE_95_longlat@polygons[[1]]@Polygons[[3]]
-poly_4 <- KDE_95_longlat@polygons[[1]]@Polygons[[4]]
-
-# Coordinates in Lon, Lat
-poly_1@coords
-poly_2@coords
-poly_3@coords
-poly_4@coords
-
-# Combine coordinates into a single df
-df_coords <- data.frame(c(rep(1,nrow(poly_1@coords)),rep(2,nrow(poly_2@coords)),rep(3,nrow(poly_3@coords)),rep(4,nrow(poly_4@coords))),
-           rbind(poly_1@coords,poly_2@coords,poly_3@coords,poly_4@coords))
-colnames(df_coords) <- c("Polygon","lon","lat")
-
-# write df as csv
-write.csv(df_coords, file=paste0(write_dir,"KDE_95_polygons.csv"), row.names=FALSE)
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
