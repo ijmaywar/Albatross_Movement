@@ -14,15 +14,15 @@ clearvars
 
 %% USER INPUTED VALUES
 
-directory = "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L0/Bird_Island/Tag_Data/2021_2022/Aux/NRL/L0_0_Raw/";
-fileExt = "dat";
+directory = "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/to_share/Gillies/Immersion_2019_2022/2021_2022/LUX/";
+fileExt = "lux";
 
 szn = '2021_2022';
 location = 'Bird_Island'; % Options: 'Bird_Island', 'Midway', 'Wandering'
 % Genus = "great";
-Tag = "Aux"; % Options: "Aux", "GPS", "GLS" 
-datatype = "Aux";
-TagType = "NRL"; % Options: 
+Tag = "GLS"; % Options: "Aux", "GPS", "GLS" 
+datatype = "GLS";
+TagType = "GLS"; % Options: 
                   % GPS: "Catlog", "iGotU"
                   % Aux: "AGM", "Axy5", "AxyAir", "GCDC", "NRL", "uMoth"
                   % GLS 
@@ -35,17 +35,24 @@ newname = false; % Options: true, false
 
 %% Set environment
 
-GD_dir = findGD(computer);
+GD_dir = "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/";
 
 % Full_metadata sheet
 fullmeta = readtable(strcat(GD_dir,'metadata/Full_metadata.xlsx'),'TreatAsEmpty',{'NA'});
 % fullmeta = fullmeta(strcmp(fullmeta.Field_season,szn) & strcmp(fullmeta.Location,location),:); % & strcmp(fullmeta.Genus,Genus),:);
-fullmeta = fullmeta(strcmp(fullmeta.Field_season,szn) & strcmp(fullmeta.Location,location) & strcmp(fullmeta.Aux_TagType,TagType),:);
+% fullmeta = fullmeta(strcmp(fullmeta.Field_season,szn) & strcmp(fullmeta.Location,location) & strcmp(fullmeta.Aux_TagType,TagType),:);
+fullmeta = fullmeta(strcmp(fullmeta.Field_season,szn),:);
+
 
 cd(directory)
-fileList = exFAT_aux_remove(struct2table(dir(strcat('*.',fileExt))));
+fileList = dir(strcat('*.',fileExt));
+fileList(startsWith({fileList.name},'._')) = [];
+fileNames = string({fileList.name});
+
 % fileList = dir;
 % fileList = fileList(4:end,:);
+
+fileList(endsWith({fileList.name},'driftadj.lux')) = [];
 
 nfiles = height(fileList);
 rename_table = table(cell(nfiles,1),cell(nfiles,1),cell(nfiles,1),cell(nfiles,1),'VariableNames',{'Old_fileName','Old_ID','New_fileName','Deployment_ID'}); 
@@ -55,7 +62,7 @@ for id = 1:nfiles
    
     % Get the file name 
     % fileName = fileList(id).name;
-    fileName = fileList.name{id};
+    fileName = fileList(id).name;
     rename_table.Old_fileName{id} = string(fileName);
     [~, f,ext] = fileparts(fileName);
     nameSplit = strsplit(f,'_');
@@ -73,7 +80,9 @@ for id = 1:nfiles
         elseif strcmp(Tag,"GLS")
             num_ = count(string(fullmeta.GLS_OG_ID(1)),"_");
             Old_BirdName = findOBN(num_,nameSplit);
+            darvic = nameSplit{3};
             findmeta = find(strcmp(fullmeta.GLS_OG_ID,Old_BirdName));
+            % findmeta = find(strcmp(fullmeta.Darvic,darvic));
         else
             disp("Can't find Tag.")
             return
@@ -123,16 +132,30 @@ for id = 1:nfiles
 end
 
 % Check for duplicates
-unique_birds = unique(string(rename_table.Old_ID));
-for i = 1:length(unique_birds)
-    find_bird = find(strcmp(rename_table.Old_ID,unique_birds(i)));
+% unique_birds = unique(string(rename_table.Old_ID));
+% for i = 1:length(unique_birds)
+%     find_bird = find(strcmp(rename_table.Old_ID,unique_birds(i)));
+%     if length(find_bird)>1
+%         disp(strcat(unique_birds(i), "has duplicates."))
+%         return
+%     end
+% end
+
+disp("rename_table has been written. Check for duplicates and then check rename_table to make sure it's correct before continuing.")
+
+%% Check for duplicates in files
+unique_files = unique(string(rename_table.New_fileName));
+for i = 1:length(unique_files)
+    find_bird = find(strcmp(string(rename_table.New_fileName),unique_files(i)));
     if length(find_bird)>1
-        disp(strcat(unique_birds(i), "has duplicates."))
+        disp(strcat(string(find_bird), " has duplicates."))
         return
     end
 end
 
-disp("rename_table has been written and there are no duplicate files. Check rename_table to make sure it's correct before continuing.")
+if i == length(unique_files)
+    disp("There are no duplicate file names.")
+end
 
 %% Write rename file
 mkdir rename_info
