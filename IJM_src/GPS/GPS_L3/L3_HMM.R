@@ -1,5 +1,6 @@
 ################################################################################
 #
+# L2 GPS -> L3 GPS data
 # Use Theo Michelot's moveHMM to seperate flight behaviors:
 #   1. Area-restricted foraging
 #   2. Commuting
