@@ -17,7 +17,7 @@ computer = "MacMini";
 % set directories
 GD_dir = findGD(computer);
 L0_dir = strcat(GD_dir,"L0/",location,"/Tag_Data/",szn,"/GLS/");
-L1_dir = strcat(GD_dir,"L1/",location,"/Tag_Data/GLS/",szn,"/");
+L1_dir = strcat(GD_dir,"L1/",location,"/Tag_Data/Immersion/",szn,"/");
 
 % Matlab functions toolbox
 addpath(genpath('/Users/ian/Documents/GitHub/AlbatrossFlightDynamics/'))
