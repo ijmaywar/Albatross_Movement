@@ -194,7 +194,8 @@ Spp_TT_df$Spp <- factor(Spp_TT_df$Spp , levels=c("BBAL", "GHAL", "BFAL", "LAAL")
 plot_Spp_TT <- ggplot(Spp_TT_df, aes(x = Spp, y = WindSpeed, fill=TripType)) +
   geom_boxplot() +
   labs(title = "", x = "Species", y = "Average WindSpeed") +
-  theme_minimal()
+  theme_minimal() +
+  ylim(0,13)
 plot_Spp_TT
 
 
@@ -204,10 +205,11 @@ plot_Spp_TT
 Spp_TT_df_all_mths$Spp <- factor(Spp_TT_df_all_mths$Spp , levels=c("BBAL", "GHAL", "BFAL", "LAAL"))
 
 # Create plot for Jan wind data
-plot_Spp_TT_mth <- ggplot(Spp_TT_df_all_mths, aes(x = Spp, y = Apr, fill=TripType)) +
+plot_Spp_TT_mth <- ggplot(Spp_TT_df_all_mths, aes(x = Spp, y = Nov, fill=TripType)) +
   geom_boxplot() +
-  labs(title = "", x = "Species", y = "Average WindSpeed") +
-  theme_minimal()
+  labs(title = "Nov", x = "Species", y = "Average WindSpeed") +
+  theme_minimal() +
+  ylim(0,13)
 plot_Spp_TT_mth
 
 
