@@ -22,13 +22,13 @@ location = "Bird_Island"; % Options: 'Bird_Island', 'Midway', 'Wandering'
 %% Set Environment
 
 % Matlab functions toolbox
-addpath(genpath('/Users/ian/Documents/GitHub/AlbatrossFlightDynamics/'))
+addpath(genpath('/Users/ian/Documents/GitHub/'))
 
 % set directories
 GD_dir = "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/NEW_STRUCTURE/";
-HD_dir = "/Volumes/LaCie/";
+HD_dir = "/Volumes/LaCie/NEW_STRUCTURE/";
 L0_dir = strcat(HD_dir,"L0/",location,"/Tag_Data/",szn,"/Aux/NRL/L0_1_Decompressed/2_ECG/");
-L1_dir = strcat(HD_dir,"L1/",location,"/Tag_Data/ECG/",szn,"/");
+L1_dir = strcat(HD_dir,"L1/",location,"/Tag_Data/ECG/ECG_NRL/",szn,"/");
 dt_break_dir = strcat(HD_dir,"L0/",location,"/Tag_Data/",szn,"/Aux/NRL/L0_1_Decompressed/datetime_breaks/");
 
 GPS_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/GPS/GPS_Catlog/',szn,'/2_buffer2km/');
@@ -39,10 +39,10 @@ addpath(genpath('/Users/ian/Documents/GitHub/AlbatrossFlightDynamics/'))
 % Full_metadata sheet
 fullmeta = readtable(strcat(GD_dir,'metadata/Full_metadata.xlsx'),'TreatAsEmpty',{'NA'});
 % Specify the field season and location you are interested in
-fullmeta = fullmeta(strcmp(fullmeta.Field_season,szn) & strcmp(fullmeta.Location,location),:);
+fullmeta = fullmeta(strcmp(fullmeta.Field_Season,szn) & strcmp(fullmeta.Location,location),:);
 
 % Tag timings sheet
-Tag_Timings = readtable(strcat(GD_dir,"L0/",location,"/Tag_Data/",szn,"/Aux/NRL/Tag_Meta_Timings_",szn,".csv"),'Delimiter',',');
+Tag_Timings = readtable(strcat(HD_dir,"L0/",location,"/Tag_Data/",szn,"/Aux/NRL/Tag_Meta_Timings_",szn,".csv"),'Delimiter',',');
 
 % Start indices sheet
 idx_tbl = readtable(strcat(L0_dir,"start_stop_indices.csv"),'Delimiter',',');
@@ -143,12 +143,12 @@ for i = 13:length(L0_fileNames)
     L0_trimmed = L0_data(start_idx:stop_idx,:);
     
     %% Trim data even more if necessary
-    extra_trim = 550;
-    new_start = extra_trim + start_idx;
-    idx_tbl(strcmp(string(idx_tbl.bird),dep_ID),:).start = new_start;
-
-    writetable(idx_tbl,strcat(L0_dir,"start_stop_indices.csv"));
-    disp ("IDX tbl updated.")
+    % extra_trim = 550;
+    % new_start = extra_trim + start_idx;
+    % idx_tbl(strcmp(string(idx_tbl.bird),dep_ID),:).start = new_start;
+    % 
+    % writetable(idx_tbl,strcat(L0_dir,"start_stop_indices.csv"));
+    % disp ("IDX tbl updated.")
 
     %% Local detrend
     
