@@ -33,6 +33,7 @@ library(gratia)
 
 fullmeta <- read_excel("/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/metadata/Full_Metadata.xlsx")
 GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/"
+HD_dir <- "/Volumes/LaCie/NEW_STRUCTURE/"
 
 # Combine all files across field seasons and locations -------------------------
 m_all <- 0
@@ -47,7 +48,7 @@ for (i_loc in 1:length(locations)) {
   
   for (i_szn in 1:length(szns)) {
     szn = szns[i_szn]
-    wind_L4_dir <- paste0(GD_dir,"L4/",loc,"/Wind_Data/",szn,"/")
+    wind_L4_dir <- paste0(HD_dir,"L4/",loc,"/Wind_Data/",szn,"/")
     setwd(wind_L4_dir)
     files <- list.files(pattern='*.csv')
     
@@ -196,8 +197,8 @@ GAM_BBAL_4 <- gam(formula = flaps ~ te(wind_vel,bwa,k=c(5, 5),bs=c('tp', 'tp')) 
 m_BBAL_filtered <- m_BBAL[1:990,]
 
 # te model with individual randomness on the te term
-GAM_BBAL_5 <- gam(formula = flaps ~ te(wind_vel,bwa,k=c(5,5),bs=c('tp','tp'),m=2) +
-                    t2(wind_vel,bwa,id,k=c(5,5,length(unique(m_BBAL_filtered$id))),bs=c('tp','tp','re'),m=1,full=TRUE),
+GAM_BBAL_5 <- gam(formula = flaps ~ te(wind_vel,bwa,k=c(5,5),bs=c('tp','tp'),m=1) +
+                    t2(wind_vel,bwa,id,k=c(5,5,length(unique(m_BBAL_filtered$id))),bs=c('tp','tp','re'),m=2,full=TRUE),
                   data = m_BBAL_filtered,
                   family = poisson(),
                   method = "REML")
@@ -211,7 +212,7 @@ GAM_BBAL_6 <- gam(formula = flaps ~ te(wind_vel,bwa,k=c(5,5),bs=c('tp','tp'),m=2
 # AIC(GAM_BBAL_1,GAM_BBAL_2,GAM_BBAL_3,GAM_BBAL_4)
 
 # Chooose a GAM_BBAL
-GAM_BBAL <- GAM_BBAL_6
+GAM_BBAL <- GAM_BBAL_5
 summary(GAM_BBAL)
 AIC(GAM_BBAL)
 plot(GAM_BBAL,scheme=2)
@@ -221,7 +222,7 @@ plot(GAM_BBAL,scheme=2)
 gratia_df <- smooth_estimates(GAM_BBAL)
 
 gratia_global <- gratia_df
-# gratia_global <- gratia_df %>% filter(is.na(id))
+gratia_global <- gratia_df %>% filter(is.na(id))
 gratia_global <- gratia_global %>% add_confint()
 gratia_global <- gratia_global %>% mutate(pred = exp(est+GAM_BBAL$coefficients[[1]]),
                                           pred_up95 = exp(upper_ci+GAM_BBAL$coefficients[[1]]),
@@ -236,6 +237,9 @@ gratia_ind_cleaned <- gratia_ind_cleaned %>% add_confint()
 gratia_ind_cleaned <- gratia_ind_cleaned %>% mutate(pred = exp(est+GAM_BBAL$coefficients[[1]]),
                                     pred_up95 = exp(upper_ci+GAM_BBAL$coefficients[[1]]),
                                     pred_low95 = exp(lower_ci+GAM_BBAL$coefficients[[1]]))
+gratia_ind_cleaned <- rename(gratia_ind_cleaned, id=id.y)
+gratia_ind_cleaned$id <- as.factor(gratia_ind_cleaned$id)
+
 
 # Plot global output
 ggplot(gratia_global, aes(wind_vel,bwa,z=est)) +
@@ -246,13 +250,13 @@ ggplot(gratia_global, aes(wind_vel,bwa,z=pred)) +
   geom_contour_filled()
 
 # plot estimates for individual 1
-ggplot(gratia_ind_cleaned %>% filter(id.y==as.character(unique(m_BBAL_filtered$id)[1])), aes(wind_vel,bwa,z=est)) +
+ggplot(gratia_ind_cleaned %>% filter(id==as.character(unique(m_BBAL_filtered$id)[1])), aes(wind_vel,bwa,z=est)) +
   geom_contour_filled()
 
 # Plot individual smooths along with global smooth
 ggplot(gratia_ind_cleaned, aes(wind_vel,pred,group=interaction(id,bwa),color=id)) + 
   geom_line() +
-  geom_line(data=gratia_global, aes(wind_vel,exp.est), color="black") # +
+  geom_line(data=gratia_global, aes(wind_vel,pred), color="black") # +
   # geom_point(m_BBAL_filtered,mapping=aes(wind_vel,flaps),color='black',alpha=0.1)
 
 # Plot global smooth with 95 confidence intervals
