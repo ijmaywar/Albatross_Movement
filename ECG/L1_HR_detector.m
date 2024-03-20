@@ -27,9 +27,9 @@ addpath(genpath('/Users/ian/Documents/GitHub/'))
 % set directories
 GD_dir = "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/NEW_STRUCTURE/";
 HD_dir = "/Volumes/LaCie/NEW_STRUCTURE/";
-L0_dir = strcat(HD_dir,"L0/",location,"/Tag_Data/",szn,"/Aux/NRL/L0_1_Decompressed/2_ECG/");
-L1_dir = strcat(HD_dir,"L1/",location,"/Tag_Data/ECG/ECG_NRL/",szn,"/");
-dt_break_dir = strcat(HD_dir,"L0/",location,"/Tag_Data/",szn,"/Aux/NRL/L0_1_Decompressed/datetime_breaks/");
+L0_dir = strcat(GD_dir,"L0/",location,"/Tag_Data/",szn,"/Aux/NRL/L0_1_Decompressed/2_ECG/");
+L1_dir = strcat(GD_dir,"L1/",location,"/Tag_Data/ECG/ECG_NRL/",szn,"/");
+dt_break_dir = strcat(GD_dir,"L0/",location,"/Tag_Data/",szn,"/Aux/NRL/L0_1_Decompressed/datetime_breaks/");
 
 GPS_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/GPS/GPS_Catlog/',szn,'/2_buffer2km/');
 
@@ -42,7 +42,7 @@ fullmeta = readtable(strcat(GD_dir,'metadata/Full_metadata.xlsx'),'TreatAsEmpty'
 fullmeta = fullmeta(strcmp(fullmeta.Field_Season,szn) & strcmp(fullmeta.Location,location),:);
 
 % Tag timings sheet
-Tag_Timings = readtable(strcat(HD_dir,"L0/",location,"/Tag_Data/",szn,"/Aux/NRL/Tag_Meta_Timings_",szn,".csv"),'Delimiter',',');
+Tag_Timings = readtable(strcat(GD_dir,"L0/",location,"/Tag_Data/",szn,"/Aux/NRL/Tag_Meta_Timings_",szn,".csv"),'Delimiter',',');
 
 % Start indices sheet
 idx_tbl = readtable(strcat(L0_dir,"start_stop_indices.csv"),'Delimiter',',');

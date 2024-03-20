@@ -21,27 +21,31 @@ library(readxl)
 library(foreach)
 library(lubridate)
 
-
 # Set Environment ---------------------------------------------------------
 
-GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/"
-wind_L3_dir <- paste0(GD_dir,"L3/",location,"/Wind_Data/",szn,"/")
-wind_L4_dir <- paste0(GD_dir,"L4/",location,"/Wind_Data/",szn,"/")
-meta_dir <- paste0(GD_dir,"L4/",location,"/Wind_Data/meta_tbls/")
+GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/NEW_STRUCTURE/"
+read_dir <- paste0(GD_dir, "Projects/Maywar/Flaps_ImmersionState_600s/HMM/",location,"/",szn,"/")
+write_dir <- paste0(GD_dir, "Projects/Maywar/Flaps_Hourly_AnalysisReady/HMM/",location,"/",szn,"/")
+meta_dir <- paste0(GD_dir, "Projects/Maywar/Flaps_Hourly_AnalysisReady/HMM/",location,"/Meta_tbls/")
 
-setwd(wind_L3_dir)
-wind_files <- list.files(pattern='*.csv')
+setwd(read_dir)
+files <- list.files(pattern='*.csv')
 
+# Set up a meta tbl to keep track of how much data is being removed after filtering for dry states
 meta_tbl <- data.frame(
-    ID = character(),
-    samples = numeric()
-  )
+  ID = character(),
+  samples_1 = numeric(),
+  samples_2 = numeric(),
+  samples_3 = numeric()
+)
 
 # Loop thru and process  ---------------------------------------------------------------
 
-for (i in 1:length(wind_files)) {
-  m <- read.csv(wind_files[i])
-  bird_trip_name <- str_sub(wind_files[i],1,-20)
+for (i in 1:length(files)) {
+  m <- read.csv(files[i])
+  birdname_trip <- str_sub(files[i],1,-20)
+  birdname <- str_sub(files[i],1,-22)
+  birdspp <- str_sub(birdname,1,4)
   
   m$datetime <- as.POSIXct(m$datetime, format="%Y-%m-%d %H:%M:%S")
   m$rounded_hour <- round_date(m$datetime, unit = "hour")
@@ -49,6 +53,7 @@ for (i in 1:length(wind_files)) {
   
   m_hourly <- m %>% filter(timediff==min(timediff))
   m_hourly$trim <- 0
+  
   # Remove all rows that contain HMM states 1 and 2
   # Also, remove all rows that have less than 6 measurements within that given hour
   for (j in 1:nrow(m_hourly)) {
@@ -64,18 +69,21 @@ for (i in 1:length(wind_files)) {
   m_hr_trim <- m_hr_trim %>% dplyr::select(-timediff,-trim,-HMM_state,-rounded_hour)
   
   if (nrow(m_hr_trim>0)) {
-    # If the trimmed file isn't emmpty, save it.
+    # If the trimmed file isn't empty, save it.
     m_hr_trim$datetime <- as.character(format(m_hr_trim$datetime)) # safer for writing csv in character format  
-    write.csv(m_hr_trim, file=paste0(wind_L4_dir,bird_trip_name,"_L4_hourly.csv"), row.names=FALSE)
+    write.csv(m_hr_trim, file=paste0(write_dir,birdname_trip,"_Flaps_HMM_Hourly_AnalysisReady.csv"), row.names=FALSE)
   }
   
   # Record how many samples remained after trimming
-  meta_tbl <- rbind(meta_tbl,c(bird_trip_name,nrow(m_hr_trim)))
+  meta_tbl <- rbind(meta_tbl,c(birdname_trip,nrow(m),nrow(m_hourly),nrow(m_hr_trim)))
 }
 
-names(meta_tbl) <- c("ID","num.samples")
-meta_tbl$num.samples <- as.numeric(meta_tbl$num.samples)
-write.csv(meta_tbl, file=paste0(meta_dir,szn,"_meta.csv"), row.names=FALSE)
+# Write meta_tbl
+names(meta_tbl) <- c("trip_ID","samples_600s","samples_Hourly","samples_Hourly_dry")
+meta_tbl$samples_600s <- as.numeric(meta_tbl$samples_600s)
+meta_tbl$samples_Hourly <- as.numeric(meta_tbl$samples_Hourly)
+meta_tbl$samples_Hourly_dry <- as.numeric(meta_tbl$samples_Hourly_dry)
+meta_tbl$samples_Hourly_removed <- meta_tbl$samples_Hourly - meta_tbl$samples_Hourly_dry
+write.csv(meta_tbl, file=paste0(meta_dir,szn,"_SamplesRemoved.csv"), row.names=FALSE)
 
-hist(meta_tbl$num.samples,breaks=50)
-
+hist(meta_tbl$samples_Hourly_dry,breaks=50)

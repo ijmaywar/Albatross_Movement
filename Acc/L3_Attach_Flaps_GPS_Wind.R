@@ -1,6 +1,7 @@
 ################################################################################
 #
-# Wind data: attach flap data and HMM state to 10 min intervals
+# Combine L2 Wind data with L2 Acc data to count the number of flaps within 
+# 10-minute GPS intervals.
 #
 ################################################################################
 
@@ -8,11 +9,10 @@
 
 rm(list = ls())
 
-# User Inputed Values -----------------------------------------------------
+# User Inputted Values -----------------------------------------------------
 
 location = 'Midway' # Options: 'Bird_Island', 'Midway'
 szn = "2022_2023"
-interp = "600s"
 
 # Load Packages -----------------------------------------------------------
 
@@ -24,11 +24,10 @@ library(foreach)
 
 # Set Environment ---------------------------------------------------------
 
-GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/"
+GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/NEW_STRUCTURE/"
 Acc_dir <- paste0(GD_dir, "L2/",location,"/Tag_Data/Acc/",szn,"/")
-HMM_dir <- paste0(GD_dir, "L3/",location,"/Tag_Data/GPS/3_states/")
-wind_L2_dir <- paste0(GD_dir,"L2/",location,"/Wind_Data/",szn,"/")
-wind_L3_dir <- paste0(GD_dir,"L3/",location,"/Wind_Data/",szn,"/")
+wind_L2_dir <- paste0(GD_dir,"L2/",location,"/Wind_Data/ERA5_SingleLevels_10m/",szn,"/")
+Acc_L3_dir <- paste0(GD_dir,"L3/",location,"/Tag_Data/Acc/",szn,"/")
 
 setwd(Acc_dir)
 acc_files <- list.files(pattern='*.csv')
@@ -37,16 +36,12 @@ setwd(wind_L2_dir)
 files <- list.files(pattern='*.csv')
 all_trips <- sub("_bwa.csv$","",files)
 
-if (interp == "600s") {
-  interval <- 600
-}
-
-
 # Add flaps ---------------------------------------------------------------
 
 for (i in 1:length(files)) {
   m <- read.csv(files[i])
-  if (difftime(m$datetime[nrow(m)],m$datetime[1],units="secs") != interval*(nrow(m)-1)) {
+ 
+  if (difftime(m$datetime[nrow(m)],m$datetime[1],units="secs") != 600*(nrow(m)-1)) {
     print("GPS continuity check failed.")
     break
   }
@@ -57,26 +52,20 @@ for (i in 1:length(files)) {
   
   # Attach number of flaps
   acc_filename <- paste0(birdname,"_Acc_L2.csv")
-  if (sum(acc_files==acc_filename)>=1) {
+  if (sum(acc_files==acc_filename)==1) {
     flap_data <- read.csv(paste0(Acc_dir,acc_filename))
   
     # find the seconds passed after the first GPS measurement for all flaps
     flap_data$GPSsec <- as.numeric(difftime(flap_data$DateTime,m$datetime[1],units='secs'))
     
-    breaks <- seq(0,interval*nrow(m),by=interval)
+    breaks <- seq(0,600*nrow(m),by=600)
     categories <- cut(flap_data$GPSsec,breaks,include.lowest=TRUE,right=FALSE)
     frequency_table <- table(categories)
     data <- as.data.frame(frequency_table)
     m$flaps <- data$Freq
     
-    # Attach HMM state
-    HMM_filename <- paste0(birdname,"_GPS_L3_600s.csv")
-    HMM_data <- read.csv(paste0(HMM_dir,birdspp,"/",HMM_filename))
-    HMM_data <- HMM_data %>% filter(trip_ID==birdname_trip)
-    m$HMM_state <- HMM_data$state
-    
     m$datetime <- as.character(format(m$datetime)) # safer for writing csv in character format  
-    write.csv(m, file=paste0(wind_L3_dir,birdname_trip,"_wind_and_flaps.csv"), row.names=FALSE)
+    write.csv(m, file=paste0(Acc_L3_dir,birdname_trip,"_Acc_L3_wind_10min.csv"), row.names=FALSE)
   
   }
 }
