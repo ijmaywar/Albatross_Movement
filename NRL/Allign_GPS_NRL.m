@@ -8,12 +8,17 @@
 %% Clear variables
 clearvars
 
+%% USER INPUTED VALUES
+
+szn = '2019_2020';
+location = "Bird_Island"; % Options: 'Bird_Island', 'Midway', 'Wandering'
+
 %%
-GD_dir = "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/";
-Sensor_dir = "/Volumes/LaCie/L0/Bird_Island/Tag_Data/2021_2022/Aux/NRL/L0_1_Decompressed/1_SensorData/";
-ECG_dir = "/Volumes/LaCie/L0/Bird_Island/Tag_Data/2021_2022/Aux/NRL/L0_1_Decompressed/2_ECG/";
-GPS_dir = "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L0/Bird_Island/Tag_Data/2021_2022/Pos/Catlog/";
-write_dir = "/Volumes/LaCie/L0/Bird_Island/Tag_Data/2021_2022/Aux/NRL/L0_1_Decompressed/datetime_breaks/";
+GD_dir = "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/Thorne Lab Shared Drive/Data/Albatross/";
+Sensor_dir = strcat(GD_dir,"L0/",location,"/Tag_Data/",szn,"/Aux/NRL/L0_1_Decompressed/1_SensorData/");
+ECG_dir = strcat(GD_dir,"L0/",location,"/Tag_Data/",szn,"/Aux/NRL/L0_1_Decompressed/2_ECG/");
+GPS_dir = strcat(GD_dir,"L0/",location,"/Tag_Data/",szn,"/Pos/Catlog/");
+write_dir = strcat(GD_dir,"L0/",location,"/Tag_Data/",szn,"/Aux/NRL/L0_1_Decompressed/datetime_breaks/");
 
 cd(Sensor_dir)
 Sensor_fileList = dir("*.txt");
@@ -36,7 +41,7 @@ nfiles = height(ECG_fileList);
 
 %% Loop thru
 
-for i = 1:length(ECG_fileList)
+for i = 16:length(ECG_fileList)
 
     cd(ECG_dir)
     namesplit = strsplit(ECG_fileNames(i),'_');
