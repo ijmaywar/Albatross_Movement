@@ -15,13 +15,12 @@ location = "Bird_Island"; % Options: 'Bird_Island', 'Midway', 'Wandering'
 %% Set Environment
 
 % Matlab functions toolbox
-addpath(genpath('/Users/ian/Documents/GitHub/AlbatrossFlightDynamics/'))
+addpath(genpath('/Users/ian/Documents/GitHub/'))
 
 % set directories
-GD_dir = "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/NEW_STRUCTURE/";
-HD_dir = "/Volumes/LaCie/";
-L0_0_dir = strcat(HD_dir,"L0/",location,"/Tag_Data/",szn,"/Aux/NRL/L0_0_Raw/");
-L0_1_dir = strcat(HD_dir,"L0/",location,"/Tag_Data/",szn,"/Aux/NRL/L0_1_Decompressed/");
+GD_dir = "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/Thorne Lab Shared Drive/Data/Albatross/";
+L0_0_dir = strcat(GD_dir,"L0/",location,"/Tag_Data/",szn,"/Aux/NRL/L0_0_Raw/");
+L0_1_dir = strcat(GD_dir,"L0/",location,"/Tag_Data/",szn,"/Aux/NRL/L0_1_Decompressed/");
 
 % Matlab functions toolbox
 addpath(genpath('/Users/ian/Documents/GitHub/AlbatrossFlightDynamics/'))
