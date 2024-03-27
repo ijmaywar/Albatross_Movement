@@ -31,9 +31,8 @@ library(gratia)
 
 # Set Environment ---------------------------------------------------------
 
-fullmeta <- read_excel("/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/metadata/Full_Metadata.xlsx")
-GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/"
-HD_dir <- "/Volumes/LaCie/NEW_STRUCTURE/"
+GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/Thorne Lab Shared Drive/Data/Albatross/"
+fullmeta <- read_excel(paste0(GD_dir,"metadata/Full_Metadata.xlsx"))
 
 # Combine all files across field seasons and locations -------------------------
 m_all <- 0
@@ -42,25 +41,34 @@ for (i_loc in 1:length(locations)) {
   
   if (loc == "Bird_Island") {
     szns = c("2019_2020","2020_2021","2021_2022")
+    immersion_src = "GLS"
   } else if (loc == "Midway") {
     szns = c("2018_2019","2021_2022","2022_2023")
+    immersion_src = "HMM"
   }
-  
+
   for (i_szn in 1:length(szns)) {
     szn = szns[i_szn]
-    wind_L4_dir <- paste0(HD_dir,"L4/",loc,"/Wind_Data/",szn,"/")
-    setwd(wind_L4_dir)
+    
+    # read_dir <- paste0(GD_dir,"Projects/Maywar/Flaps_Hourly_AnalysisReady/No_Imm_Trim/",loc,"/",szn,"/")
+    read_dir <- paste0(GD_dir,"Projects/Maywar/Flaps_Hourly_AnalysisReady/",immersion_src,"/",loc,"/",szn,"/")
+    
+    setwd(read_dir)
     files <- list.files(pattern='*.csv')
     
-    # skip WAAL files
-    indices_to_remove <- grep("^WAAL", files)
-    if (length(indices_to_remove != 0)) {
-      files <- files[-indices_to_remove]
-    }
+    # # skip WAAL files
+    # indices_to_remove <- grep("^WAAL", files)
+    # if (length(indices_to_remove != 0)) {
+    #   files <- files[-indices_to_remove]
+    # }
     
     # combine all files and label them with the szn
     for (i in 1:length(files)) {
-      bird <- str_sub(files[i],1,-17)
+      # bird <- str_sub(files[i],1,-34)
+      # bird_trip <- str_sub(files[i],1,-32)
+    
+      bird <- str_sub(files[i],1,-38)
+      bird_trip <- str_sub(files[i],1,-36)
       birdmeta <- fullmeta %>% dplyr::filter(Deployment_ID == bird)
       
       # only use the file if metadata indicates that the bird is usable
@@ -81,17 +89,6 @@ for (i_loc in 1:length(locations)) {
   }
 }
 
-# Turn variables into factors
-m_all$id <- as.factor(m_all$id)
-m_all$tripID <- as.factor(m_all$tripID) 
-m_all$szn <- as.factor(m_all$szn)
-m_all$loc <- as.factor(m_all$loc)
-m_all$Trip_Type <- as.factor(m_all$Trip_Type)
-m_all$spp <- as.factor(m_all$spp)
-
-# Re-order spp groups
-m_all$spp <- factor(m_all$spp , levels=c("BBAL", "GHAL", "BFAL", "LAAL"))
-
 # Classify 2BEP, E_pip, Ep as BG
 m_all <- m_all %>% mutate(Trip_Type = factor(replace(as.character(Trip_Type),Trip_Type=="2BEP","BG")))
 m_all <- m_all %>% mutate(Trip_Type = factor(replace(as.character(Trip_Type),Trip_Type=="E_pip","BG")))
@@ -109,378 +106,260 @@ m_all$plotday <- ifelse(m_all$plotday > 365 & m_all$datetime$year+1900 == 2021, 
 # Remove unnecessary columns
 # m_all <- m_all %>% dplyr::select(-lon,-lat,-u,-v,-datetime,-wind_dir,-bird_dir,-bird_vel)
 
+# # LOAD m_all
+m_all_NoImmTrim <- read.csv("/Users/ian/Desktop/m_all_NoImmTrim.csv")
+m_all_Trim <- read.csv("/Users/ian/Desktop/m_all_Trim.csv")
+
+m_all <- m_all_NoImmTrim
+
+# Categorize BWAs
+m_all <- m_all %>% mutate(BWA_cat = case_when(bwa<=45 ~ "head",
+                                              bwa>45 & bwa<135 ~ "cross",
+                                              bwa>=135 ~ "tail"))
+
+# Turn variables into factors
+m_all$id <- as.factor(m_all$id)
+m_all$tripID <- as.factor(m_all$tripID) 
+m_all$szn <- as.factor(m_all$szn)
+m_all$loc <- as.factor(m_all$loc)
+m_all$Trip_Type <- as.factor(m_all$Trip_Type)
+m_all$spp <- as.factor(m_all$spp)
+m_all$BWA_cat <- as.factor(m_all$BWA_cat)
+
+# Re-order spp groups
+m_all$spp <- factor(m_all$spp , levels=c("BBAL", "GHAL", "WAAL", "BFAL", "LAAL"))
 
 # Split data between species
 m_BBAL <- m_all %>% filter(spp=="BBAL")
 m_GHAL <- m_all %>% filter(spp=="GHAL")
+m_WAAL <- m_all %>% filter(spp=="WAAL")
 m_LAAL <- m_all %>% filter(spp=="LAAL")
 m_BFAL <- m_all %>% filter(spp=="BFAL")
-
 
 
 # Flap plots --------------------------------------------------------------
 
 ################################################################################
 
-m_BBAL_filtered <- m_BBAL
+# Tensor product of wind_vel and bwa
 
-# TRY CHANGING K
-
-# GAMM_BBAL <- gamm4(formula = flaps ~ s(wind_vel,k=5), 
-#                     random = ~(1|id),
-#                     data = m_BBAL_filtered,
-#                     family = poisson)
-# 
-# preds <- predict(GAMM_BBAL$gam,m_BBAL_filtered %>% select(wind_vel,bwa))
-# preds_df <- data.frame(cbind(m_BBAL_filtered,preds))
-# preds_df <- preds_df %>% mutate(est_trans = exp(preds))
-
-# base model with individual randomness
-GAM_BBAL_1 <- gam(formula = flaps ~ s(wind_vel,k=5,bs='tp') + s(wind_vel,id,bs='re',k=5),
-                    data = m_BBAL_filtered,
-                    family = poisson(),
-                    method = "REML")
-
-summary(GAM_BBAL_1)
-AIC(GAM_BBAL_1)
-
-# Create dataframe to use predict() 
-predict_df_base <- expand.grid(wind_vel=seq(min(m_BBAL_filtered$wind_vel),max(m_BBAL_filtered$wind_vel),length.out=100),
-                          id = unique(m_BBAL_filtered$id)[1:10]
-                          )
-preds_base <- predict(GAM_BBAL_1,newdata=predict_df_base,type="terms",se.fit=TRUE)
-preds_df_base <- data.frame(cbind(predict_df_base,preds_base$fit,preds_base$se.fit))
-preds_df_base <- preds_df_base %>% mutate(global = exp(s.wind_vel. + attr(preds_base,"constant")[[1]]),
-                                individual = exp(s.wind_vel. + s.wind_vel.id. + attr(preds_base,"constant")[[1]]),
-                                global_up95 = exp(s.wind_vel. + attr(preds_base,"constant")[[1]] + 1.96*s.wind_vel..1),
-                                global_low95 = exp(s.wind_vel. + attr(preds_base,"constant")[[1]] - 1.96*s.wind_vel..1)
-                                )
-
-# Plot individual smooths along with global smooth
-ggplot(preds_df_base, aes(wind_vel,individual,color=id)) + 
-  geom_line() +
-  geom_line(data=preds_df_base, aes(wind_vel,global), color="black") +
-  geom_point(m_BBAL_filtered,mapping=aes(wind_vel,flaps),color='black',alpha=0.1)
-
-# Plot global smooth with 95 confidence intervals
-ggplot(preds_df_base, aes(wind_vel,global)) + 
-  geom_line() +
-  geom_point(m_BBAL_filtered,mapping=aes(wind_vel,flaps),color='black',alpha=0.1) +
-  geom_ribbon(data=preds_df_base,aes(ymin=global_low95,ymax=global_up95),alpha=0.2) +
-  ggtitle("all BBAL")
-
-# ti model with individual randomness
-GAM_BBAL_2 <- gam(formula = flaps ~ ti(wind_vel,k=3,bs='tp') + 
-                  ti(bwa,k=4,bs='tp') + 
-                  ti(wind_vel,bwa,k=c(3, 4),bs=c('tp', 'tp')) + 
-                  s(wind_vel,id,bs='re',k=5),
-                data = m_BBAL_filtered,
-                family = poisson(),
-                method = "REML")
-
-# s and ti model with individual randomness
-GAM_BBAL_3 <- gam(formula = flaps ~ s(wind_vel,k=5,bs='tp') + 
-                  s(bwa,k=3,bs='tp') + 
-                  ti(wind_vel,bwa,k=c(5, 3),bs=c('tp', 'tp')) + 
-                  s(wind_vel,id,bs='re'),
-                data = m_BBAL_filtered,
-                family = poisson(),
-                method = "REML")
-
-# te model with individual randomness
-GAM_BBAL_4 <- gam(formula = flaps ~ te(wind_vel,bwa,k=c(5, 5),bs=c('tp', 'tp')) + 
-                    s(wind_vel,id,bs='re'),
-                  data = m_BBAL_filtered,
-                  family = poisson(),
+GAM_BBAL <- gam(formula = flaps ~ s(wind_vel,k=5,bs='tp') +
+                                  s(bwa,k=5,bs='tp') +
+                                  ti(wind_vel,bwa,k=c(5,5),bs=c('tp','tp')) +
+                    s(id,k=length(unique(m_BBAL$id)),bs="re"),
+                  data = m_BBAL,
+                  family = "poisson",
                   method = "REML")
 
-m_BBAL_filtered <- m_BBAL[1:990,]
-
-# te model with individual randomness on the te term
-GAM_BBAL_5 <- gam(formula = flaps ~ te(wind_vel,bwa,k=c(5,5),bs=c('tp','tp'),m=1) +
-                    t2(wind_vel,bwa,id,k=c(5,5,length(unique(m_BBAL_filtered$id))),bs=c('tp','tp','re'),m=2,full=TRUE),
-                  data = m_BBAL_filtered,
-                  family = poisson(),
-                  method = "REML")
-
-GAM_BBAL_6 <- gam(formula = flaps ~ te(wind_vel,bwa,k=c(5,5),bs=c('tp','tp'),m=2),
-                  data = m_BBAL_filtered,
-                  family = poisson(),
-                  method = "REML")
-
-# Compare AIC scores
-# AIC(GAM_BBAL_1,GAM_BBAL_2,GAM_BBAL_3,GAM_BBAL_4)
-
-# Chooose a GAM_BBAL
-GAM_BBAL <- GAM_BBAL_5
-summary(GAM_BBAL)
-AIC(GAM_BBAL)
 plot(GAM_BBAL,scheme=2)
 
-# gratia package geom_contour()
+ds  <- data_slice(GAM_BBAL, wind_vel = evenly(wind_vel, n = 100), 
+                  id = unique(m_BBAL$id)[1:10],
+                  bwa = evenly(bwa,n=100))
 
-gratia_df <- smooth_estimates(GAM_BBAL)
-
-gratia_global <- gratia_df
-gratia_global <- gratia_df %>% filter(is.na(id))
-gratia_global <- gratia_global %>% add_confint()
-gratia_global <- gratia_global %>% mutate(pred = exp(est+GAM_BBAL$coefficients[[1]]),
-                                          pred_up95 = exp(upper_ci+GAM_BBAL$coefficients[[1]]),
-                                          pred_low95 = exp(lower_ci+GAM_BBAL$coefficients[[1]]))
-
-gratia_ind <- gratia_df %>% filter(id %in% unique(m_BBAL_filtered$id)[1:10])
-gratia_ind <- merge(gratia_global,gratia_ind,by=c("wind_vel","bwa"))
-gratia_ind <- gratia_ind %>% mutate(est = est.x + est.y,
-                                          se = se.x + se.y)
-gratia_ind_cleaned <- gratia_ind %>% select(id.y,wind_vel,bwa,est,se)
-gratia_ind_cleaned <- gratia_ind_cleaned %>% add_confint()
-gratia_ind_cleaned <- gratia_ind_cleaned %>% mutate(pred = exp(est+GAM_BBAL$coefficients[[1]]),
-                                    pred_up95 = exp(upper_ci+GAM_BBAL$coefficients[[1]]),
-                                    pred_low95 = exp(lower_ci+GAM_BBAL$coefficients[[1]]))
-gratia_ind_cleaned <- rename(gratia_ind_cleaned, id=id.y)
-gratia_ind_cleaned$id <- as.factor(gratia_ind_cleaned$id)
+# fv <- fitted_values(GAM_BBAL, data = ds, scale = "response",
+#                          terms = c("(Intercept)","te(wind_vel,bwa)","s(id)"))
+# 
+# fv_global <- fitted_values(GAM_BBAL, data = ds, scale = "response",
+#                                 terms = c("(Intercept)","te(wind_vel,bwa)"))
 
 
-# Plot global output
-ggplot(gratia_global, aes(wind_vel,bwa,z=est)) +
-  geom_contour_filled()
+fv <- fitted_values(GAM_BBAL, data = ds, scale = "response",
+                    terms = c("(Intercept)","s(wind_vel)","s(bwa)","ti(wind_vel,bwa)","s(id)"))
 
-# Plot estimates
-ggplot(gratia_global, aes(wind_vel,bwa,z=pred)) +
-  geom_contour_filled()
-
-# plot estimates for individual 1
-ggplot(gratia_ind_cleaned %>% filter(id==as.character(unique(m_BBAL_filtered$id)[1])), aes(wind_vel,bwa,z=est)) +
-  geom_contour_filled()
-
-# Plot individual smooths along with global smooth
-ggplot(gratia_ind_cleaned, aes(wind_vel,pred,group=interaction(id,bwa),color=id)) + 
-  geom_line() +
-  geom_line(data=gratia_global, aes(wind_vel,pred), color="black") # +
-  # geom_point(m_BBAL_filtered,mapping=aes(wind_vel,flaps),color='black',alpha=0.1)
-
-# Plot global smooth with 95 confidence intervals
-ggplot(gratia_global, aes(wind_vel,pred,group=bwa)) + 
-  geom_line() +
-  geom_point(m_BBAL_filtered,mapping=aes(wind_vel,flaps),color='black',alpha=0.1) # +
-  # geom_ribbon(data=gratia_global,aes(ymin=pred_low95,ymax=pred_up95),alpha=0.2)
+fv_global <- fitted_values(GAM_BBAL, data = ds, scale = "response",
+                           terms = c("(Intercept)","s(wind_vel)","s(bwa)","ti(wind_vel,bwa)"))
 
 
 
-# Create dataframe to use predict() 
-predict_df <- expand.grid(wind_vel=seq(min(m_BBAL_filtered$wind_vel),max(m_BBAL_filtered$wind_vel),length.out=100),
-           id = unique(m_BBAL_filtered$id)[1:10],
-           bwa=seq(min(m_BBAL_filtered$bwa),max(m_BBAL_filtered$bwa),length.out=10)
-           )
-preds <- predict(GAM_BBAL,newdata=predict_df,type="terms",se.fit=TRUE)
-preds_df <- data.frame(cbind(predict_df,preds$fit,preds$se.fit))
-# preds_df <- preds_df %>% mutate(global = exp(s.wind_vel. + attr(preds,"constant")[[1]]),
-#                                 individual = exp(s.wind_vel. + s.wind_vel.id. + attr(preds,"constant")[[1]]))
-preds_df <- preds_df %>% mutate(global = exp(te.wind_vel.bwa. + attr(preds,"constant")[[1]]),
-                                individual = exp(te.wind_vel.bwa. + s.wind_vel.id. + attr(preds,"constant")[[1]]),
-                                global_up95 = exp(te.wind_vel.bwa. + attr(preds,"constant")[[1]] + 1.96*te.wind_vel.bwa..1),
-                                global_low95 = exp(te.wind_vel.bwa. + attr(preds,"constant")[[1]] - 1.96*te.wind_vel.bwa..1)
-)
+fv %>% filter(id==unique(m_BBAL$id)[1])|>
+  ggplot(aes(wind_vel,bwa, z=fitted)) +
+  geom_contour_filled() +
+  labs(title="individual 1")
 
-# Plot individual smooths along with global smooth
-ggplot(preds_df, aes(wind_vel,individual,group=interaction(id,bwa),color=id)) + 
-  geom_line() +
-  geom_line(data=preds_df, aes(wind_vel,global), color="black") +
-  geom_point(m_BBAL_filtered,mapping=aes(wind_vel,flaps),color='black',alpha=0.1)
+fv %>% filter(id==unique(m_BBAL$id)[2])|>
+  ggplot(aes(wind_vel,bwa, z=fitted)) +
+  geom_contour_filled() +
+  labs(title="individual 2")
 
-# Plot global smooth with 95 confidence intervals
-ggplot(preds_df, aes(wind_vel,global,group=bwa)) + 
-  geom_line() +
-  geom_point(m_BBAL_filtered,mapping=aes(wind_vel,flaps),color='black',alpha=0.1) +
-  geom_ribbon(data=preds_df,aes(ymin=global_low95,ymax=global_up95),alpha=0.2) +
-  ggtitle("headwinds")
+fv %>% filter(id==unique(m_BBAL$id)[3])|>
+  ggplot(aes(wind_vel,bwa, z=fitted)) +
+  geom_contour_filled() +
+  labs(title="individual 3")
 
-# smooth for individual 1
-ggplot(preds_df %>% filter(id == as.character(unique(m_BBAL_filtered$id)[1])), aes(wind_vel,individual,group=interaction(id,bwa))) + 
-  geom_line(color='blue') +
-  geom_line(data=preds_df, aes(wind_vel,global,group=bwa), color="black") +
-  geom_point(m_BBAL_filtered %>% filter(id == as.character(unique(m_BBAL_filtered$id)[1])), mapping = aes(wind_vel,flaps),color='red') + 
-  geom_point(m_BBAL_filtered,mapping=aes(wind_vel,flaps),color='black',alpha=0.1)
-
-# smooth for individual 2
-ggplot(preds_df %>% filter(id == as.character(unique(m_BBAL_filtered$id)[2])), aes(wind_vel,individual,group=interaction(id,bwa))) + 
-  geom_line(color='blue') +
-  geom_line(data=preds_df, aes(wind_vel,global,group=bwa), color="black") +
-  geom_point(m_BBAL_filtered %>% filter(id == as.character(unique(m_BBAL_filtered$id)[2])), mapping = aes(wind_vel,flaps),color='red') + 
-  geom_point(m_BBAL_filtered,mapping=aes(wind_vel,flaps),color='black',alpha=0.1)
-
-# smooth for individual 3
-ggplot(preds_df %>% filter(id == as.character(unique(m_BBAL_filtered$id)[3])), aes(wind_vel,individual,group=interaction(id,bwa))) + 
-  geom_line(color='blue') +
-  geom_line(data=preds_df, aes(wind_vel,global,group=bwa), color="black") +
-  geom_point(m_BBAL_filtered %>% filter(id == as.character(unique(m_BBAL_filtered$id)[3])), mapping = aes(wind_vel,flaps),color='red') + 
-  geom_point(m_BBAL_filtered,mapping=aes(wind_vel,flaps),color='black',alpha=0.1)
+fv_global |>
+  ggplot(aes(wind_vel,bwa, z=fitted)) +
+  geom_contour_filled() + 
+  labs(title="global")
 
 ################################################################################
-# Breaking up data into head, cross, and tail-winds
+# Interaction term for categorized bwa ---------------------------------------------
 
-m_BBAL_head <- m_BBAL_filtered %>% filter(bwa<=45) # only head-winds
-m_BBAL_cross <- m_BBAL_filtered %>% filter(bwa>45 & bwa<135) # only cross-winds
-m_BBAL_tail <- m_BBAL_filtered %>% filter(bwa>=135) # only tail-winds
 
-# base model with individual randomness for headwinds
-GAM_BBAL_head <- gam(formula = flaps ~ s(wind_vel,k=5,bs='tp') + s(wind_vel,id,bs='re',k=5),
-                  data = m_BBAL_head,
-                  family = poisson(),
-                  method = "REML")
+# interaction between factor and continuous variable
+GAM_BBAL_directional <- gam(formula = flaps ~ s(wind_vel,bs='tp',k=3) +
+                                      s(wind_vel,by=BWA_cat,k=3,m=1) + 
+                                      s(id,k=length(unique(m_BBAL$id)),bs="re"),
+                            data = m_BBAL,
+                            family = "poisson",
+                            method = "REML")
 
-# Create dataframe to use predict() for headwinds
-predict_df_head <- expand.grid(wind_vel=seq(min(m_BBAL_head$wind_vel),max(m_BBAL_head$wind_vel),length.out=100),
-                               id = unique(m_BBAL_head$id)[1:10])
-preds_head <- predict(GAM_BBAL_head,newdata=predict_df_head,type="terms",se.fit=TRUE)
-preds_df_head <- data.frame(cbind(predict_df_head,preds_head$fit,preds_head$se.fit))
-preds_df_head <- preds_df_head %>% mutate(global = exp(s.wind_vel. + attr(preds_head,"constant")[[1]]),
-                                          individual = exp(s.wind_vel. + s.wind_vel.id. + attr(preds_head,"constant")[[1]]),
-                                          global_up95 = exp(s.wind_vel. + attr(preds_head,"constant")[[1]] + 1.96*s.wind_vel..1),
-                                          global_low95 = exp(s.wind_vel. + attr(preds_head,"constant")[[1]] - 1.96*s.wind_vel..1)
-)
+ds_directional  <- data_slice(GAM_BBAL_directional, wind_vel = evenly(wind_vel, n = 100), id = unique(m_BBAL$id)[1:10],
+                              BWA_cat = unique(m_BBAL$BWA_cat))
 
-# Plot individual smooths along with global smooth for headwinds
-ggplot(preds_df_head, aes(wind_vel,individual,color=id)) + 
-  geom_point() +
-  geom_point(data=preds_df_head, aes(wind_vel,global), color="black") +
-  geom_point(m_BBAL_head,mapping=aes(wind_vel,flaps),color='black',alpha=0.1)
+ds_directional$BWA_cat <- factor(ds_directional$BWA_cat, levels=c("head", "cross", "tail"))
 
-# Plot global smooth with 95 confidence intervals for headwinds
-ggplot(preds_df_head, aes(wind_vel,global)) + 
+fv_directional <- fitted_values(GAM_BBAL_directional, data = ds_directional, scale = "response")
+
+fv_directional_global <- fitted_values(GAM_BBAL_directional, data = ds_directional, scale = "response",
+                                       terms = c("(Intercept)","s(wind_vel)","s(wind_vel):BWA_catcross",
+                                                 "s(wind_vel):BWA_cathead","s(wind_vel):BWA_cattail"))
+
+fv_directional |>
+  ggplot(aes(x = wind_vel, y = fitted, color=id)) +
+  geom_line() +
+  geom_point(m_BBAL,mapping=aes(wind_vel,flaps),color='black',alpha=0.1) +
+  geom_line(fv_directional_global,mapping=aes(wind_vel,fitted),color='black',linewidth=1) +
+  geom_ribbon(fv_directional_global,mapping=aes(ymin = lower, ymax = upper, y = NULL), alpha = 0.1,fill='black') +
+  facet_wrap(~BWA_cat,ncol=3)
+
+fv_directional_global |>
+  ggplot(aes(x = wind_vel, y = fitted, color=BWA_cat)) +
+  geom_line(linewidth=1) +
+  geom_ribbon(fv_directional_global,mapping=aes(ymin = lower, ymax = upper, y = NULL,fill=BWA_cat),alpha = 0.3,color=NA) +
+  labs(title="Global for three directions - no imm trim")
+
+################################################################################
+# Breaking up data into tail, cross, and tail-winds
+
+# RUN tail, CROSS, TAIL SPLIT ---------------------------------------------
+# Command, option, T to run this section
+
+directional_k <- 5
+
+m_BBAL_head <- m_BBAL %>% filter(bwa<=45) # only head-winds
+m_BBAL_cross <- m_BBAL %>% filter(bwa>45 & bwa<135) # only cross-winds
+m_BBAL_tail <- m_BBAL %>% filter(bwa>=135) # only tail-winds
+
+# base model with individual randomness for headWINDS
+GAM_BBAL_head <- gam(formula = flaps ~ s(wind_vel,bs='tp',k=directional_k) +
+                     s(id,k=length(unique(m_BBAL_head$id)),bs="re"),
+                   data = m_BBAL_head,
+                   family = "poisson",
+                   method = "REML")
+
+ds_head  <- data_slice(GAM_BBAL_head, wind_vel = evenly(wind_vel, n = 100), id = unique(m_BBAL_head$id)[1:10])
+
+fv_head <- fitted_values(GAM_BBAL_head, data = ds_head, scale = "response",
+                       terms = c("(Intercept)","s(wind_vel)","s(id)"))
+
+fv_head_global <- fitted_values(GAM_BBAL_head, data = ds_head, scale = "response",
+                              terms = c("(Intercept)","s(wind_vel)"))
+
+fv_head |>
+  ggplot(aes(x = wind_vel, y = fitted, color = id)) +
   geom_line() +
   geom_point(m_BBAL_head,mapping=aes(wind_vel,flaps),color='black',alpha=0.1) +
-  geom_ribbon(data=preds_df_head,aes(ymin=global_low95,ymax=global_up95),alpha=0.2) +
-  ggtitle("headwinds")
+  geom_line(fv_head_global,mapping=aes(wind_vel,fitted),color='black') +
+  geom_ribbon(fv_head_global,mapping=aes(ymin = lower, ymax = upper, y = NULL), alpha = 0.1) +
+  labs(title="headwinds")
 
-# base model with individual randomness for crosswinds
-GAM_BBAL_cross <- gam(formula = flaps ~ s(wind_vel,k=5,bs='tp') + s(wind_vel,id,bs='re',k=5),
+fv_head_global |>
+  ggplot(aes(x = wind_vel, y = fitted)) +
+  geom_line(color='black') +
+  geom_ribbon(fv_head_global,mapping=aes(ymin = lower, ymax = upper, y = NULL), alpha = 0.4) +
+  labs(title="headwinds")
+
+summary(GAM_BBAL_head)
+
+
+# base model with individual randomness for crossWINDS
+GAM_BBAL_cross <- gam(formula = flaps ~ s(wind_vel,bs='tp',k=directional_k) +
+                       s(id,k=length(unique(m_BBAL_cross$id)),bs="re"),
                      data = m_BBAL_cross,
-                     family = poisson(),
+                     family = "poisson",
                      method = "REML")
 
-# Create dataframe to use predict() for crosswinds
-predict_df_cross <- expand.grid(wind_vel=seq(min(m_BBAL_cross$wind_vel),max(m_BBAL_cross$wind_vel),length.out=100),
-                               id = unique(m_BBAL_cross$id)[1:10])
-preds_cross <- predict(GAM_BBAL_cross,newdata=predict_df_cross,type="terms",se.fit=TRUE)
-preds_df_cross <- data.frame(cbind(predict_df_cross,preds_cross$fit,preds_cross$se.fit))
-preds_df_cross <- preds_df_cross %>% mutate(global = exp(s.wind_vel. + attr(preds_cross,"constant")[[1]]),
-                                          individual = exp(s.wind_vel. + s.wind_vel.id. + attr(preds_cross,"constant")[[1]]),
-                                          global_up95 = exp(s.wind_vel. + attr(preds_cross,"constant")[[1]] + 1.96*s.wind_vel..1),
-                                          global_low95 = exp(s.wind_vel. + attr(preds_cross,"constant")[[1]] - 1.96*s.wind_vel..1)
-)
+ds_cross  <- data_slice(GAM_BBAL_cross, wind_vel = evenly(wind_vel, n = 100), id = unique(m_BBAL_cross$id)[1:10])
 
-# Plot individual smooths along with global smooth for crosswinds
-ggplot(preds_df_cross, aes(wind_vel,individual,color=id)) + 
-  geom_point() +
-  geom_point(data=preds_df_cross, aes(wind_vel,global), color="black") +
-  geom_point(m_BBAL_cross,mapping=aes(wind_vel,flaps),color='black',alpha=0.1)
+fv_cross <- fitted_values(GAM_BBAL_cross, data = ds_cross, scale = "response",
+                         terms = c("(Intercept)","s(wind_vel)","s(id)"))
 
-# Plot global smooth with 95 confidence intervals for crosswinds
-ggplot(preds_df_cross, aes(wind_vel,global)) + 
+fv_cross_global <- fitted_values(GAM_BBAL_cross, data = ds_cross, scale = "response",
+                                terms = c("(Intercept)","s(wind_vel)"))
+
+fv_cross |>
+  ggplot(aes(x = wind_vel, y = fitted, color = id)) +
   geom_line() +
   geom_point(m_BBAL_cross,mapping=aes(wind_vel,flaps),color='black',alpha=0.1) +
-  geom_ribbon(data=preds_df_cross,aes(ymin=global_low95,ymax=global_up95),alpha=0.2) +
-  ggtitle("crosswinds")
+  geom_line(fv_cross_global,mapping=aes(wind_vel,fitted),color='black') +
+  geom_ribbon(fv_cross_global,mapping=aes(ymin = lower, ymax = upper, y = NULL), alpha = 0.1) +
+  labs(title="crosswinds")
 
-# base model with individual randomness for tailwinds
-GAM_BBAL_tail <- gam(formula = flaps ~ s(wind_vel,k=5,bs='tp') + s(wind_vel,id,bs='re',k=5),
+
+
+# base model with individual randomness for tailWINDS
+GAM_BBAL_tail <- gam(formula = flaps ~ s(wind_vel,bs='tp',k=directional_k) +
+                       s(id,k=length(unique(m_BBAL_tail$id)),bs="re"),
                      data = m_BBAL_tail,
-                     family = poisson(),
+                     family = "poisson",
                      method = "REML")
 
-# Create dataframe to use predict() for tailwinds
-predict_df_tail <- expand.grid(wind_vel=seq(min(m_BBAL_tail$wind_vel),max(m_BBAL_tail$wind_vel),length.out=100),
-                               id = unique(m_BBAL_tail$id)[1:10])
-preds_tail <- predict(GAM_BBAL_tail,newdata=predict_df_tail,type="terms",se.fit=TRUE)
-preds_df_tail <- data.frame(cbind(predict_df_tail,preds_tail$fit,preds_tail$se.fit))
-preds_df_tail <- preds_df_tail %>% mutate(global = exp(s.wind_vel. + attr(preds_tail,"constant")[[1]]),
-                                          individual = exp(s.wind_vel. + s.wind_vel.id. + attr(preds_tail,"constant")[[1]]),
-                                          global_up95 = exp(s.wind_vel. + attr(preds_tail,"constant")[[1]] + 1.96*s.wind_vel..1),
-                                          global_low95 = exp(s.wind_vel. + attr(preds_tail,"constant")[[1]] - 1.96*s.wind_vel..1)
-                                          )
+ds_tail  <- data_slice(GAM_BBAL_tail, wind_vel = evenly(wind_vel, n = 100), id = unique(m_BBAL_tail$id)[1:10])
 
+fv_tail <- fitted_values(GAM_BBAL_tail, data = ds_tail, scale = "response",
+                         terms = c("(Intercept)","s(wind_vel)","s(id)"))
 
-# Plot individual smooths along with global smooth for tailwinds
-ggplot(preds_df_tail, aes(wind_vel,individual,color=id)) + 
-  geom_point() +
-  geom_point(data=preds_df_tail, aes(wind_vel,global), color="black") +
-  geom_point(m_BBAL_tail,mapping=aes(wind_vel,flaps),color='black',alpha=0.1) +
-  ggtitle("Tailwinds")
+fv_tail_global <- fitted_values(GAM_BBAL_tail, data = ds_tail, scale = "response",
+                                terms = c("(Intercept)","s(wind_vel)"))
 
-# Plot global smooth with 95 confidence intervals for tailwinds
-ggplot(preds_df_tail, aes(wind_vel,global)) + 
+fv_tail |>
+  ggplot(aes(x = wind_vel, y = fitted, color = id)) +
   geom_line() +
   geom_point(m_BBAL_tail,mapping=aes(wind_vel,flaps),color='black',alpha=0.1) +
-  geom_ribbon(aes(ymin=global_low95,ymax=global_up95),alpha=0.2) +
-  ggtitle("Tailwinds")
-
-plot(GAM_BBAL_tail,pages=1)
-################################################################################
-# Messing with a subset of data
+  geom_line(fv_tail_global,mapping=aes(wind_vel,fitted),color='black') +
+  geom_ribbon(fv_tail_global,mapping=aes(ymin = lower, ymax = upper, y = NULL), alpha = 0.1) +
+  labs(title="tailwinds")
 
 
 
-################################################################################
-# For BBAL
-fiveP_BBAL <- quantile(m_BBAL$wind_vel,probs=(c(.05,.95)))
-m_BBAL_filtered <- m_BBAL
-# m_BBAL_filtered <- m_BBAL %>% filter(wind_vel>fiveP_BBAL[[1]] & wind_vel<fiveP_BBAL[[2]])
-# m_BBAL_filtered <- m_BBAL_filtered %>% filter(bwa<=45) # only head-winds
-# m_BBAL_filtered <- m_BBAL_filtered %>% filter(bwa>45 & bwa<135) # only cross-winds
-# m_BBAL_filtered <- m_BBAL_filtered %>% filter(bwa>=135) # only tail-winds
-ggplot(m_BBAL_filtered, aes(wind_vel,flaps)) + 
-  geom_point(color='black')
+# Plots with all 3 directions
+ggplot(m_BBAL, aes(wind_vel,flaps)) + 
+  geom_point(alpha=0.1) +
+  geom_line(fv_head_global,mapping=aes(wind_vel,fitted),color='green',linewidth=1) +
+  geom_line(fv_cross_global,mapping=aes(wind_vel,fitted),color='blue',linewidth=1) +
+  geom_line(fv_tail_global,mapping=aes(wind_vel,fitted),color='red',linewidth=1) +
+  labs(title="Global smooths for the three directions")
 
-GAM_BBAL <- gam(formula = flaps ~ s(wind_vel,k=4,bs='tp') + s(bwa,bs='tp',k=4) + te(wind_vel, bwa, k = c(4, 4), bs = c('tp', 'tp')),
-                data = m_BBAL_filtered,
-                family = poisson(),
-                method = "REML")
+# Plots with all 3 directions
+ggplot(fv_head_global, aes(wind_vel,fitted)) + 
+  geom_line(color='green',linewidth=1) +
+  geom_ribbon(fv_head_global,mapping=aes(ymin = lower, ymax = upper, y = NULL), alpha = 0.2, fill='green') +
+  geom_line(fv_cross_global,mapping=aes(wind_vel,fitted),color='blue',linewidth=1) +
+  geom_ribbon(fv_cross_global,mapping=aes(ymin = lower, ymax = upper, y = NULL), alpha = 0.2, fill='blue') +
+  geom_line(fv_tail_global,mapping=aes(wind_vel,fitted),color='red',linewidth=1) +
+  geom_ribbon(fv_tail_global,mapping=aes(ymin = lower, ymax = upper, y = NULL), alpha = 0.2, fill='red') +
+  labs(title="Global smooths for the three directions. k = 5")
 
-preds <- predict.gam(GAM_BBAL,m_BBAL_filtered %>% select(wind_vel,bwa))
-preds_df <- data.frame(cbind(m_BBAL_filtered,preds))
-preds_df <- preds_df %>% mutate(est_trans = exp(preds))
 
-ggplot(m_BBAL_filtered, aes(wind_vel,flaps)) +
-  geom_point(color='red') +
-  geom_point(data=preds_df, aes(wind_vel,est_trans), color="black")
-
-summary(GAM_BBAL)
-
-plot(GAM_BBAL,scheme=2,pages=1)
 
 ################################################################################
-# For GHAL
-fiveP_GHAL <- quantile(m_GHAL$wind_vel,probs=(c(.05,.95)))
-m_GHAL_filtered <- m_GHAL
-m_GHAL_filtered <- m_GHAL %>% filter(wind_vel>fiveP_GHAL[[1]] & wind_vel<fiveP_GHAL[[2]])
-# m_GHAL_filtered <- m_GHAL_filtered %>% filter(bwa<=45) # only head-winds
-# m_GHAL_filtered <- m_GHAL_filtered %>% filter(bwa>45 & bwa<135) # only cross-winds
-# m_GHAL_filtered <- m_GHAL_filtered %>% filter(bwa>=135) # only tail-winds
-ggplot(m_GHAL_filtered, aes(wind_vel,flaps)) + 
-  geom_point(color='black')
+# Try without removing landings -----------------------------------------------
 
-GAM_GHAL <- gam(formula = flaps ~ te(wind_vel, bwa, k = c(5, 5), bs = c('tp', 'tp')),
-                 data = m_GHAL_filtered,
-                 family = poisson(),
-                 method = "REML")
 
-preds <- predict.gam(GAM_GHAL,m_GHAL_filtered %>% select(wind_vel,bwa))
-preds_df <- data.frame(cbind(m_GHAL_filtered,preds))
-preds_df <- preds_df %>% mutate(est_trans = exp(preds))
+################################################################################
+# GHAL --------------------------------------------------------------------
 
-ggplot(m_GHAL_filtered, aes(wind_vel,flaps)) +
-  geom_point(color='red') +
-  geom_point(data=preds_df, aes(wind_vel,est_trans), color="black")
 
-summary(GAM_GHAL)
+
+
 
 ################################################################################
 # For BFAL
 fiveP_BFAL <- quantile(m_BFAL$wind_vel,probs=(c(.05,.95)))
 m_BFAL_filtered <- m_BFAL
 m_BFAL_filtered <- m_BFAL %>% filter(wind_vel>fiveP_BFAL[[1]] & wind_vel<fiveP_BFAL[[2]])
-# m_BFAL_filtered <- m_BFAL_filtered %>% filter(bwa<=45) # only head-winds
+# m_BFAL_filtered <- m_BFAL_filtered %>% filter(bwa<=45) # only tail-winds
 # m_BFAL_filtered <- m_BFAL_filtered %>% filter(bwa>45 & bwa<135) # only cross-winds
 # m_BFAL_filtered <- m_BFAL_filtered %>% filter(bwa>=135) # only tail-winds
 ggplot(m_BFAL_filtered, aes(wind_vel,flaps)) + 
@@ -506,7 +385,7 @@ summary(GAM_BFAL)
 fiveP_LAAL <- quantile(m_LAAL$wind_vel,probs=(c(.05,.95)))
 m_LAAL_filtered <- m_LAAL
 m_LAAL_filtered <- m_LAAL %>% filter(wind_vel>fiveP_LAAL[[1]] & wind_vel<fiveP_LAAL[[2]])
-# m_LAAL_filtered <- m_LAAL_filtered %>% filter(bwa<=45) # only head-winds
+# m_LAAL_filtered <- m_LAAL_filtered %>% filter(bwa<=45) # only tail-winds
 # m_LAAL_filtered <- m_LAAL_filtered %>% filter(bwa>45 & bwa<135) # only cross-winds
 # m_LAAL_filtered <- m_LAAL_filtered %>% filter(bwa>=135) # only tail-winds
 ggplot(m_LAAL_filtered, aes(wind_vel,flaps)) + 
@@ -528,7 +407,7 @@ ggplot(m_LAAL_filtered, aes(wind_vel,flaps)) +
 summary(GAM_LAAL)
 
 ################################################################################
-# Facet wrap by species, split bwa into head, cross, and tail:
+# Facet wrap by species, split bwa into tail, cross, and tail:
 
 
 
@@ -722,7 +601,7 @@ scatter_plot
 
 
 
-# this gets rid of headwinds (setting bwa>60)
+# this gets rid of tailwinds (setting bwa>60)
 m_selectedWinds <- filter(m_all,bwa>60)
 
 # do i separate into inc and BG? 

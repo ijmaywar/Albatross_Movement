@@ -29,6 +29,7 @@ GD_dir = "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/
 L0_dir = strcat(GD_dir,"L0/",location,"/Tag_Data/",szn,"/Aux/NRL/L0_1_Decompressed/1_SensorData/");
 L1_dir = strcat(GD_dir,"L1/",location,"/Tag_Data/Acc/Acc_NRL/",szn,"/");
 GPS_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/GPS/GPS_Catlog/',szn,'/2_buffer2km/');
+break_dir = strcat(GD_dir,"L0/",location,"/Tag_Data/",szn,"/Aux/NRL/L0_1_Decompressed/datetime_breaks/");
 
 % Matlab functions toolbox
 addpath(genpath('/Users/ian/Documents/GitHub/AlbatrossFlightDynamics/'))
@@ -37,9 +38,6 @@ addpath(genpath('/Users/ian/Documents/GitHub/AlbatrossFlightDynamics/'))
 fullmeta = readtable(strcat(GD_dir,'metadata/Full_metadata.xlsx'),'TreatAsEmpty',{'NA'});
 % Specify the field season and location you are interested in
 fullmeta = fullmeta(strcmp(fullmeta.Field_Season,szn) & strcmp(fullmeta.Location,location),:);
-
-% Tag timings sheet
-Tag_Timings = readtable(strcat(GD_dir,"L0/",location,"/Tag_Data/",szn,"/Aux/NRL/Tag_Meta_Timings_",szn,".csv"),'Delimiter',',');
 
 % Prevent figures from popping up when running in the background
 set(0,'DefaultFigureVisible','off')
@@ -94,14 +92,14 @@ parfor i = 1:height(L0_fileList)
     %% s1
     
     samplingRate = 1/75; % 75 Hz
-    nSamples = height(m);
-    
-    m.DateTime = (ON_DateTime + seconds(0:samplingRate:(nSamples-1)*samplingRate))';
+
+    % Add DateTime and DateTime corrected columns
+    m.DateTime = (ON_DateTime + seconds(0:samplingRate:(height(m)-1)*samplingRate))';
 
     % Downsample to 25 Hz
     m = m(1:3:end,:);
 
-    if strcmp(m.Properties.VariableNames{1},'Var1')
+    if sum(strcmp(m.Properties.VariableNames,'Var1'))==1
         % name columns if they were never named
         m.Properties.VariableNames = {'Ax','Ay','Az','Magx','Magy,','Magz','Gx','Gy','Gz','TempDegC','PRPa','DateTime'}
     end
