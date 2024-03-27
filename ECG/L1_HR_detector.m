@@ -105,13 +105,7 @@ for i = 1:length(L0_fileNames)
 
     % Make sure this data is usable based on Tag_Timings
     Usable = Tag_Timings(strcmp(Tag_Timings.dep_ID,dep_ID),:).Usable; 
-
-    %%
-    % if Usable == 0
-    %     disp(strcat(dep_ID, " is unusable."))
-    %     continue
-    % end
-        
+    
     %% Find dt_break
     cd(dt_break_dir)
     birdDTBREAKname = strcat(dep_ID,"_dt_breaks.csv");
@@ -324,7 +318,7 @@ for i = 1:length(L0_fileNames)
         end
     end
 
-    DateTime = (ON_DateTime + seconds((corrected_idx-1)*(1/fs)));        %seconds(0:samplingRate:(nSamples-1)*samplingRate))';
+    DateTime = (ON_DateTime + seconds((corrected_idx-1)*(1/fs)));
     DateTime.Format = 'yyyy-MM-dd HH:mm:ss.SSSSSS';
 
     %% Save data
@@ -347,41 +341,5 @@ for i = 1:length(L0_fileNames)
 
 end
         
-
-
-%% plot start of differenced data
-
-figure
-plot(x1_1(1:1000000))
-ylim([-1.5 1.5])
-
-%% reverse data
-
-for j = 1:length(x1_1)
-    x2_1(j,1) = x1_1(end-j+1);
-end
-
-
-%% plot differenced data (in reverse)
-
-figure
-plot(x2_1(1:1000000))
-ylim([-1.5 1.5])
-
-
-% flip x1_1
-        
-
-
-
-        %% plot start
-        figure
-        plot(1:10000000,L0_trimmed(1:10000000))
-         
-        %% plot end 
-        figure
-        x_end = length(L0_trimmed);
-        plot(x_end-10000000:x_end,L0_trimmed(x_end-10000000:x_end))
-
 
 

@@ -22,10 +22,10 @@ library(foreach)
 
 # Set Environment ---------------------------------------------------------
 
-GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/NEW_STRUCTURE/"
+GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/Thorne Lab Shared Drive/Data/Albatross/"
 Acc_L3_dir <- paste0(GD_dir,"L3/",location,"/Tag_Data/Acc/",szn,"/")
 GLS_L1_dir <- paste0(GD_dir, "L1/",location,"/Tag_Data/Immersion/GLS/",szn,"/")
-write_dir <- paste0(GD_dir, "Projects/Maywar/Flaps_ImmersionState_600s/GLS/",location,"/",szn,"/")
+write_dir <- paste0(GD_dir, "Projects/Maywar/Flaps_600s/GLS/",location,"/",szn,"/")
 
 setwd(GLS_L1_dir)
 GLS_files <- list.files(pattern='*.csv')

@@ -1,6 +1,6 @@
 ################################################################################
 #
-# Wind data: Take 600s wind data with gps, HMM, num. flaps and turn it into hourly intervals 
+# Wind data: Take 600s wind data with gps, GLS, num. flaps and turn it into hourly intervals 
 #
 ################################################################################
 
