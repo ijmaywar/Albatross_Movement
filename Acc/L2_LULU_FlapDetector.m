@@ -15,30 +15,39 @@ clearvars
 
 %% USER INPUTED VALUES
 
-szn = '2020_2021';
-location = 'Bird_Island'; % Options: 'Bird_Island', 'Midway', 'Wandering'
-computer = 'MacMini'; % Options: "MacMini," "MacBookPro"
-AccType = 'Technosmart';
+szn = '2019_2020';
+location = 'Bird_Island'; % Options: 'Bird_Island', 'Midway'
+AccType = 'NRL'; % Options: 'Technosmart', 'NRL'
 
 %% Set envrionment
 
 % set directories
-GD_dir = findGD(computer);
+GD_dir = "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/Thorne Lab Shared Drive/Data/Albatross/";
 % L1_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/Acc/Acc_',AccType,'/',szn,'/dt_local/');
 L1_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/Acc/Acc_',AccType,'/',szn,'/');
-L2_dir = strcat(GD_dir,'L2/',location,'/Tag_Data/Acc/',szn,'/');
+
+if strcmp(AccType,'NRL')
+    % If the flap detector is being run on acc data from NRL tags, the
+    % L1_Acc data will be in a subfolder called "NRL_Not_Adjusted" because
+    % the DateTime on these files haven't been adjusted yet.
+    L2_dir = strcat(GD_dir,'L2/',location,'/Tag_Data/Acc/',szn,'/NRL_Not_Adjusted/');
+elseif strcmp(AccType,'Technosmart')
+    L2_dir = strcat(GD_dir,'L2/',location,'/Tag_Data/Acc/',szn,'/');
+end
 
 % Matlab functions toolbox
-addpath(genpath('/Users/ian/Documents/GitHub/AlbatrossFlightDynamics/'))
+addpath(genpath('/Users/ian/Documents/GitHub/'))
 
 % Full_metadata sheet
 fullmeta = readtable(strcat(GD_dir,'metadata/Full_metadata.xlsx'),'TreatAsEmpty',{'NA'});
 % Specify the field season and location you are interested in
-fullmeta = fullmeta(strcmp(fullmeta.Field_season,szn) & strcmp(fullmeta.Location,location),:);
+fullmeta = fullmeta(strcmp(fullmeta.Field_Season,szn) & strcmp(fullmeta.Location,location),:);
 
 % Create L1 file list
 cd(L1_dir)
-L1_fileList = exFAT_aux_remove(struct2table(dir('*.csv')));
+L1_fileList = dir('*.csv');
+L1_fileList(startsWith({L1_fileList.name},'._')) = [];
+L1_fileList = struct2table(L1_fileList);
 
 % Make sure that every L1 file can be found in Full_metadata.xlsx
 disp(CheckMeta(fullmeta,L1_fileList,3,"Deployment_ID"))

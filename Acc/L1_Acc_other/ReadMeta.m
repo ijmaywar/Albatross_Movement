@@ -15,33 +15,32 @@ clearvars
 %% USER INPUTED VALUES
 
 szn = '2021_2022';
-location = 'Bird_Island'; % Options: 'Bird_Island', 'Midway', 'Wandering'
-computer = 'MacMini'; % Options: "MacMini," "MacBookPro"
+location = 'Bird_Island'; % Options: 'Bird_Island', 'Midway'
 datalvl = "L1";
-tagtype = "AGM";
-datatype = "Accelerometer";
+tagtype = "NRL";
 
 %% Set environment
 
 % set directories
-GD_dir = findGD(computer);
-L1_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/Acc/Acc_Technosmart/',szn,'/');
+GD_dir = "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/Thorne Lab Shared Drive/Data/Albatross/";
+% L1_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/Acc/Acc_Technosmart/',szn,'/');
+L1_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/Acc/Acc_NRL/',szn,'/');
 
 % Matlab functions toolbox
-addpath(genpath('/Users/ian/Documents/GitHub/AlbatrossFlightDynamics/'))
+addpath(genpath('/Users/ian/Documents/GitHub/'))
 
 % Full_metadata sheet
 fullmeta = readtable(strcat(GD_dir,'metadata/Full_metadata.xlsx'),'TreatAsEmpty',{'NA'});
 % Specify the field season and location you are interested in
 % fullmeta = fullmeta(strcmp(fullmeta.Field_season,szn) & strcmp(fullmeta.Location,location),:);
-fullmeta = fullmeta(strcmp(fullmeta.Field_season,szn) & strcmp(fullmeta.Location,location) & strcmp(fullmeta.Aux_TagType,tagtype),:);
+fullmeta = fullmeta(strcmp(fullmeta.Field_Season,szn) & strcmp(fullmeta.Location,location) & strcmp(fullmeta.Aux_TagType,tagtype),:);
 
 %% How far did I get?
 
 cd(L1_dir)
 L1_fileList = exFAT_aux_remove(struct2table(dir('*.csv')));
 
-metastruct_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/Acc/Acc_Technosmart/',szn,'/meta_structures/');
+metastruct_dir = strcat(L1_dir,'meta_structures/');
 cd(metastruct_dir)
 metastruct_fileList = exFAT_aux_remove(struct2table(dir('*.mat')));
 
@@ -119,7 +118,7 @@ for i = 1:height(meta_table)
     end
 
     if fullmeta.Acc_L1 + fullmeta.Acc_Fix + fullmeta.Acc_Skip ~= 1
-        disp(stract("L1 should be marked as either complete, 'Fix', or 'Skip' for ", meta_table.Deployment_ID(i)))
+        disp(strcat("L1 should be marked as either complete, 'Fix', or 'Skip' for ", meta_table.Deployment_ID(i)))
         pause;
     end
 

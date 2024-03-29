@@ -97,7 +97,7 @@ L0_fileNames = string({L0_fileList.name});
 
 %% Loop thru and process birds
 
-for i = 1:length(L0_fileNames)
+for i = 2:length(L0_fileNames)
     %% load data to be deteced.
 
     namesplit = strsplit(L0_fileNames(i),'_');
@@ -105,7 +105,7 @@ for i = 1:length(L0_fileNames)
 
     % Make sure this data is usable based on Tag_Timings
     Usable = Tag_Timings(strcmp(Tag_Timings.dep_ID,dep_ID),:).Usable; 
-    
+
     %% Find dt_break
     cd(dt_break_dir)
     birdDTBREAKname = strcat(dep_ID,"_dt_breaks.csv");
@@ -326,6 +326,7 @@ for i = 1:length(L0_fileNames)
     df_HeartBeats.Properties.VariableNames = {'DateTime','idx','probability'};
     
     df_HeartBeats.DateTime = DateTime';
+    df_HeartBeats.DateTime = string(df_HeartBeats.DateTime);
     df_HeartBeats.idx = og_idx';
     df_HeartBeats.corrected_idx = corrected_idx';
     df_HeartBeats.probability = probability';
