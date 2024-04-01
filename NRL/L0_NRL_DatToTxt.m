@@ -1,5 +1,15 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Convert .dat file to .txt for NRL files
+% Use L0_NRL_DatToTxt to convert the raw .dat files into readable .txt files. 
+% This code will create three types of output:
+%   1_SensorData: written in 75 Hz, this records data similar to the AGM tags
+%   2_ECG: written in 600 Hz, this records the ECG signal
+%   3_HeaderPos: this keeps track of tag glitches somehow…IJM could not 
+%                figure out how to use this successfully. IJM has not been 
+%                using this to account for tag glitches. Instead, I am 
+%                using L0_Find_DT_Breaks.m to look for gaps in the GPS data 
+%                and apply these changes in datetime to the data recorded 
+%                by the NRLs.
 %
 % I. Maywar
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -9,7 +19,7 @@ clearvars
 
 %% USER INPUTED VALUES
 
-szn = '2021_2022';
+szn = '2019_2020';
 location = "Bird_Island"; % Options: 'Bird_Island', 'Midway', 'Wandering'
 
 %% Set Environment
@@ -22,9 +32,6 @@ GD_dir = "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/
 L0_0_dir = strcat(GD_dir,"L0/",location,"/Tag_Data/",szn,"/Aux/NRL/L0_0_Raw/");
 L0_1_dir = strcat(GD_dir,"L0/",location,"/Tag_Data/",szn,"/Aux/NRL/L0_1_Decompressed/");
 
-% Matlab functions toolbox
-addpath(genpath('/Users/ian/Documents/GitHub/AlbatrossFlightDynamics/'))
-
 cd(L0_0_dir)
 fileList = dir('*.dat');
 % Remove artifacts that start with '._' (which are created by using an external HD)
@@ -32,7 +39,7 @@ fileList(startsWith({fileList.name},'._')) = [];
 
 %% Unpack Raw Neurologger .dat files
 
-for i = 1:length(fileList)
+for i = 7:length(fileList)
     
     %%
     namesplit = strsplit(fileList(i).name,'_');
@@ -50,7 +57,7 @@ for i = 1:length(fileList)
     [Calibration, ECG_t, Accel_t, Pressure_t, Temp_t, Gyro_t, Magn_t, Sync_t,HeaderPosition] = Datalogger4ChConverter_MARG_Altimeter_final(fileList(i).name, Parameters);
     
     % Write header positions in the text file-----------------------------------
-    filenamei = strcat(L0_1_dir, "3_HeaderPos/", current_bird, '_HeaderPos.txt');
+    filenamei = strcat(L0_1_dir, "3_HeaderPos/", current_bird, '_NRL_L0_1_1_HeaderPos.txt');
     writematrix(HeaderPosition', filenamei);
     
     %Get tempterature and pressure---------------------------------------------
@@ -105,8 +112,8 @@ for i = 1:length(fileList)
     eegfilename = strcat(L0_0_dir, "output_mat/", current_bird,'_eegmatraw600hz.mat');
     save(eegfilename,'ECG','-v7.3')
     
-    writematrix(ECG, strcat(L0_1_dir, "2_ECG/", current_bird, "_ECG.txt")); % 'delimiter',',')
-    writematrix(SensorMat,strcat(L0_1_dir, "1_SensorData/", current_bird, "_SensorData.txt")); % 'delimiter',',')
+    writematrix(ECG, strcat(L0_1_dir, "2_ECG/", current_bird, "_NRL_L0_1_1_ECG.txt")); % 'delimiter',',')
+    writematrix(SensorMat,strcat(L0_1_dir, "1_SensorData/", current_bird, "_NRL_L0_1_1_SensorData.txt")); % 'delimiter',',')
     
 
     %%

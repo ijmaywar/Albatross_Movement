@@ -14,35 +14,37 @@ clearvars
 
 %% USER INPUTED VALUES
 
-directory = "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/to_share/Gillies/Immersion_2019_2022/2021_2022/LUX/";
-fileExt = "lux";
+% Paste the path name for the desired folder here:
+directory = "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1ZwIQqcVnA34cxm_324gF2ie4UtWb8-Qb/Thorne Lab Shared Drive/Data/Albatross/L0/Bird_Island/Tag_Data/2021_2022/Aux/AGM/WAAL/";
+% What is the format of the file? (e.g. .csv)
+fileExt = "csv";
 
 szn = '2021_2022';
 location = 'Bird_Island'; % Options: 'Bird_Island', 'Midway', 'Wandering'
 % Genus = "great";
-Tag = "GLS"; % Options: "Aux", "GPS", "GLS" 
-datatype = "GLS";
-TagType = "GLS"; % Options: 
+Tag = "Aux"; % Options: "Aux", "GPS", "GLS" 
+datatype = "AGM";
+TagType = "AGM"; % Options: 
                   % GPS: "Catlog", "iGotU"
                   % Aux: "AGM", "Axy5", "AxyAir", "GCDC", "NRL", "uMoth"
                   % GLS 
                   % AxyTrek
 datalvl = 0; % Options: 0, 1, 2
 % datasublvl = 2; % Options: 1, 2, 3
-computer = "MacMini"; % Options: "MacMini", "MacBookPro"
 
-newname = false; % Options: true, false
+% Are the files currently written under the naming convention?
+nam_conv = false; % Options: true, false
+
 
 %% Set environment
 
-GD_dir = "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/";
+GD_dir = "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/Thorne Lab Shared Drive/Data/Albatross/";
 
 % Full_metadata sheet
 fullmeta = readtable(strcat(GD_dir,'metadata/Full_metadata.xlsx'),'TreatAsEmpty',{'NA'});
-% fullmeta = fullmeta(strcmp(fullmeta.Field_season,szn) & strcmp(fullmeta.Location,location),:); % & strcmp(fullmeta.Genus,Genus),:);
-% fullmeta = fullmeta(strcmp(fullmeta.Field_season,szn) & strcmp(fullmeta.Location,location) & strcmp(fullmeta.Aux_TagType,TagType),:);
-fullmeta = fullmeta(strcmp(fullmeta.Field_season,szn),:);
-
+% fullmeta = fullmeta(strcmp(fullmeta.Field_Season,szn) & strcmp(fullmeta.Location,location),:); % & strcmp(fullmeta.Genus,Genus),:);
+% fullmeta = fullmeta(strcmp(fullmeta.Field_Season,szn) & strcmp(fullmeta.Location,location) & strcmp(fullmeta.Aux_TagType,TagType),:);
+fullmeta = fullmeta(strcmp(fullmeta.Field_Season,szn),:);
 
 cd(directory)
 fileList = dir(strcat('*.',fileExt));
@@ -52,7 +54,7 @@ fileNames = string({fileList.name});
 % fileList = dir;
 % fileList = fileList(4:end,:);
 
-fileList(endsWith({fileList.name},'driftadj.lux')) = [];
+% fileList(endsWith({fileList.name},'driftadj.lux')) = [];
 
 nfiles = height(fileList);
 rename_table = table(cell(nfiles,1),cell(nfiles,1),cell(nfiles,1),cell(nfiles,1),'VariableNames',{'Old_fileName','Old_ID','New_fileName','Deployment_ID'}); 
@@ -68,7 +70,7 @@ for id = 1:nfiles
     nameSplit = strsplit(f,'_');
 
     % Find metadata
-    if ~newname % For OG_IDs   
+    if ~nam_conv % For OG_IDs   
         if ismember(Tag,["GPS","AxyTrek"])
             num_ = count(string(fullmeta.Pos_OG_ID(1)),"_");
             Old_BirdName = findOBN(num_,nameSplit);

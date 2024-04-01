@@ -15,16 +15,16 @@ clearvars
 
 %% USER INPUTED VALUES
 
-szn = '2019_2020';
+szn = '2021_2022';
 location = 'Bird_Island'; % Options: 'Bird_Island', 'Midway'
-AccType = 'NRL'; % Options: 'Technosmart', 'NRL'
+AccType = 'Technosmart'; % Options: 'Technosmart', 'NRL'
 
 %% Set envrionment
 
 % set directories
 GD_dir = "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/Thorne Lab Shared Drive/Data/Albatross/";
-% L1_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/Acc/Acc_',AccType,'/',szn,'/dt_local/');
-L1_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/Acc/Acc_',AccType,'/',szn,'/');
+% L1_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/Acc/Acc_',AccType,'/',szn,'/');
+L1_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/Acc/Acc_',AccType,'/',szn,'/WAAL/');
 
 if strcmp(AccType,'NRL')
     % If the flap detector is being run on acc data from NRL tags, the

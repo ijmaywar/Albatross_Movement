@@ -41,7 +41,7 @@ nfiles = height(ECG_fileList);
 
 %% Loop thru
 
-for i = 16:length(ECG_fileList)
+for i = 1:length(ECG_fileList)
 
     cd(ECG_dir)
     namesplit = strsplit(ECG_fileNames(i),'_');
