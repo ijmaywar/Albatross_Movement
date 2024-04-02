@@ -90,7 +90,7 @@ L0_fileNames = string({L0_fileList.name});
 
 %% Loop thru and process birds
 
-for i = 10:length(L0_fileNames)
+for i = 14:length(L0_fileNames)
     %% load data to be deteced.
 
     namesplit = strsplit(L0_fileNames(i),'_');
