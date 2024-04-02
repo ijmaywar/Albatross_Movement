@@ -11,17 +11,16 @@ IJM - April 1 2024\
 \'93._\'94 files are artifacts created when moving files between PCs and Macs when using a hard drive set to \'93ExFat\'94.\
 There might be a bunch of these files scattered throughout the Lab Shared Drive, especially when transferring over entire folders using a hard drive.\
 \
-In order to sweep thru files list \'93._\'94 files, go to terminal in the folder you want to look thru (for Mac) and type:\
+In order to sweep thru a folder and count the number of files that start with \'93._\'94, go to terminal in the folder you want to look thru (for Mac) and type:\
 \pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 
-\f1\fs22 \cf2 \CocoaLigature0 find . -type f -name '._*'\
+\f1\fs22 \cf2 \CocoaLigature0 find . -type f -name '._*' | wc -1\
 \
 \pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
 
-\f0\fs24 \cf0 \CocoaLigature1 This will list all files that start with \'93._\'94. Make sure that the output of this code is not too much, in other words make sure that there aren\'92t too many files that start with \'93._\'94. Rewriting too many files may cause google drive to crash because it has to re-sync the entire folder you are working with. This is especially the case with the L1 and L0 folders - the files in here are huge so choose a subfolder to work with instead of the entire level.\
+\f0\fs24 \cf0 \CocoaLigature1 This will return the number of files that start with \'93._\'94. Make sure that the output of this code isn\'92t too high. You want to work with around ~2000 files max. Rewriting too many files may cause google drive to crash because it has to re-sync the entire folder you are working with and Google Drive is finicky and annoying. This is especially the case with the L1 and L0 folders - the files in here are huge so choose a subfolder to work with instead of the entire level.\
 \
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
-\cf0 In order to delete all of the files that start with \'93._\'94, run this in terminal:\
+In order to delete all of the files that start with \'93._\'94, run this in terminal:\
 \pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 
 \f1\fs22 \cf2 \CocoaLigature0 find . -type f -name '._*' -delete\
