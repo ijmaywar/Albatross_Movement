@@ -32,6 +32,7 @@ end
 warning('off','MATLAB:table:ModifiedAndSavedVarNames')
 
 % set directories
+GD_dir = "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/Thorne Lab Shared Drive/Data/Albatross/";
 % L0_dir = strcat(GD_dir,'L0/',location,'/Tag_Data/',szn,'/Aux/',tagtype,'/');
 L0_dir = strcat(GD_dir,'L0/',location,'/Tag_Data/',szn,'/Aux/',tagtype,'/WAAL/');
 % L1_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/Acc/Acc_Technosmart/',szn,'/');

@@ -29,7 +29,6 @@ GD_dir = "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/
 HD_dir = "/Volumes/LaCie/NEW_STRUCTURE/";
 L0_dir = strcat(GD_dir,"L0/",location,"/Tag_Data/",szn,"/Aux/NRL/L0_1_Decompressed/2_ECG/");
 L1_dir = strcat(GD_dir,"L1/",location,"/Tag_Data/ECG/ECG_NRL/",szn,"/");
-dt_break_dir = strcat(GD_dir,"L0/",location,"/Tag_Data/",szn,"/Aux/NRL/L0_1_Decompressed/datetime_breaks/");
 
 GPS_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/GPS/GPS_Catlog/',szn,'/2_buffer2km/');
 
@@ -83,12 +82,6 @@ param.MV = 30;
 % the low probbility peaks that you want to delete
 param.probthres = 0.2; 
 
-%% Find dt_breaks
-cd(dt_break_dir)
-dt_break_fileList = dir('*.csv');
-dt_break_fileList(startsWith({dt_break_fileList.name},'._')) = [];
-dt_break_fileNames = string({dt_break_fileList.name});
-
 %% Find data
 cd(L0_dir)
 L0_fileList = dir('*.txt');
@@ -102,21 +95,6 @@ for i = 10:length(L0_fileNames)
 
     namesplit = strsplit(L0_fileNames(i),'_');
     dep_ID = strcat(namesplit{1},'_',namesplit{2},'_',namesplit{3});
-
-    % Make sure this data is usable based on Tag_Timings
-    Usable = Tag_Timings(strcmp(Tag_Timings.dep_ID,dep_ID),:).Usable; 
-
-    %% Find dt_break
-    cd(dt_break_dir)
-    birdDTBREAKname = strcat(dep_ID,"_dt_breaks.csv");
-    findDTBREAK = find(strcmp(dt_break_fileNames,birdDTBREAKname));
-    if isempty(findDTBREAK)
-        % GPS file didn't write to there is no break_tbl so just load an
-        % empty break_tbl...
-        dt_break_tbl = readtable(strcat(GD_dir,"L0/Bird_Island/Tag_Data/2021_2022/Aux/NRL/L0_1_Decompressed/datetime_breaks/WAAL_20220123_OB00_dt_breaks.csv"));
-    else
-        dt_break_tbl = readtable(dt_break_fileNames(findDTBREAK));
-    end
 
     %% Load data
     cd(L0_dir)
@@ -303,22 +281,7 @@ for i = 10:length(L0_fileNames)
     og_idx = peak+start_idx-1;
     corrected_idx = og_idx;
 
-    if height(dt_break_tbl) ~= 0
-        cumulative_correction = [0;cumsum(dt_break_tbl.ECG_sample_dur)];
-        % find index with breaks included
-        for og_i = 1:length(og_idx)
-            idx_fit = find(dt_break_tbl.ECG_sample_num >= og_idx(og_i), 1, 'first');
-            if isempty(idx_fit)
-                % In this case the idx is found after all breaks
-                idx_fit = height(dt_break_tbl)+1;
-            end
-            
-            corrected_idx(og_i) = og_idx(og_i) + cumulative_correction(idx_fit);
-            
-        end
-    end
-
-    DateTime = (ON_DateTime + seconds((corrected_idx-1)*(1/fs)));
+    DateTime = (ON_DateTime + seconds((og_idx-1)*(1/fs)));
     DateTime.Format = 'yyyy-MM-dd HH:mm:ss.SSSSSS';
 
     %% Save data
@@ -328,7 +291,6 @@ for i = 10:length(L0_fileNames)
     df_HeartBeats.DateTime = DateTime';
     df_HeartBeats.DateTime = string(df_HeartBeats.DateTime);
     df_HeartBeats.idx = og_idx';
-    df_HeartBeats.corrected_idx = corrected_idx';
     df_HeartBeats.probability = probability';
 
     writetable(df_HeartBeats,strcat(L1_dir,'/',dep_ID,'_L1.csv')); 
@@ -338,7 +300,7 @@ for i = 10:length(L0_fileNames)
     %% clear things
 
     close all
-    clearvars -except dt_break_dir dt_break_fileNames fs fullmeta GD_dir GPS_dir idx_tbl Ini L0_dir L0_fileList L0_fileNames L1_dir location param s szn Tag_Timings i
+    clearvars -except fs fullmeta GD_dir GPS_dir idx_tbl Ini L0_dir L0_fileList L0_fileNames L1_dir location param s szn Tag_Timings i
 
 end
         

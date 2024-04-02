@@ -1,3 +1,4 @@
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 % This code finds breaks in the GPS data to help approximate DateTime for
@@ -17,8 +18,8 @@ location = "Bird_Island"; % Options: 'Bird_Island', 'Midway', 'Wandering'
 GD_dir = "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/Thorne Lab Shared Drive/Data/Albatross/";
 Sensor_dir = strcat(GD_dir,"L0/",location,"/Tag_Data/",szn,"/Aux/NRL/L0_1_Decompressed/1_SensorData/");
 ECG_dir = strcat(GD_dir,"L0/",location,"/Tag_Data/",szn,"/Aux/NRL/L0_1_Decompressed/2_ECG/");
-GPS_dir = strcat(GD_dir,"L0/",location,"/Tag_Data/",szn,"/Pos/Catlog/");
-write_dir = strcat(GD_dir,"L0/",location,"/Tag_Data/",szn,"/Aux/NRL/L0_1_Decompressed/datetime_breaks/");
+GPS_dir = strcat(GD_dir,"L1/",location,"/Tag_Data/GPS/GPS_Catlog/",szn,"/2_buffer2km/");
+write_dir = strcat(GD_dir,"L0/",location,"/Tag_Data/",szn,"/Aux/NRL/L0_1_Decompressed/datetime_breaks_2/");
 
 cd(Sensor_dir)
 Sensor_fileList = dir("*.txt");
@@ -57,7 +58,7 @@ for i = 1:length(ECG_fileList)
     Sensor_SR = 75; % Other NRL sensors sample at 75 Hz
 
     %% GPS
-    birdGPSname = strcat(current_bird,"_Catlog_L0.csv");
+    birdGPSname = strcat(current_bird,"_GPS_L1_2.csv");
     findGPS = find(strcmp(GPS_fileNames,birdGPSname));
     if isempty(findGPS)
         disp(strcat("There is no GPS file for ", current_bird))
@@ -70,16 +71,12 @@ for i = 1:length(ECG_fileList)
         disp("Can't load GPS data correctly.")
         return
     end
-    
-    GPS_DateTime = strcat(string(m_GPS.Date), " ", string(m_GPS.Time));
-    GPS_DateTime = datetime(GPS_DateTime,'InputFormat','dd-MMM-yyyy HH:mm:ss');
 
-    GPS_diff_mins = minutes(diff(GPS_DateTime));
+    GPS_diff_mins = minutes(diff(m_GPS.datetime));
     
     % the index for which the datetime jump between this value and the next
     % is greater than 4 minutes
     GPS_breaks = find(GPS_diff_mins > 4);
-
 
     %% Create break_tbl
 
@@ -89,10 +86,10 @@ for i = 1:length(ECG_fileList)
     for break_idx = 1:length(GPS_breaks)
 
         % This is the datetime at which the break starts
-        break_start = GPS_DateTime(GPS_breaks(break_idx));
+        break_start = m_GPS.datetime(GPS_breaks(break_idx));
 
         % This is the dt at which the break ends
-        break_end = GPS_DateTime(GPS_breaks(break_idx)+1);
+        break_end = m_GPS.datetime(GPS_breaks(break_idx)+1);
 
         % This is the length (in mins) of the break
         break_length_mins = GPS_diff_mins(GPS_breaks(break_idx));
