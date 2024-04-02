@@ -17,23 +17,14 @@ clearvars
 
 szn = '2021_2022';
 location = 'Bird_Island'; % Options: 'Bird_Island', 'Midway'
-AccType = 'Technosmart'; % Options: 'Technosmart', 'NRL'
+AccType = 'NRL'; % Options: 'Technosmart', 'NRL'
 
 %% Set envrionment
 
 % set directories
 GD_dir = "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/Thorne Lab Shared Drive/Data/Albatross/";
-% L1_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/Acc/Acc_',AccType,'/',szn,'/');
-L1_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/Acc/Acc_',AccType,'/',szn,'/WAAL/');
-
-if strcmp(AccType,'NRL')
-    % If the flap detector is being run on acc data from NRL tags, the
-    % L1_Acc data will be in a subfolder called "NRL_Not_Adjusted" because
-    % the DateTime on these files haven't been adjusted yet.
-    L2_dir = strcat(GD_dir,'L2/',location,'/Tag_Data/Acc/',szn,'/NRL_Not_Adjusted/');
-elseif strcmp(AccType,'Technosmart')
-    L2_dir = strcat(GD_dir,'L2/',location,'/Tag_Data/Acc/',szn,'/');
-end
+L1_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/Acc/Acc_',AccType,'/',szn,'/');
+L2_dir = strcat(GD_dir,'L2/',location,'/Tag_Data/Acc/',szn,'/');
 
 % Matlab functions toolbox
 addpath(genpath('/Users/ian/Documents/GitHub/'))
@@ -59,7 +50,7 @@ p = get(0, "MonitorPositions");
 mkdir(strcat(L2_dir,"Parameters/"))
 
 %% Loop thru birds
-parfor j = 1:height(L1_fileList)
+for j = 1:height(L1_fileList)
 % for j = 4:7
 
     %% Read bird 
@@ -135,26 +126,6 @@ parfor j = 1:height(L1_fileList)
     [~,m_idx] = min(mvSlp_m);
     m = m_range(m_idx);
 
-    % % Search for MinPeakDistance
-
-    % minPk_range = (k:7); % k is the lower end because downward pulses k and smaller are annihilated. 
-    % num_flaps_minPk = [];
-    % mean_pk_minPk = [];
-    % 
-    % parfor i = 1:length(minPk_range)
-    %     minPk_i = minPk_range(i);
-    %     filtered = Ukm(raw,k,m);
-    %     pks = findpeaks(-filtered,'MinPeakHeight',-th,'MinPeakDistance',minPk_i);
-    %     pks = -pks; % Flip the peaks upsidedown
-    % 
-    %     num_flaps = length(pks);
-    %     num_flaps_minPk(i) = num_flaps;
-    % end
-    % 
-    % mvSlp_minPk = abs(movingslope(num_flaps_minPk));
-    % [~,minPk_idx] = min(mvSlp_minPk);
-    % minPk = minPk_range(minPk_idx);
-
     %% Plot figures and save
 
     % th
@@ -188,22 +159,6 @@ parfor j = 1:height(L1_fileList)
         ylabel('movingslope')
     xlabel('m')
     saveas(nFlaps_movslp_m,strcat(L2_dir,figdir,bird,'_search_m.fig'))
-
-    % % minPkDistance
-    % 
-    % nFlaps_movslp_minPk = figure;
-    % yyaxis left
-    %     scatter(minPk_range,num_flaps_minPk)
-    %     hold on 
-    %     scatter(minPk_range(minPk_idx),num_flaps_minPk(minPk_idx),'LineWidth',5)
-    %     ylabel('Number of flaps')
-    % yyaxis right
-    %     scatter(minPk_range,mvSlp_minPk)
-    %     hold on
-    %     scatter(minPk_range(minPk_idx),mvSlp_minPk(minPk_idx),'LineWidth',5)
-    %     ylabel('movingslope')
-    % xlabel('Minimum Peak Distance')
-    % saveas(nFlaps_movslp_minPk,strcat(L2_dir,figdir,bird,'_search_minPk.fig'))
 
     %% Final calculation
 
@@ -243,103 +198,3 @@ parfor j = 1:height(L1_fileList)
     disp(strcat(bird,'(',num2str(j),'/',num2str(height(L1_fileList)), '): L2 complete.'))
 
 end
-
-
-
-
-
-%% Plot raw data
-
-figure
-temp_range = hr_start:hr_stop; 
-plot(raw(temp_range))
-hold on
-plot(filtered(temp_range))
-yline(-1)
-
-%% Find a specific datetime
-spec_idx = find(Acc.DateTime=="2021-01-07 14:59:02.000000")
-hr_start = spec_idx - (30*60*25);
-hr_stop = spec_idx + (30*60*25);
-
-
-
-
-
-
-
-
-
-
-
-
-%% Extra code for comparison of peaks
-% 
-% diffPk_locs0 = diff(pk_locs0);
-% Pk_dists0(1) = diffPk_locs0(1);
-% for i=2:length(diffPk_locs0)
-%     Pk_dists0(i) = max(diffPk_locs0(i),diffPk_locs0(i-1));
-% end
-% Pk_dists0(end+1) = diffPk_locs0(end);
-% 
-% diffPk_locs1 = diff(pk_locs1);
-% Pk_dists1(1) = diffPk_locs1(1);
-% for i=2:length(diffPk_locs1)
-%     Pk_dists1(i) = max(diffPk_locs1(i),diffPk_locs1(i-1));
-% end
-% Pk_dists1(end+1) = diffPk_locs1(end);
-% 
-% % Histogram of peak distances and heights
-% 
-% figdir = strcat('Figures/',bird,'/');
-% 
-% peak_dist_fig = figure;
-% subplot(3,2,1)
-%     h0 = histogram(Pk_dists0,'BinEdges',(5:1:35));
-%     h0Bins = h0.BinCounts;
-%     bar(5:1:34,h0Bins)
-%     title('k=0')
-%     ylabel('num flaps')
-%     xlabel('distance to closest peak')
-%     YL = get(gca, 'YLim');
-%     ylim(YL)
-% subplot(3,2,3)
-%     h1 = histogram(Pk_dists1,'BinEdges',(5:1:35));
-%     h1Bins = h1.BinCounts;
-%     bar(5:1:34,h1Bins)
-%     title('k=1')
-%     ylabel('num flaps')
-%     xlabel('distance to closest peak')
-%     ylim(YL)
-% subplot(3,2,5)
-%     bar(5:1:34,(h0Bins-h1Bins)./h0Bins);
-%     title('comaprison')
-%     ylabel('% change')
-%     xlabel('distance to closest peak')
-%     ylim([-1 1])
-% subplot(3,2,2)
-%     h0 = histogram(-pks0,'BinEdges',(1:.2:4));
-%     h0Bins = h0.BinCounts;
-%     bar(1:0.2:3.8,h0Bins)
-%     title('k=0')
-%     ylabel('num flaps')
-%     xlabel('peak height')
-%     YL = get(gca, 'YLim');
-%     ylim(YL)
-% subplot(3,2,4)
-%     h1 = histogram(-pks1,'BinEdges',(1:.2:4));
-%     h1Bins = h1.BinCounts;
-%     bar(1:0.2:3.8,h1Bins)
-%     title('k=1')
-%     ylabel('num flaps')
-%     xlabel('peak height')
-%     ylim(YL)
-% subplot(3,2,6)
-%     bar(1:0.2:3.8,(h0Bins-h1Bins)./h0Bins);
-%     title('comparison')
-%     ylabel('% change')
-%     xlabel('peak height')
-%     ylim([-1 1])
-% 
-% saveas(peak_dist_fig,strcat(L2_dir,figdir,bird,'_FlapChanges.fig'))
-
