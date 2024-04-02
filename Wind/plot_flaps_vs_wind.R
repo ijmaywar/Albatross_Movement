@@ -110,7 +110,7 @@ m_all$plotday <- ifelse(m_all$plotday > 365 & m_all$datetime$year+1900 == 2021, 
 m_all_NoImmTrim <- read.csv("/Users/ian/Desktop/m_all_NoImmTrim.csv")
 m_all_Trim <- read.csv("/Users/ian/Desktop/m_all_Trim.csv")
 
-m_all <- m_all_NoImmTrim
+m_all <- m_all_Trim
 
 # Categorize BWAs
 m_all <- m_all %>% mutate(BWA_cat = case_when(bwa<=45 ~ "head",
@@ -198,11 +198,18 @@ fv_global |>
 
 # interaction between factor and continuous variable
 GAM_BBAL_directional <- gam(formula = flaps ~ s(wind_vel,bs='tp',k=3) +
-                                      s(wind_vel,by=BWA_cat,k=3,m=1) + 
+                                      s(wind_vel,BWA_cat,bs='fs',k=3,m=1) + 
                                       s(id,k=length(unique(m_BBAL$id)),bs="re"),
                             data = m_BBAL,
                             family = "poisson",
                             method = "REML")
+
+# GAM_BBAL_directional <- gam(formula = flaps ~ s(wind_vel,bs='tp',k=3) +
+#                               s(wind_vel,BWA_cat,k=3,m=1) + 
+#                               s(id,k=length(unique(m_BBAL$id)),bs="re"),
+#                             data = m_BBAL,
+#                             family = "poisson",
+#                             method = "REML")
 
 ds_directional  <- data_slice(GAM_BBAL_directional, wind_vel = evenly(wind_vel, n = 100), id = unique(m_BBAL$id)[1:10],
                               BWA_cat = unique(m_BBAL$BWA_cat))
@@ -227,7 +234,44 @@ fv_directional_global |>
   ggplot(aes(x = wind_vel, y = fitted, color=BWA_cat)) +
   geom_line(linewidth=1) +
   geom_ribbon(fv_directional_global,mapping=aes(ymin = lower, ymax = upper, y = NULL,fill=BWA_cat),alpha = 0.3,color=NA) +
-  labs(title="Global for three directions - no imm trim")
+  labs(title="Global for three directions")
+
+################################################################################
+# GHAL
+
+# interaction between factor and continuous variable
+GAM_GHAL_directional <- gam(formula = flaps ~ s(wind_vel,bs='tp',k=3) +
+                              s(wind_vel,by=BWA_cat,k=3,m=1) + 
+                              s(id,k=length(unique(m_GHAL$id)),bs="re"),
+                            data = m_GHAL,
+                            family = "poisson",
+                            method = "REML")
+
+ds_directional  <- data_slice(GAM_GHAL_directional, wind_vel = evenly(wind_vel, n = 100), id = unique(m_GHAL$id)[1:10],
+                              BWA_cat = unique(m_GHAL$BWA_cat))
+
+ds_directional$BWA_cat <- factor(ds_directional$BWA_cat, levels=c("head", "cross", "tail"))
+
+fv_directional <- fitted_values(GAM_GHAL_directional, data = ds_directional, scale = "response")
+
+fv_directional_global <- fitted_values(GAM_GHAL_directional, data = ds_directional, scale = "response",
+                                       terms = c("(Intercept)","s(wind_vel)","s(wind_vel):BWA_catcross",
+                                                 "s(wind_vel):BWA_cathead","s(wind_vel):BWA_cattail"))
+
+fv_directional |>
+  ggplot(aes(x = wind_vel, y = fitted, color=id)) +
+  geom_line() +
+  geom_point(m_GHAL,mapping=aes(wind_vel,flaps),color='black',alpha=0.1) +
+  geom_line(fv_directional_global,mapping=aes(wind_vel,fitted),color='black',linewidth=1) +
+  geom_ribbon(fv_directional_global,mapping=aes(ymin = lower, ymax = upper, y = NULL), alpha = 0.1,fill='black') +
+  facet_wrap(~BWA_cat,ncol=3)
+
+fv_directional_global |>
+  ggplot(aes(x = wind_vel, y = fitted, color=BWA_cat)) +
+  geom_line(linewidth=1) +
+  geom_ribbon(fv_directional_global,mapping=aes(ymin = lower, ymax = upper, y = NULL,fill=BWA_cat),alpha = 0.3,color=NA) +
+  labs(title="Global for three directions")
+
 
 ################################################################################
 # Breaking up data into tail, cross, and tail-winds
@@ -235,7 +279,7 @@ fv_directional_global |>
 # RUN tail, CROSS, TAIL SPLIT ---------------------------------------------
 # Command, option, T to run this section
 
-directional_k <- 5
+directional_k <- 3
 
 m_BBAL_head <- m_BBAL %>% filter(bwa<=45) # only head-winds
 m_BBAL_cross <- m_BBAL %>% filter(bwa>45 & bwa<135) # only cross-winds
@@ -324,12 +368,22 @@ fv_tail |>
 
 
 # Plots with all 3 directions
+
+fv_head_global |>
+  ggplot(aes(x = wind_vel, y = fitted)) +
+  geom_ribbon()
+  geom_ribbon(fv_cross_global,mapping=aes(ymin = lower, ymax = upper, y = NULL,fill=BWA_cat),alpha = 0.3,color=NA) +
+  geom_ribbon(fv_tail_global,mapping=aes(ymin = lower, ymax = upper, y = NULL,fill=BWA_cat),alpha = 0.3,color=NA) +
+  labs(title="Global for three directions")
+
+
 ggplot(m_BBAL, aes(wind_vel,flaps)) + 
   geom_point(alpha=0.1) +
   geom_line(fv_head_global,mapping=aes(wind_vel,fitted),color='green',linewidth=1) +
   geom_line(fv_cross_global,mapping=aes(wind_vel,fitted),color='blue',linewidth=1) +
   geom_line(fv_tail_global,mapping=aes(wind_vel,fitted),color='red',linewidth=1) +
-  labs(title="Global smooths for the three directions")
+  labs(title="Global smooths for the three directions") +
+  ylim(0,1000)
 
 # Plots with all 3 directions
 ggplot(fv_head_global, aes(wind_vel,fitted)) + 

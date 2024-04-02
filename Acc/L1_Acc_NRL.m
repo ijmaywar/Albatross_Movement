@@ -16,7 +16,7 @@ clearvars
 
 %% USER INPUTED VALUES
 
-szn = '2019_2020';
+szn = '2021_2022';
 location = "Bird_Island"; % Options: 'Bird_Island', 'Midway'
 
 %% Set Environment
@@ -29,7 +29,6 @@ GD_dir = "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/
 L0_dir = strcat(GD_dir,"L0/",location,"/Tag_Data/",szn,"/Aux/NRL/L0_1_Decompressed/1_SensorData/");
 L1_dir = strcat(GD_dir,"L1/",location,"/Tag_Data/Acc/Acc_NRL/",szn,"/");
 GPS_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/GPS/GPS_Catlog/',szn,'/2_buffer2km/');
-break_dir = strcat(GD_dir,"L0/",location,"/Tag_Data/",szn,"/Aux/NRL/L0_1_Decompressed/datetime_breaks/");
 
 % Full_metadata sheet
 fullmeta = readtable(strcat(GD_dir,'metadata/Full_metadata.xlsx'),'TreatAsEmpty',{'NA'});
@@ -60,7 +59,7 @@ CheckMetaGPSUnique(L0_fileList,GPS_fileList,fullmeta)
 
 %% Loop thru and process birds
 
-for i = 1:1%height(L0_fileList)
+for i = 1:height(L0_fileList)
     
     
     namesplit = strsplit(L0_fileNames(i),'_');
@@ -82,9 +81,6 @@ for i = 1:1%height(L0_fileList)
     birdGPSname = strcat(dep_ID,'_GPS_L1_2.csv');
     findGPS = find(strcmp(string(GPS_fileList.name),birdGPSname));
     GPSdata = readtable(GPS_fileNames(findGPS));  
-
-    % Read break_tbl
-    break_tbl = readtable(strcat(break_dir,dep_ID,'_dt_breaks.csv'));
 
     cd(L0_dir)
     m = readtable(L0_fileNames(i));
@@ -141,9 +137,6 @@ for i = 1:1%height(L0_fileList)
 
     disp(strcat(dep_ID,'(',num2str(i),'/',num2str(height(L0_fileList)), '): s2 complete.'))
 
-    %% Adjust DT
-
-    
     %% s3
 
     [m,s3_timetbl,s3_meta] = TripTrim(m,GPSdata,dep_ID);
