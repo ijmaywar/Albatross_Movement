@@ -22,8 +22,8 @@ library(readxl)
 library(lme4)
 library(stringr)
 library(dplyr)
-# library(mgcv)
-library(gamm4)
+library(mgcv)
+# library(gamm4)
 library(mgcViz)
 library(gridExtra)
 library(patchwork)
@@ -55,12 +55,6 @@ for (i_loc in 1:length(locations)) {
     
     setwd(read_dir)
     files <- list.files(pattern='*.csv')
-    
-    # # skip WAAL files
-    # indices_to_remove <- grep("^WAAL", files)
-    # if (length(indices_to_remove != 0)) {
-    #   files <- files[-indices_to_remove]
-    # }
     
     # combine all files and label them with the szn
     for (i in 1:length(files)) {
@@ -136,10 +130,29 @@ m_WAAL <- m_all %>% filter(spp=="WAAL")
 m_LAAL <- m_all %>% filter(spp=="LAAL")
 m_BFAL <- m_all %>% filter(spp=="BFAL")
 
+# How many samples per spp per BWA_cat? ----------------------------------------
+
+nrow(m_BBAL)
+nrow(m_BBAL %>% filter(BWA_cat=="cross"))
+nrow(m_BBAL %>% filter(BWA_cat=="head"))
+nrow(m_BBAL %>% filter(BWA_cat=="tail"))
+
+nrow(m_GHAL)
+nrow(m_GHAL %>% filter(BWA_cat=="cross"))
+nrow(m_GHAL %>% filter(BWA_cat=="head"))
+nrow(m_GHAL %>% filter(BWA_cat=="tail"))
+
+nrow(m_BFAL)
+nrow(m_BFAL %>% filter(BWA_cat=="cross"))
+nrow(m_BFAL %>% filter(BWA_cat=="head"))
+nrow(m_BFAL %>% filter(BWA_cat=="tail"))
+
+nrow(m_LAAL)
+nrow(m_LAAL %>% filter(BWA_cat=="cross"))
+nrow(m_LAAL %>% filter(BWA_cat=="head"))
+nrow(m_LAAL %>% filter(BWA_cat=="tail"))
 
 # Flap plots --------------------------------------------------------------
-
-################################################################################
 
 # Tensor product of wind_vel and bwa
 
@@ -196,33 +209,82 @@ fv_global |>
 # Interaction term for categorized bwa ---------------------------------------------
 
 
-# interaction between factor and continuous variable
-GAM_BBAL_directional <- gam(formula = flaps ~ s(wind_vel,bs='tp',k=3) +
-                                      s(wind_vel,BWA_cat,bs='fs',k=3,m=1) + 
+# Random wiggly curves:
+# Produces random smooth curves for each level of BWA_cat
+# Main effect (wind_vel) plus factor level smooth deviations from that effect.
+
+main_k <- 3
+fac_k <- 3
+
+GAM_BBAL_directional <- gam(formula = flaps ~ s(wind_vel,bs='tp',k=main_k,m=2) +
+                                      s(wind_vel,BWA_cat,bs='fs',k=fac_k,m=2) + 
                                       s(id,k=length(unique(m_BBAL$id)),bs="re"),
                             data = m_BBAL,
                             family = "poisson",
                             method = "REML")
 
+GAM_GHAL_directional <- gam(formula = flaps ~ s(wind_vel,bs='tp',k=main_k,m=2) +
+                              s(wind_vel,BWA_cat,bs='fs',k=fac_k,m=2) + 
+                              s(id,k=length(unique(m_GHAL$id)),bs="re"),
+                            data = m_GHAL,
+                            family = "poisson",
+                            method = "REML")
+
+GAM_BFAL_directional <- gam(formula = flaps ~ s(wind_vel,bs='tp',k=main_k,m=2) +
+                              s(wind_vel,BWA_cat,bs='fs',k=fac_k,m=2) + 
+                              s(id,k=length(unique(m_BFAL$id)),bs="re"),
+                            data = m_BFAL,
+                            family = "poisson",
+                            method = "REML")
+
+GAM_LAAL_directional <- gam(formula = flaps ~ s(wind_vel,bs='tp',k=main_k,m=2) +
+                              s(wind_vel,BWA_cat,bs='fs',k=fac_k,m=2) + 
+                              s(id,k=length(unique(m_LAAL$id)),bs="re"),
+                            data = m_LAAL,
+                            family = "poisson",
+                            method = "REML")
+
+
+# Group-level smooths for BWA_cat:
+# (Doesn't allow for major deviations from the main effect)
 # GAM_BBAL_directional <- gam(formula = flaps ~ s(wind_vel,bs='tp',k=3) +
-#                               s(wind_vel,BWA_cat,k=3,m=1) + 
+#                               s(wind_vel,by=BWA_cat,k=3,m=1) + 
 #                               s(id,k=length(unique(m_BBAL$id)),bs="re"),
 #                             data = m_BBAL,
 #                             family = "poisson",
 #                             method = "REML")
 
-ds_directional  <- data_slice(GAM_BBAL_directional, wind_vel = evenly(wind_vel, n = 100), id = unique(m_BBAL$id)[1:10],
-                              BWA_cat = unique(m_BBAL$BWA_cat))
+ds_directional  <- rbind(data_slice(GAM_BBAL_directional, wind_vel = evenly(wind_vel, n = 100), id = unique(m_BBAL$id)[1:10],
+                              BWA_cat = unique(m_BBAL$BWA_cat)),
+                         data_slice(GAM_GHAL_directional, wind_vel = evenly(wind_vel, n = 100), id = unique(m_GHAL$id)[1:10],
+                                    BWA_cat = unique(m_GHAL$BWA_cat)),
+                         data_slice(GAM_BFAL_directional, wind_vel = evenly(wind_vel, n = 100), id = unique(m_BFAL$id)[1:10],
+                                    BWA_cat = unique(m_BFAL$BWA_cat)),
+                         data_slice(GAM_LAAL_directional, wind_vel = evenly(wind_vel, n = 100), id = unique(m_LAAL$id)[1:10],
+                                    BWA_cat = unique(m_LAAL$BWA_cat)))
 
 ds_directional$BWA_cat <- factor(ds_directional$BWA_cat, levels=c("head", "cross", "tail"))
 
-fv_directional <- fitted_values(GAM_BBAL_directional, data = ds_directional, scale = "response")
+fv_directional <- rbind(fitted_values(GAM_BBAL_directional, data = ds_directional %>% filter(str_detect(id,"BBAL")), scale = "response"),
+                        fitted_values(GAM_GHAL_directional, data = ds_directional %>% filter(str_detect(id,"GHAL")), scale = "response"),
+                        fitted_values(GAM_BFAL_directional, data = ds_directional %>% filter(str_detect(id,"BFAL")), scale = "response"),
+                        fitted_values(GAM_LAAL_directional, data = ds_directional %>% filter(str_detect(id,"LAAL")), scale = "response"))
+fv_directional <- fv_directional %>% mutate(spp = substr(id,1,4))
+fv_directional$spp <- factor(fv_directional$spp, levels=c("BBAL","GHAL","BFAL","LAAL"))
 
-fv_directional_global <- fitted_values(GAM_BBAL_directional, data = ds_directional, scale = "response",
-                                       terms = c("(Intercept)","s(wind_vel)","s(wind_vel):BWA_catcross",
-                                                 "s(wind_vel):BWA_cathead","s(wind_vel):BWA_cattail"))
+fv_directional_global <- rbind(fitted_values(GAM_BBAL_directional, data = ds_directional %>% filter(str_detect(id,"BBAL")), scale = "response",
+                                       terms = c("(Intercept)","s(wind_vel,BWA_cat)")),
+                               fitted_values(GAM_GHAL_directional, data = ds_directional %>% filter(str_detect(id,"GHAL")), scale = "response",
+                                             terms = c("(Intercept)","s(wind_vel,BWA_cat)")),
+                               fitted_values(GAM_BFAL_directional, data = ds_directional %>% filter(str_detect(id,"BFAL")), scale = "response",
+                                             terms = c("(Intercept)","s(wind_vel,BWA_cat)")),
+                               fitted_values(GAM_LAAL_directional, data = ds_directional %>% filter(str_detect(id,"LAAL")), scale = "response",
+                                             terms = c("(Intercept)","s(wind_vel,BWA_cat)")))
+fv_directional_global <- fv_directional_global %>% mutate(spp = substr(id,1,4))
+fv_directional_global$spp <- factor(fv_directional_global$spp, levels=c("BBAL","GHAL","BFAL","LAAL"))
+                               
 
-fv_directional |>
+fv_directional %>% filter(spp=="BBAL") |>
   ggplot(aes(x = wind_vel, y = fitted, color=id)) +
   geom_line() +
   geom_point(m_BBAL,mapping=aes(wind_vel,flaps),color='black',alpha=0.1) +
@@ -236,7 +298,7 @@ fv_directional_global |>
   geom_ribbon(fv_directional_global,mapping=aes(ymin = lower, ymax = upper, y = NULL,fill=BWA_cat),alpha = 0.3,color=NA) +
   labs(title="Global for three directions")
 
-################################################################################
+  ################################################################################
 # GHAL
 
 # interaction between factor and continuous variable
