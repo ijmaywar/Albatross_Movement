@@ -10,8 +10,8 @@ rm(list = ls())
 
 # User Inputted Values -----------------------------------------------------
 
-location = 'Midway' # Options: 'Bird_Island', 'Midway'
-szn = "2022_2023"
+location = 'Bird_Island' # Options: 'Bird_Island', 'Midway'
+szn = "2021_2022"
 
 # Load Packages -----------------------------------------------------------
 
@@ -25,8 +25,8 @@ library(lubridate)
 
 GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/Thorne Lab Shared Drive/Data/Albatross/"
 read_dir <- paste0(GD_dir, "L3/",location,"/Tag_Data/Acc/",szn,"/")
-write_dir <- paste0(GD_dir, "Projects/Maywar/Flaps_Hourly_AnalysisReady/No_Imm_Trim/",location,"/",szn,"/")
-meta_dir <- paste0(GD_dir, "Projects/Maywar/Flaps_Hourly_AnalysisReady/No_Imm_Trim/",location,"/Meta_tbls/")
+write_dir <- paste0(GD_dir, "Analysis/Maywar/Flaps_Hourly_AnalysisReady/No_Imm_Trim/",location,"/",szn,"/")
+meta_dir <- paste0(GD_dir, "Analysis/Maywar/Flaps_Hourly_AnalysisReady/No_Imm_Trim/",location,"/Meta_tbls/")
 
 setwd(read_dir)
 files <- list.files(pattern='*.csv')
@@ -43,6 +43,7 @@ meta_tbl <- data.frame(
 
 for (i in 1:length(files)) {
   m <- read.csv(files[i])
+  m$datetime <- as.POSIXct(m$datetime,format="%Y-%m-%d %H:%M:%S", tz="GMT")
   birdname_trip <- str_sub(files[i],1,-23)
   birdname <- str_sub(files[i],1,-25)
   birdspp <- str_sub(birdname,1,4)

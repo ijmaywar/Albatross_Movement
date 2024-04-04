@@ -39,7 +39,7 @@ fileList(startsWith({fileList.name},'._')) = [];
 
 %% Unpack Raw Neurologger .dat files
 
-for i = 7:length(fileList)
+for i = 14:14 %1:length(fileList)
     
     %%
     namesplit = strsplit(fileList(i).name,'_');

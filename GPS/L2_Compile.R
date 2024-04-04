@@ -22,10 +22,6 @@ GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu
 szn_dir <- paste0(GD_dir, "THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L2/",location,"/Tag_Data/GPS/")
 compile_dir <- paste0(GD_dir, "THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L2/",location,"/Tag_Data/GPS/compiled/")
 
-# Create Write Directories
-# dir.create(paste0(compile_dir,'300s/'))
-# dir.create(paste0(compile_dir,'600s/'))
-
 setwd(szn_dir)
 seasons <- list.files()[1:length(list.files())-1] # Remove the last folder because that's for the compiled data
 

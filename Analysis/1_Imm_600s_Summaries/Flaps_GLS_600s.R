@@ -25,7 +25,7 @@ library(foreach)
 GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/Thorne Lab Shared Drive/Data/Albatross/"
 Acc_L3_dir <- paste0(GD_dir,"L3/",location,"/Tag_Data/Acc/",szn,"/")
 GLS_L1_dir <- paste0(GD_dir, "L1/",location,"/Tag_Data/Immersion/GLS/",szn,"/")
-write_dir <- paste0(GD_dir, "Projects/Maywar/Flaps_600s/GLS/",location,"/",szn,"/")
+write_dir <- paste0(GD_dir, "Analysis/Maywar/Flaps_600s/GLS/",location,"/",szn,"/")
 
 setwd(GLS_L1_dir)
 GLS_files <- list.files(pattern='*.csv')
@@ -37,7 +37,7 @@ Acc_files <- list.files(pattern='*.csv')
 
 for (i in 1:length(Acc_files)) {
   m <- read.csv(Acc_files[i])
-  m$datetime <- as.POSIXct(m$datetime)
+  m$datetime <- as.POSIXct(m$datetime,format="%Y-%m-%d %H:%M:%S", tz="GMT")
   
   if (difftime(m$datetime[nrow(m)],m$datetime[1],units="secs") != 600*(nrow(m)-1)) {
     print("GPS continuity check failed.")

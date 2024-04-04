@@ -16,7 +16,7 @@ clearvars
 
 %% USER INPUTED VALUES
 
-szn = '2021_2022';
+szn = '2019_2020';
 location = "Bird_Island"; % Options: 'Bird_Island', 'Midway'
 
 %% Set Environment

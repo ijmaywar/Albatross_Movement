@@ -3,21 +3,27 @@
 %
 
 %%
+GD_dir = "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/Thorne Lab Shared Drive/Data/Albatross/";
 fullmeta = readtable(strcat(GD_dir,'metadata/Full_metadata.xlsx'),'TreatAsEmpty',{'NA'});
 
 %%
-folder = "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1ZwIQqcVnA34cxm_324gF2ie4UtWb8-Qb/Thorne Lab Shared Drive/Data/Albatross/L1/Bird_Island/Tag_Data/ECG/ECG_NRL/2019_2020/";
+folder = "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1ZwIQqcVnA34cxm_324gF2ie4UtWb8-Qb/Thorne Lab Shared Drive/Data/Albatross/L1/Bird_Island/Tag_Data/ECG/ECG_NRL/2021_2022/";
 cd(folder)
 fileList = dir('*.csv');
 fileList(startsWith({fileList.name},'._')) = [];
 fileNames = string({fileList.name});
 
 %%
-for i = 1:length(fileNames)
+for i = 16:length(fileNames)
     
     %% Load data
     m = readtable(fileNames(i));
     disp("Data loaded.")
+
+    if ~ismember('corrected_idx', m.Properties.VariableNames)
+        disp(strcat("corrected_idx is not a column for file ",string(i)))
+        continue
+    end
     
     %%
     namesplit = strsplit(fileNames(i),'_');
