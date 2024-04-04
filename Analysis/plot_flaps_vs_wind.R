@@ -209,12 +209,18 @@ fv_global |>
 
 # Remove outliers --------------------------------------------------------------
 
-# THIS IS A HUGE OUTLIER, so remove it!
-m_BBAL |>
-  ggplot(aes(wind_vel,flaps)) +
-  geom_point(color='black') +
-  geom_point(m_BBAL %>% filter(id=="BBAL_20200114_RF18"),mapping=aes(x=wind_vel,y=flaps),color='red')
-           
+# Look at domains of different IDs
+for (fig_i in 1:length(unique(m_BBAL$id))) {
+  print(m_BBAL |>
+    ggplot(aes(wind_vel,flaps)) +
+    geom_point(color='black') +
+    geom_point(m_BBAL %>% filter(id==unique(m_BBAL$id)[fig_i]),mapping=aes(x=wind_vel,y=flaps),color='red') +
+    labs(title=fig_i))
+  
+  readline(prompt="Press [enter] to continue")
+}
+
+# THIS IS A HUGE OUTLIER, so remove it!         
 m_BBAL <- m_BBAL %>% filter(id != "BBAL_20200114_RF18")
 
 # Interaction term for categorized bwa -----------------------------------------
