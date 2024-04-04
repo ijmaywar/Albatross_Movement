@@ -104,7 +104,7 @@ m_all$plotday <- ifelse(m_all$plotday > 365 & m_all$datetime$year+1900 == 2021, 
 m_all_NoImmTrim <- read.csv("/Users/ian/Desktop/m_all_NoImmTrim.csv")
 m_all_Trim <- read.csv("/Users/ian/Desktop/m_all_Trim.csv")
 
-m_all <- m_all_Trim
+m_all <- m_all_NoImmTrim
 
 # Categorize BWAs
 m_all <- m_all %>% mutate(BWA_cat = case_when(bwa<=45 ~ "head",
@@ -206,8 +206,18 @@ fv_global |>
   labs(title="global")
 
 ################################################################################
-# Interaction term for categorized bwa ---------------------------------------------
 
+# Remove outliers --------------------------------------------------------------
+
+# THIS IS A HUGE OUTLIER, so remove it!
+m_BBAL |>
+  ggplot(aes(wind_vel,flaps)) +
+  geom_point(color='black') +
+  geom_point(m_BBAL %>% filter(id=="BBAL_20200114_RF18"),mapping=aes(x=wind_vel,y=flaps),color='red')
+           
+m_BBAL <- m_BBAL %>% filter(id != "BBAL_20200114_RF18")
+
+# Interaction term for categorized bwa -----------------------------------------
 
 # Random wiggly curves:
 # Produces random smooth curves for each level of BWA_cat
@@ -222,6 +232,24 @@ GAM_BBAL_directional <- gam(formula = flaps ~ s(wind_vel,bs='tp',k=main_k,m=2) +
                             data = m_BBAL,
                             family = "poisson",
                             method = "REML")
+
+# Figure out the domains of the ids
+
+GAM_BBAL_directional <- gam(formula = flaps ~ s(wind_vel,bs='tp',k=main_k,m=2) +
+                              s(wind_vel,id,bs='fs',k=length(unique(m_BBAL$id)),m=1),
+                            data = m_BBAL,
+                            family = "poisson",
+                            method = "REML")
+
+GAM_BBAL_directional <- gam(formula = flaps ~ s(wind_vel,bs='tp',k=main_k,m=2) +
+                              s(wind_vel,id,bs='fs',k=length(unique(m_BBAL$id)),m=1),
+                            data = m_BBAL,
+                            family = "poisson",
+                            method = "REML")
+
+
+# subset the data and change to bs="fs"
+# the 
 
 GAM_GHAL_directional <- gam(formula = flaps ~ s(wind_vel,bs='tp',k=main_k,m=2) +
                               s(wind_vel,BWA_cat,bs='fs',k=fac_k,m=2) + 
@@ -254,13 +282,13 @@ GAM_LAAL_directional <- gam(formula = flaps ~ s(wind_vel,bs='tp',k=main_k,m=2) +
 #                             family = "poisson",
 #                             method = "REML")
 
-ds_directional  <- rbind(data_slice(GAM_BBAL_directional, wind_vel = evenly(wind_vel, n = 100), id = unique(m_BBAL$id)[1:10],
+ds_directional  <- rbind(data_slice(GAM_BBAL_directional, wind_vel = evenly(wind_vel, n = 100), id = unique(m_BBAL$id),
                               BWA_cat = unique(m_BBAL$BWA_cat)),
-                         data_slice(GAM_GHAL_directional, wind_vel = evenly(wind_vel, n = 100), id = unique(m_GHAL$id)[1:10],
+                         data_slice(GAM_GHAL_directional, wind_vel = evenly(wind_vel, n = 100), id = unique(m_GHAL$id),
                                     BWA_cat = unique(m_GHAL$BWA_cat)),
-                         data_slice(GAM_BFAL_directional, wind_vel = evenly(wind_vel, n = 100), id = unique(m_BFAL$id)[1:10],
+                         data_slice(GAM_BFAL_directional, wind_vel = evenly(wind_vel, n = 100), id = unique(m_BFAL$id),
                                     BWA_cat = unique(m_BFAL$BWA_cat)),
-                         data_slice(GAM_LAAL_directional, wind_vel = evenly(wind_vel, n = 100), id = unique(m_LAAL$id)[1:10],
+                         data_slice(GAM_LAAL_directional, wind_vel = evenly(wind_vel, n = 100), id = unique(m_LAAL$id),
                                     BWA_cat = unique(m_LAAL$BWA_cat)))
 
 ds_directional$BWA_cat <- factor(ds_directional$BWA_cat, levels=c("head", "cross", "tail"))
@@ -273,13 +301,13 @@ fv_directional <- fv_directional %>% mutate(spp = substr(id,1,4))
 fv_directional$spp <- factor(fv_directional$spp, levels=c("BBAL","GHAL","BFAL","LAAL"))
 
 fv_directional_global <- rbind(fitted_values(GAM_BBAL_directional, data = ds_directional %>% filter(str_detect(id,"BBAL")), scale = "response",
-                                       terms = c("(Intercept)","s(wind_vel,BWA_cat)")),
+                                       terms = c("(Intercept)","s(wind_vel)","s(wind_vel,BWA_cat)")),
                                fitted_values(GAM_GHAL_directional, data = ds_directional %>% filter(str_detect(id,"GHAL")), scale = "response",
-                                             terms = c("(Intercept)","s(wind_vel,BWA_cat)")),
+                                             terms = c("(Intercept)","s(wind_vel)","s(wind_vel,BWA_cat)")),
                                fitted_values(GAM_BFAL_directional, data = ds_directional %>% filter(str_detect(id,"BFAL")), scale = "response",
-                                             terms = c("(Intercept)","s(wind_vel,BWA_cat)")),
+                                             terms = c("(Intercept)","s(wind_vel)","s(wind_vel,BWA_cat)")),
                                fitted_values(GAM_LAAL_directional, data = ds_directional %>% filter(str_detect(id,"LAAL")), scale = "response",
-                                             terms = c("(Intercept)","s(wind_vel,BWA_cat)")))
+                                             terms = c("(Intercept)","s(wind_vel)","s(wind_vel,BWA_cat)")))
 fv_directional_global <- fv_directional_global %>% mutate(spp = substr(id,1,4))
 fv_directional_global$spp <- factor(fv_directional_global$spp, levels=c("BBAL","GHAL","BFAL","LAAL"))
                                
@@ -287,16 +315,18 @@ fv_directional_global$spp <- factor(fv_directional_global$spp, levels=c("BBAL","
 fv_directional %>% filter(spp=="BBAL") |>
   ggplot(aes(x = wind_vel, y = fitted, color=id)) +
   geom_line() +
-  geom_point(m_BBAL,mapping=aes(wind_vel,flaps),color='black',alpha=0.1) +
-  geom_line(fv_directional_global,mapping=aes(wind_vel,fitted),color='black',linewidth=1) +
-  geom_ribbon(fv_directional_global,mapping=aes(ymin = lower, ymax = upper, y = NULL), alpha = 0.1,fill='black') +
-  facet_wrap(~BWA_cat,ncol=3)
+  # geom_point(m_BBAL,mapping=aes(wind_vel,flaps),color='black',alpha=0.1) +
+  geom_line(fv_directional_global %>% filter(spp=="BBAL"),mapping=aes(wind_vel,fitted),color='black',linewidth=1) +
+  geom_ribbon(fv_directional_global %>% filter(spp=="BBAL"),mapping=aes(ymin = lower, ymax = upper, y = NULL), alpha = 0.1,fill='black') +
+  facet_wrap(~BWA_cat,ncol=3) +
+  theme(legend.position="none")
 
 fv_directional_global |>
   ggplot(aes(x = wind_vel, y = fitted, color=BWA_cat)) +
   geom_line(linewidth=1) +
   geom_ribbon(fv_directional_global,mapping=aes(ymin = lower, ymax = upper, y = NULL,fill=BWA_cat),alpha = 0.3,color=NA) +
-  labs(title="Global for three directions")
+  labs(title="Global for three directions") +
+  facet_wrap(~spp,ncol=4)
 
   ################################################################################
 # GHAL
