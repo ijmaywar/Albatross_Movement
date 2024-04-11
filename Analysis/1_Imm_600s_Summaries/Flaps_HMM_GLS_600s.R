@@ -1,6 +1,6 @@
 ################################################################################
 #
-# Combine flap data, GLS immersion state, and GPS data in 600s intervals.
+# Add GLS data to Flap data and HMM states in 600s intervals.
 #
 ################################################################################
 
@@ -10,8 +10,8 @@ rm(list = ls())
 
 # User Inputted Values -----------------------------------------------------
 
-location = 'Bird_Island'
-szn = "2021_2022"
+location = 'Midway'
+szn = "2018_2019"
 
 # Load Packages -----------------------------------------------------------
 
@@ -23,37 +23,37 @@ library(foreach)
 # Set Environment ---------------------------------------------------------
 
 GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/Thorne Lab Shared Drive/Data/Albatross/"
-Acc_L3_dir <- paste0(GD_dir,"L3/",location,"/Tag_Data/Acc/",szn,"/")
+Analysis_dir <- paste0(GD_dir, "Analysis/Maywar/Flaps_600s/Flaps_HMM/",location,"/",szn,"/")
 GLS_L1_dir <- paste0(GD_dir, "L1/",location,"/Tag_Data/Immersion/GLS/",szn,"/")
-write_dir <- paste0(GD_dir, "Analysis/Maywar/Flaps_600s/GLS/",location,"/",szn,"/")
+write_dir <- paste0(GD_dir, "Analysis/Maywar/Flaps_600s/Flaps_HMM_GLS/",location,"/",szn,"/")
 
 setwd(GLS_L1_dir)
 GLS_files <- list.files(pattern='*.csv')
 
-setwd(Acc_L3_dir)
-Acc_files <- list.files(pattern='*.csv')
+setwd(Analysis_dir)
+Analysis_files <- list.files(pattern='*.csv')
 
 # Add Immersion data ---------------------------------------------------------------
 
-for (i in 1:length(Acc_files)) {
-  m <- read.csv(Acc_files[i])
+for (i in 1:length(Analysis_files)) {
+  m <- read.csv(Analysis_files[i])
   m$datetime <- as.POSIXct(m$datetime,format="%Y-%m-%d %H:%M:%S", tz="GMT")
   
   if (difftime(m$datetime[nrow(m)],m$datetime[1],units="secs") != 600*(nrow(m)-1)) {
-    print("GPS continuity check failed.")
+    print("Data continuity check failed.")
     break
   }
   
-  birdname_trip <- str_sub(Acc_files[i],1,-23)
-  birdname <- str_sub(Acc_files[i],1,-25)
+  birdname_trip <- str_sub(Analysis_files[i],1,-20)
+  birdname <- str_sub(Analysis_files[i],1,-22)
   birdspp <- str_sub(birdname,1,4)
   
   # Attach Immersion Data
   GLS_filename <- paste0(birdname,"_GLS_L1.csv")
   if (sum(GLS_files==GLS_filename)==1) {
     Immersion_data <- read.csv(paste0(GLS_L1_dir,GLS_filename))
-    Immersion_data$starttime <- as.POSIXct(Immersion_data$starttime,format="%d-%b-%Y %H:%M:%S")
-    Immersion_data$endtime <- as.POSIXct(Immersion_data$endtime,format="%d-%b-%Y %H:%M:%S")
+    Immersion_data$starttime <- as.POSIXct(Immersion_data$starttime,format="%d-%b-%Y %H:%M:%S",tz="GMT")
+    Immersion_data$endtime <- as.POSIXct(Immersion_data$endtime,format="%d-%b-%Y %H:%M:%S",tz="GMT")
     Immersion_data_wet <- Immersion_data %>% filter(state=="wet")
     
     # Attach GLS state
@@ -74,7 +74,7 @@ for (i in 1:length(Acc_files)) {
     }
     
     m$datetime <- as.character(format(m$datetime)) # safer for writing csv in character format  
-    write.csv(m, file=paste0(write_dir,birdname_trip,"_Flaps_GLS_600s.csv"), row.names=FALSE)
+    write.csv(m, file=paste0(write_dir,birdname_trip,"_Flaps_HMM_GLS_600s.csv"), row.names=FALSE)
     
   }
-}
+} 
