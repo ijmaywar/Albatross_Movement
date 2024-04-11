@@ -11,8 +11,8 @@ rm(list = ls())
 
 # User Inputted Values -----------------------------------------------------
 
-location = 'Midway' # Options: 'Bird_Island', 'Midway'
-szn = "2022_2023"
+location = 'Bird_Island' # Options: 'Bird_Island', 'Midway'
+szn = "2019_2020"
 
 # Load Packages -----------------------------------------------------------
 
@@ -40,6 +40,7 @@ all_trips <- sub("_bwa.csv$","",files)
 
 for (i in 1:length(files)) {
   m <- read.csv(files[i])
+  m$datetime <- as.POSIXct(m$datetime,format="%Y-%m-%d %H:%M:%S", tz="GMT")
  
   if (difftime(m$datetime[nrow(m)],m$datetime[1],units="secs") != 600*(nrow(m)-1)) {
     print("GPS continuity check failed.")
@@ -54,6 +55,7 @@ for (i in 1:length(files)) {
   acc_filename <- paste0(birdname,"_Acc_L2.csv")
   if (sum(acc_files==acc_filename)==1) {
     flap_data <- read.csv(paste0(Acc_dir,acc_filename))
+    flap_data$DateTime <- as.POSIXct(flap_data$DateTime,format="%Y-%m-%d %H:%M:%S", tz="GMT")
   
     # find the seconds passed after the first GPS measurement for all flaps
     flap_data$GPSsec <- as.numeric(difftime(flap_data$DateTime,m$datetime[1],units='secs'))

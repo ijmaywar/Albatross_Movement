@@ -48,7 +48,6 @@ for (i in 1:length(files)) {
   birdname <- str_sub(files[i],1,-25)
   birdspp <- str_sub(birdname,1,4)
   
-  m$datetime <- as.POSIXct(m$datetime, format="%Y-%m-%d %H:%M:%S")
   m$rounded_hour <- round_date(m$datetime, unit = "hour")
   m$timediff <- abs(as.numeric(difftime(m$datetime,m$rounded_hour)))
   

@@ -26,8 +26,9 @@ library(foreach)
 
 GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/Thorne Lab Shared Drive/Data/Albatross/"
 Acc_L3_dir <- paste0(GD_dir,"L3/",location,"/Tag_Data/Acc/",szn,"/")
-GPS_L3_dir <- paste0(GD_dir, "L3/",location,"/Tag_Data/GPS/compiled_all_yrs/3_states/")
-write_dir <- paste0(GD_dir, "Projects/Maywar/Flaps_600s/HMM/",location,"/",szn,"/")
+GPS_3S_L3_dir <- paste0(GD_dir, "L3/",location,"/Tag_Data/GPS/compiled_all_yrs/3_states/")
+GPS_2S_L3_dir <- paste0(GD_dir, "L3/",location,"/Tag_Data/GPS/compiled_all_yrs/2_states/")
+write_dir <- paste0(GD_dir, "Analysis/Maywar/Flaps_600s/Flaps_HMM/",location,"/",szn,"/")
 
 setwd(Acc_L3_dir)
 Acc_files <- list.files(pattern='*.csv')
@@ -36,10 +37,10 @@ Acc_files <- list.files(pattern='*.csv')
 
 for (i in 1:length(Acc_files)) {
   m <- read.csv(Acc_files[i])
-  m$datetime <- as.POSIXct(m$datetime)
+  m$datetime <- as.POSIXct(m$datetime,format="%Y-%m-%d %H:%M:%S", tz="GMT")
   
   if (difftime(m$datetime[nrow(m)],m$datetime[1],units="secs") != 600*(nrow(m)-1)) {
-    print("GPS continuity check failed.")
+    print("Data continuity check failed.")
     break
   }
   
@@ -47,11 +48,17 @@ for (i in 1:length(Acc_files)) {
   birdname <- str_sub(Acc_files[i],1,-25)
   birdspp <- str_sub(birdname,1,4)
   
-  # Attach HMM state
-  HMM_filename <- paste0(birdname,"_GPS_L3_600s.csv")
-  HMM_data <- read.csv(paste0(GPS_L3_dir,birdspp,"/",HMM_filename))
-  HMM_data <- HMM_data %>% filter(trip_ID==birdname_trip)
-  m$HMM_state <- HMM_data$state
+  # Attach HMM 3S state
+  HMM_3S_filename <- paste0(birdname,"_GPS_L3_600s.csv")
+  HMM_3S_data <- read.csv(paste0(GPS_3S_L3_dir,birdspp,"/",HMM_3S_filename))
+  HMM_3S_data <- HMM_3S_data %>% filter(trip_ID==birdname_trip)
+  m$HMM_3S_state <- HMM_3S_data$state
+  
+  # Attach HMM 2S state
+  HMM_2S_filename <- paste0(birdname,"_GPS_L3_600s.csv")
+  HMM_2S_data <- read.csv(paste0(GPS_2S_L3_dir,birdspp,"/",HMM_2S_filename))
+  HMM_2S_data <- HMM_2S_data %>% filter(trip_ID==birdname_trip)
+  m$HMM_2S_state <- HMM_2S_data$state
   
   m$datetime <- as.character(format(m$datetime)) # safer for writing csv in character format  
   write.csv(m, file=paste0(write_dir,birdname_trip,"_Flaps_HMM_600s.csv"), row.names=FALSE)

@@ -17,13 +17,13 @@ clearvars
 
 szn = '2021_2022';
 location = 'Bird_Island'; % Options: 'Bird_Island', 'Midway'
-AccType = 'NRL'; % Options: 'Technosmart', 'NRL'
+AccType = 'Technosmart'; % Options: 'Technosmart', 'NRL'
 
 %% Set envrionment
 
 % set directories
 GD_dir = "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/Thorne Lab Shared Drive/Data/Albatross/";
-L1_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/Acc/Acc_',AccType,'/',szn,'/');
+L1_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/Acc/Acc_',AccType,'/',szn,'/WAAL/');
 L2_dir = strcat(GD_dir,'L2/',location,'/Tag_Data/Acc/',szn,'/');
 
 % Matlab functions toolbox
@@ -198,3 +198,8 @@ for j = 1:height(L1_fileList)
     disp(strcat(bird,'(',num2str(j),'/',num2str(height(L1_fileList)), '): L2 complete.'))
 
 end
+
+
+%% Plot data
+
+plot(filtered(1:10000))

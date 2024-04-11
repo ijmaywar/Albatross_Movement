@@ -59,7 +59,7 @@ CheckMetaGPSUnique(L0_fileList,GPS_fileList,fullmeta)
 
 %% Loop thru and process birds
 
-for i = 1:height(L0_fileList)
+for i = 15:15 %:height(L0_fileList)
     
     
     namesplit = strsplit(L0_fileNames(i),'_');
