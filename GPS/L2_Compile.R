@@ -11,16 +11,21 @@ rm(list = ls())
 
 # User Inputed Values -----------------------------------------------------
 
-location = 'Bird_Island' # Options: 'Bird_Island', 'Midway'
+location = 'Midway' # Options: 'Bird_Island', 'Midway'
 
 # Set Environment ---------------------------------------------------------
 
 library(dplyr)
 library(ggplot2)
 
-GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/"
-szn_dir <- paste0(GD_dir, "THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L2/",location,"/Tag_Data/GPS/")
-compile_dir <- paste0(GD_dir, "THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L2/",location,"/Tag_Data/GPS/compiled/")
+GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/Thorne Lab Shared Drive/Data/Albatross/"
+szn_dir <- paste0(GD_dir, "L2/",location,"/Tag_Data/GPS/")
+
+if (location == "Bird_Island") {
+  compile_dir <- paste0(GD_dir, "L2/",location,"/Tag_Data/GPS/compiled_2019_2022/compiled_by_spp/")
+} else if (location == "Midway") {
+  compile_dir <- paste0(GD_dir, "L2/",location,"/Tag_Data/GPS/compiled_2018_2023/compiled_by_spp/")
+}
 
 setwd(szn_dir)
 seasons <- list.files()[1:length(list.files())-1] # Remove the last folder because that's for the compiled data
@@ -43,27 +48,13 @@ for (i in 1:length(species)) {
   
   for (j in 1:length(seasons)) {
     
-    # 300s files
-    setwd(paste0(szn_dir,seasons[j],"/300s/"))
-    gpsfiles<-list.files(pattern='*.csv')
-    
-    for (k in 1:length(gpsfiles)) {
-      if (substr(gpsfiles[k],1,4)==spp) {
-        current_file <- read.csv(gpsfiles[k])
-        if (!exists("compiled300s")) {
-          compiled300s <- current_file
-        } else {
-          compiled300s <- bind_rows(compiled300s, current_file)
-        }
-      }
-    }
-    
     # 600s files
-    setwd(paste0(szn_dir,seasons[j],"/600s/"))
+    setwd(paste0(szn_dir,seasons[j],"/"))
     gpsfiles<-list.files(pattern='*.csv')
     for (k in 1:length(gpsfiles)) {
       if (substr(gpsfiles[k],1,4)==spp) {
         current_file <- read.csv(gpsfiles[k])
+        current_file$datetime <- as.POSIXct(current_file$datetime, format = "%Y-%m-%d %H:%M:%S", tz = "GMT")
         if (!exists("compiled600s")){
           compiled600s <- current_file
         } else {
@@ -73,13 +64,11 @@ for (i in 1:length(species)) {
     }
   }
   
-  compiled300s$datetime <- as.character(format(compiled300s$datetime)) # safer for writing csv in character format
   compiled600s$datetime <- as.character(format(compiled600s$datetime)) # safer for writing csv in character format
   
-  write.csv(compiled300s, file=paste0(compile_dir,"300s/",spp,"interp_300s.csv"), row.names=FALSE)
-  write.csv(compiled600s, file=paste0(compile_dir,"600s/",spp,"interp_600s.csv"), row.names=FALSE)
+  write.csv(compiled600s, file=paste0(compile_dir,spp,"_GPS_L2_600s.csv"), row.names=FALSE)
   
-  rm(compiled300s,compiled600s)
+  rm(compiled600s)
   
 }
 

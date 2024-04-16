@@ -7,10 +7,10 @@
 
 rm(list = ls())
 
-# User Inputed Values -----------------------------------------------------
+# User Inputted Values -----------------------------------------------------
 
-szn = '2019_2020'
-location = 'Bird_Island' # Options: 'Bird_Island', 'Midway'
+szn = '2022_2023'
+location = 'Midway' # Options: 'Bird_Island', 'Midway'
 
 # Set Environment ---------------------------------------------------------
 
@@ -20,9 +20,9 @@ library(rlang)
 library(dplyr)
 library(ggplot2)
 
-GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/"
-L1_dir <- paste0(GD_dir, "THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L1/",location,"/Tag_Data/GPS/GPS_Catlog/",szn,"/2_buffer2km/")
-L2_dir <- paste0(GD_dir, "THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L2/",location,"/Tag_Data/GPS/",szn,"/")
+GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/Thorne Lab Shared Drive/Data/Albatross/"
+L1_dir <- paste0(GD_dir, "L1/",location,"/Tag_Data/GPS/GPS_Catlog/",szn,"/2_buffer2km/")
+L2_dir <- paste0(GD_dir, "L2/",location,"/Tag_Data/GPS/",szn,"/")
 
 # Find GPS files
 setwd(L1_dir)
@@ -37,6 +37,7 @@ wrap360 = function(lon) {lon360<-ifelse(lon<0,lon+360,lon);return(lon360)}
 for (i in 1:length(gpsfiles)) {
   
   mi<-read.csv(gpsfiles[i])
+  mi$datetime <- as.POSIXct(mi$datetime, format = "%Y-%m-%d %H:%M:%S", tz = "GMT")
   # ---------------------------------------------------------------------
   # Interpolate Tracks
   # ---------------------------------------------------------------------
@@ -46,8 +47,7 @@ for (i in 1:length(gpsfiles)) {
   coordinates(newm) = c("lon","lat")
   proj4string(newm) <- CRS("+proj=longlat +ellps=WGS84")
   xy<-cbind(newm$lon,newm$lat)
-  # ptime <- as.POSIXct(mi$datetime, format = "%Y-%m-%d %H:%M:%S", tz="UTC")
-  ptime <- as.POSIXct(mi$datetime, tz="UTC")
+  ptime <- mi$datetime
   
   tripscheck<-which(!is.na(mi$tripID))
   if (is_empty(tripscheck)) {
@@ -70,7 +70,7 @@ for (i in 1:length(gpsfiles)) {
     
     # And Save
     df600_keep$datetime <- as.character(format(df600_keep$datetime)) # safer for writing csv in character format
-    write.csv(df600_keep, file=paste0(L2_dir,'600s/', mi$id[1], "_L2_interp600s.csv"), row.names=FALSE)
+    write.csv(df600_keep, file=paste0(L2_dir, mi$id[1], "_GPS_L2_600s.csv"), row.names=FALSE)
     
   }
   

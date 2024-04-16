@@ -68,7 +68,7 @@ L0_fileNames = string({L0_fileList.name});
 
     %% Find start_idx
     fig_start = 1;
-    HFF = 2000000; % How Far Forward (How much of the head is plotted)
+    HFF = 000000; % How Far Forward (How much of the head is plotted)
     figure
     plot(fig_start:HFF,L0_data(fig_start:HFF))
     ylim([-6 6])
@@ -109,6 +109,6 @@ L0_fileNames = string({L0_fileList.name});
     writetable(idx_tbl,strcat(L0_dir,"start_stop_indices.csv"));
     disp("Table saved.")
     close all
-    clearvars -except i idx_tbl L0_fileNames fs L0_dir
+    clearvars -except i idx_tbl L0_fileNames
     i = i+1
 

@@ -26,10 +26,14 @@ addpath(genpath('/Users/ian/Documents/GitHub/'))
 
 % set directories
 GD_dir = "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/Thorne Lab Shared Drive/Data/Albatross/";
+HD_dir = "/Volumes/LaCie/NEW_STRUCTURE/";
 L0_dir = strcat(GD_dir,"L0/",location,"/Tag_Data/",szn,"/Aux/NRL/L0_1_Decompressed/2_ECG/");
 L1_dir = strcat(GD_dir,"L1/",location,"/Tag_Data/ECG/ECG_NRL/",szn,"/");
 
 GPS_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/GPS/GPS_Catlog/',szn,'/2_buffer2km/');
+
+% Matlab functions toolbox
+addpath(genpath('/Users/ian/Documents/GitHub/AlbatrossFlightDynamics/'))
 
 % Full_metadata sheet
 fullmeta = readtable(strcat(GD_dir,'metadata/Full_metadata.xlsx'),'TreatAsEmpty',{'NA'});
@@ -85,9 +89,8 @@ L0_fileList(startsWith({L0_fileList.name},'._')) = [];
 L0_fileNames = string({L0_fileList.name});
 
 %% Loop thru and process birds
-redos = [13, 14, 15, 18, 20, 21, 22, 23];
-for i = redos(1:end)
-% for i = 28:length(L0_fileNames)
+
+for i = 28:length(L0_fileNames)
     %% load data to be deteced.
 
     namesplit = strsplit(L0_fileNames(i),'_');
@@ -276,6 +279,7 @@ for i = redos(1:end)
     % Find the idx of the peaks when the data trimmed from the start is
     % added back on
     og_idx = peak+start_idx-1;
+    corrected_idx = og_idx;
 
     DateTime = (ON_DateTime + seconds((og_idx-1)*(1/fs)));
     DateTime.Format = 'yyyy-MM-dd HH:mm:ss.SSSSSS';

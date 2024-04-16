@@ -13,9 +13,8 @@ rm(list = ls())
 
 # User Inputed Values -----------------------------------------------------
 
-location = 'Midway' # Options: 'Bird_Island', 'Midway'
-spp = "LAAL"
-interp_interval = "600s"
+location = 'Bird_Island' # Options: 'Bird_Island', 'Midway'
+spp = "GHAL"
 numstates = "3_states" # "2_states"
   
 # Set Environment ---------------------------------------------------------
@@ -34,9 +33,9 @@ wrap360 = function(lon) {lon360<-ifelse(lon<0,lon+360,lon);return(lon360)}
 
 # Loop thru and process ---------------------------------------------------
   
-GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/"
-compile_dir <- paste0(GD_dir, "THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L2/",location,"/Tag_Data/GPS/compiled_by_spp/")
-L3_dir <- paste0(GD_dir, "THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L3/",location,"/Tag_Data/GPS/",numstates,"/")
+GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/Thorne Lab Shared Drive/Data/Albatross/"
+compile_dir <- paste0(GD_dir, "L2/",location,"/Tag_Data/GPS/compiled_2019_2022/compiled_by_spp/")
+L3_dir <- paste0(GD_dir, "L3/",location,"/Tag_Data/GPS/compiled_all_yrs/",numstates,"/",spp,"/")
 
 # Load data ---------------------------------------------------------------
 
@@ -142,7 +141,7 @@ for (i in 1:length(birdIDs)) {
   trips = tripIDs[str_sub(tripIDs,1,-3) == birdIDs[i]]
   
   bird_HMMdf <- HMMdf %>% filter(dep_ID == current_bird)
-  write.csv(bird_HMMdf, file=paste0(L3_dir,spp,"/",current_bird,"_GPS_L3_",interp_interval,".csv"), row.names=FALSE)
+  write.csv(bird_HMMdf, file=paste0(L3_dir,"/",current_bird,"_GPS_L3_600s.csv"), row.names=FALSE)
   
   for (j in 1:length(trips)) {
     current_trip = trips[j]
@@ -151,7 +150,7 @@ for (i in 1:length(birdIDs)) {
       geom_point(size = 1, aes(color = state)) +
       ggtitle(current_trip) + 
       geom_point(size = 3, x = colony_coords[1], y = colony_coords[2])
-    ggsave(paste0(L3_dir,spp,"/","Figures/",current_trip,"_",interp_interval,"_path_with_states.png"))
+    ggsave(paste0(L3_dir,"/","Figures/",current_trip,"_600s_path_with_states.png"))
   }
   
 }

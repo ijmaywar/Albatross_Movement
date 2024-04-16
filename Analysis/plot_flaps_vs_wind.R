@@ -18,7 +18,6 @@ locations = c('Bird_Island','Midway')
 
 library(ggplot2)
 library(readxl)
-# library(Matrix)
 library(lme4)
 library(stringr)
 library(dplyr)
@@ -32,56 +31,12 @@ library(gratia)
 # Set Environment ---------------------------------------------------------
 
 GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/Thorne Lab Shared Drive/Data/Albatross/"
+read_dir <- paste0(GD_dir,"Analysis/Maywar/Flaps_Hourly/Flaps_HMM_GLS_ECG_Compiled/")
 fullmeta <- read_excel(paste0(GD_dir,"metadata/Full_Metadata.xlsx"))
 
-# Combine all files across field seasons and locations -------------------------
-m_all <- 0
-for (i_loc in 1:length(locations)) {
-  loc = locations[i_loc]
-  
-  if (loc == "Bird_Island") {
-    szns = c("2019_2020","2020_2021","2021_2022")
-    immersion_src = "GLS"
-  } else if (loc == "Midway") {
-    szns = c("2018_2019","2021_2022","2022_2023")
-    immersion_src = "HMM"
-  }
-
-  for (i_szn in 1:length(szns)) {
-    szn = szns[i_szn]
-    
-    # read_dir <- paste0(GD_dir,"Projects/Maywar/Flaps_Hourly_AnalysisReady/No_Imm_Trim/",loc,"/",szn,"/")
-    read_dir <- paste0(GD_dir,"Projects/Maywar/Flaps_Hourly_AnalysisReady/",immersion_src,"/",loc,"/",szn,"/")
-    
-    setwd(read_dir)
-    files <- list.files(pattern='*.csv')
-    
-    # combine all files and label them with the szn
-    for (i in 1:length(files)) {
-      # bird <- str_sub(files[i],1,-34)
-      # bird_trip <- str_sub(files[i],1,-32)
-    
-      bird <- str_sub(files[i],1,-38)
-      bird_trip <- str_sub(files[i],1,-36)
-      birdmeta <- fullmeta %>% dplyr::filter(Deployment_ID == bird)
-      
-      # only use the file if metadata indicates that the bird is usable
-      if (birdmeta$Focus == 1) {
-        m <- read.csv(files[i])
-        m$szn = szn
-        m$loc = loc
-        m$Trip_Type = birdmeta$Trip_Type
-        m$spp = birdmeta$Species
-        
-        if (length(m_all)==1) {
-          m_all <- m
-        } else {
-          m_all <- rbind(m_all,m)
-        }
-      }
-    }
-  }
-}
+setwd(read_dir)
+files <- list.files(pattern = '*.csv')
+m_all <- read_csv(files[1])
 
 # Classify 2BEP, E_pip, Ep as BG
 m_all <- m_all %>% mutate(Trip_Type = factor(replace(as.character(Trip_Type),Trip_Type=="2BEP","BG")))
@@ -89,22 +44,16 @@ m_all <- m_all %>% mutate(Trip_Type = factor(replace(as.character(Trip_Type),Tri
 m_all <- m_all %>% mutate(Trip_Type = factor(replace(as.character(Trip_Type),Trip_Type=="Ep","BG")))
 
 # Datetime stuff
-m_all$datetime <- as.POSIXlt(m_all$datetime,format="%Y-%m-%d %H:%M:%S")
-m_all$julian <- m_all$datetime$yday + 1 
-# plotday are the days since the beginning of the year (January 1 of the first
-# year is 1)
-m_all$plotday <- ifelse(m_all$julian > 200, m_all$julian, m_all$julian + 365)
-# adjust for leap years
-m_all$plotday <- ifelse(m_all$plotday > 365 & m_all$datetime$year+1900 == 2021, m_all$plotday+1, m_all$plotday)
+m_all$datetime <- as.POSIXlt(m_all$datetime,format="%Y-%m-%d %H:%M:%S",tz="GMT")
+# m_all$julian <- m_all$datetime$yday + 1 
+# # plotday are the days since the beginning of the year (January 1 of the first
+# # year is 1)
+# m_all$plotday <- ifelse(m_all$julian > 200, m_all$julian, m_all$julian + 365)
+# # adjust for leap years
+# m_all$plotday <- ifelse(m_all$plotday > 365 & m_all$datetime$year+1900 == 2021, m_all$plotday+1, m_all$plotday)
 
 # Remove unnecessary columns
 # m_all <- m_all %>% dplyr::select(-lon,-lat,-u,-v,-datetime,-wind_dir,-bird_dir,-bird_vel)
-
-# # LOAD m_all
-m_all_NoImmTrim <- read.csv("/Users/ian/Desktop/m_all_NoImmTrim.csv")
-m_all_Trim <- read.csv("/Users/ian/Desktop/m_all_Trim.csv")
-
-m_all <- m_all_NoImmTrim
 
 # Categorize BWAs
 m_all <- m_all %>% mutate(BWA_cat = case_when(bwa<=45 ~ "head",
@@ -114,45 +63,191 @@ m_all <- m_all %>% mutate(BWA_cat = case_when(bwa<=45 ~ "head",
 # Turn variables into factors
 m_all$id <- as.factor(m_all$id)
 m_all$tripID <- as.factor(m_all$tripID) 
-m_all$szn <- as.factor(m_all$szn)
-m_all$loc <- as.factor(m_all$loc)
+m_all$Field_Season <- as.factor(m_all$Field_Season)
+m_all$Location <- as.factor(m_all$Location)
 m_all$Trip_Type <- as.factor(m_all$Trip_Type)
-m_all$spp <- as.factor(m_all$spp)
+m_all$Species <- as.factor(m_all$Species)
 m_all$BWA_cat <- as.factor(m_all$BWA_cat)
 
-# Re-order spp groups
-m_all$spp <- factor(m_all$spp , levels=c("BBAL", "GHAL", "WAAL", "BFAL", "LAAL"))
+# Re-order Species groups
+m_all$Species <- factor(m_all$Species , levels=c("BBAL", "GHAL", "WAAL", "BFAL", "LAAL"))
 
 # Split data between species
-m_BBAL <- m_all %>% filter(spp=="BBAL")
-m_GHAL <- m_all %>% filter(spp=="GHAL")
-m_WAAL <- m_all %>% filter(spp=="WAAL")
-m_LAAL <- m_all %>% filter(spp=="LAAL")
-m_BFAL <- m_all %>% filter(spp=="BFAL")
+m_BBAL <- m_all %>% filter(Species=="BBAL")
+m_GHAL <- m_all %>% filter(Species=="GHAL")
+m_WAAL <- m_all %>% filter(Species=="WAAL")
+m_LAAL <- m_all %>% filter(Species=="LAAL")
+m_BFAL <- m_all %>% filter(Species=="BFAL")
 
-# How many samples per spp per BWA_cat? ----------------------------------------
+# How many samples per Species per BWA_cat? ----------------------------------------
 
-nrow(m_BBAL)
-nrow(m_BBAL %>% filter(BWA_cat=="cross"))
-nrow(m_BBAL %>% filter(BWA_cat=="head"))
-nrow(m_BBAL %>% filter(BWA_cat=="tail"))
+nrow(m_all)
+m_all %>% count(Species)
+m_all %>% group_by(Species, BWA_cat) %>% summarize(count=n())
 
-nrow(m_GHAL)
-nrow(m_GHAL %>% filter(BWA_cat=="cross"))
-nrow(m_GHAL %>% filter(BWA_cat=="head"))
-nrow(m_GHAL %>% filter(BWA_cat=="tail"))
+# Filtering based on HMM state
+# In the 2-state model, state 1 is foraging/on-water and state 2 is commuting
+# In the 3-state model, state 1 is on-water, state 2 is foraging, and state 3 is commuting
 
-nrow(m_BFAL)
-nrow(m_BFAL %>% filter(BWA_cat=="cross"))
-nrow(m_BFAL %>% filter(BWA_cat=="head"))
-nrow(m_BFAL %>% filter(BWA_cat=="tail"))
+# 2-state HMM
+m_HMM_2S <- m_all %>% filter(HMM_2S_state==2)
+m_HMM_2S %>% count(Species)
+m_HMM_2S %>% group_by(Species, BWA_cat) %>% summarize(count=n())
 
-nrow(m_LAAL)
-nrow(m_LAAL %>% filter(BWA_cat=="cross"))
-nrow(m_LAAL %>% filter(BWA_cat=="head"))
-nrow(m_LAAL %>% filter(BWA_cat=="tail"))
+# 3-state HMM selecting for just commuting
+m_HMM_3S_commuting <- m_all %>% filter(HMM_3S_state==3)
+m_HMM_3S_commuting %>% count(Species)
+m_HMM_3S_commuting %>% group_by(Species, BWA_cat) %>% summarize(count=n())
+
+# 3-state HMM selecting for commuting and foraging
+m_HMM_3S_cf <- m_all %>% filter(HMM_3S_state==3 | HMM_3S_state==2)
+m_HMM_3S_cf %>% count(Species)
+m_HMM_3S_cf %>% group_by(Species, BWA_cat) %>% summarize(count=n())
+
+# Filtering based on GLS state
+# Birds that have GLS tags will be filtered by GLS state while birds that do 
+# not have GLS tags will be filtered using an HMM
+m_GLS_dry <- m_all %>% filter(GLS_state=='dry')
+m_GLS_dry %>% count(Species)
+m_GLS_dry %>% group_by(Species, BWA_cat) %>% summarize(count=n())
+
+m_GLS_wet <- m_all %>% filter(GLS_state=='wet')
+
+# stats on the performance of HMM in relation to GLS
+m_all %>% group_by(GLS_state,HMM_2S_state) %>% summarize(count=n())
+m_all %>% group_by(GLS_state,HMM_3S_state) %>% summarize(count=n())
+
 
 # Flap plots --------------------------------------------------------------
+
+main_k <- 3
+fac_k <- 3
+
+m_BBAL <- filter(m_GLS_dry %>% Species=="BBAL")
+m_GHAL <- filter(m_GLS_dry %>% Species=="GHAL")
+m_BBAL <- filter(m_GLS_dry %>% Species=="BBAL")
+
+GAM_BBAL_directional <- gam(formula = flaps ~ s(wind_vel,bs='tp',k=main_k,m=2) +
+                              s(wind_vel,BWA_cat,bs='fs',k=fac_k,m=2) + 
+                              s(id,k=length(unique(m_BBAL$id)),bs="re"),
+                            data = m_BBAL,
+                            family = "poisson",
+                            method = "REML")
+m_all |>
+  ggplot(aes(wind_vel,flaps)) +
+  geom_point() +
+  geom_point(m_GLS_wet,mapping=aes(wind_vel,flaps),color='red',alpha=1)
+
+m_GLS_dry |>
+  ggplot(aes(wind_vel,flaps)) +
+  geom_point() +
+  geom_point(m_GLS_wet,mapping=aes(wind_vel,flaps),color='red',alpha=.3)
+
+m_GLS_wet |>
+  ggplot(aes(wind_vel,flaps)) +
+  geom_point() +
+  geom_point(m_GLS_dry,mapping=aes(wind_vel,flaps),color='red',alpha=.3)
+
+
+# Create GAMs for "usable" and "unusable" data according to the GLS...
+GAM_GLS_list <- list()
+for (spp in levels(m_GLS_dry$Species)) {
+  GAM_GLS_state_list <- list()
+  for (GLS_cat in c("dry","wet","all")) {
+    m_current <- m_all %>% filter(Species==spp)
+    if (GLS_cat=="dry" | GLS_cat=="wet") {
+      m_current <- m_current %>% filter(GLS_state==GLS_cat)
+    } else if (GLS_cat != "all") {
+      print("invalid GLS_cat.")
+      break
+    }
+    current_GAM_GLS <- gam(formula = flaps ~ s(wind_vel,bs='tp',k=3,m=2) +
+                       s(wind_vel,BWA_cat,bs='fs',k=3,m=2) + 
+                       s(id,k=length(unique(m_current$id)),bs="re"),
+                     data = m_current,
+                     family = "poisson",
+                     method = "REML")
+    current_ds_GLS  <- data_slice(current_GAM_GLS, wind_vel = evenly(wind_vel, n = 100), 
+                              id = unique(m_current$id)[1:10],
+                              BWA_cat = unique(m_current$BWA_cat))
+    
+    current_fv_GLS <- fitted_values(current_GAM_GLS, data = current_ds_GLS, scale = "response",
+                                terms = c("(Intercept)","s(wind_vel)","s(wind_vel,BWA_cat)","s(id)"))
+    
+    current_fv_GLS_global <- fitted_values(current_GAM_GLS, data = current_ds_GLS, scale = "response",
+                                       terms = c("(Intercept)","s(wind_vel)","s(wind_vel,BWA_cat)"))
+    
+    # Add metadata for the current species and GLS category
+    current_ds_GLS <- cbind(current_ds_GLS,data.frame(Species = rep(spp,nrow(current_ds_GLS)),
+                                                      GLS_state = rep(GLS_cat,nrow(current_ds_GLS))))
+    current_fv_GLS <- cbind(current_fv_GLS,data.frame(Species = rep(spp,nrow(current_fv_GLS)),
+                                                      GLS_state = rep(GLS_cat,nrow(current_fv_GLS))))
+    current_fv_GLS_global <- cbind(current_fv_GLS_global,data.frame(Species = rep(spp,nrow(current_fv_GLS_global)),
+                                                      GLS_state = rep(GLS_cat,nrow(current_fv_GLS_global))))
+    
+    GAM_GLS_state_list[[GLS_cat]] <- current_GAM_GLS
+    if (spp == "BBAL" & GLS_cat == "dry") {
+      ds_GLS_df <- current_ds_GLS
+      fv_GLS_df <- current_fv_GLS
+      fv_GLS_global_df <- current_fv_GLS_global
+    } else {
+      ds_GLS_df <- rbind(ds_GLS_df,current_ds_GLS)
+      fv_GLS_df <- rbind(fv_GLS_df,current_fv_GLS)
+      fv_GLS_global_df <- rbind(fv_GLS_global_df,current_fv_GLS_global)
+    }
+  }
+  GAM_GLS_list[[spp]] <- GAM_GLS_state_list
+}
+
+
+# Instead of putting ds and fv into lists, put them into a df with columns describing
+# the spp and state. I can then use facet_wrap() when plotting.
+
+# Plot the GAMs alongside eachother - A similar results would be strange...
+# Could show that because these are hour-long summaries, on-water behavior is not really important
+# Could also show that the GLSs are not providing the correct output for some reason.
+
+fv_GLS_global_df %>% filter(Species=="BBAL") |>
+  ggplot(aes(wind_vel,fitted,color=BWA_cat)) +
+  geom_line() +
+  geom_ribbon(mapping=aes(ymin = lower, ymax = upper, y = NULL, color = BWA_cat),alpha = 0.3) +
+  labs(title="BBAL") +
+  xlim(0,25) + 
+  ylim(0,1000) +
+  facet_wrap(~GLS_state)
+
+# It looks like the shape of the GAMs don't change too much when accounting for GLS state...
+
+fv_GLS_wet_global |>
+  ggplot(aes(wind_vel,fitted,color=BWA_cat)) +
+  geom_line() +
+  geom_ribbon(mapping=aes(ymin = lower, ymax = upper, y = NULL, color = BWA_cat),alpha = 0.3) +
+  geom_point(m_GLS_wet,mapping=aes(wind_vel,flaps),alpha=0.1,color='black') +
+  labs(title="GLS Wet") +
+  xlim(0,25) + 
+  ylim(0,1000)
+
+fv_GLS_dry_global |>
+  ggplot(aes(wind_vel,fitted,color=BWA_cat)) +
+  geom_line() +
+  geom_ribbon(mapping=aes(ymin = lower, ymax = upper, y = NULL, color = BWA_cat),alpha = 0.3) +
+  geom_point(m_GLS_dry,mapping=aes(wind_vel,flaps),alpha=0.1) + 
+  labs(title="GLS Dry") + 
+  ylim(0,7000)
+
+
+
+fv_GLS_wet_global |>
+  ggplot(aes(wind_vel,fitted)) +
+  geom_line(linewidth=1,color='red') +
+  geom_ribbon(mapping=aes(ymin = lower, ymax = upper, y = NULL),alpha = 0.3,color='red') +
+  geom_point(m_GLS_wet,mapping=aes(wind_vel,flaps),alpha=0.1) + 
+  labs(title="GLS Wet") + 
+  ylim(0,7000)
+
+
+
+
 
 # Tensor product of wind_vel and bwa
 
@@ -303,8 +398,8 @@ fv_directional <- rbind(fitted_values(GAM_BBAL_directional, data = ds_directiona
                         fitted_values(GAM_GHAL_directional, data = ds_directional %>% filter(str_detect(id,"GHAL")), scale = "response"),
                         fitted_values(GAM_BFAL_directional, data = ds_directional %>% filter(str_detect(id,"BFAL")), scale = "response"),
                         fitted_values(GAM_LAAL_directional, data = ds_directional %>% filter(str_detect(id,"LAAL")), scale = "response"))
-fv_directional <- fv_directional %>% mutate(spp = substr(id,1,4))
-fv_directional$spp <- factor(fv_directional$spp, levels=c("BBAL","GHAL","BFAL","LAAL"))
+fv_directional <- fv_directional %>% mutate(Species = substr(id,1,4))
+fv_directional$Species <- factor(fv_directional$Species, levels=c("BBAL","GHAL","BFAL","LAAL"))
 
 fv_directional_global <- rbind(fitted_values(GAM_BBAL_directional, data = ds_directional %>% filter(str_detect(id,"BBAL")), scale = "response",
                                        terms = c("(Intercept)","s(wind_vel)","s(wind_vel,BWA_cat)")),
@@ -314,16 +409,16 @@ fv_directional_global <- rbind(fitted_values(GAM_BBAL_directional, data = ds_dir
                                              terms = c("(Intercept)","s(wind_vel)","s(wind_vel,BWA_cat)")),
                                fitted_values(GAM_LAAL_directional, data = ds_directional %>% filter(str_detect(id,"LAAL")), scale = "response",
                                              terms = c("(Intercept)","s(wind_vel)","s(wind_vel,BWA_cat)")))
-fv_directional_global <- fv_directional_global %>% mutate(spp = substr(id,1,4))
-fv_directional_global$spp <- factor(fv_directional_global$spp, levels=c("BBAL","GHAL","BFAL","LAAL"))
+fv_directional_global <- fv_directional_global %>% mutate(Species = substr(id,1,4))
+fv_directional_global$Species <- factor(fv_directional_global$Species, levels=c("BBAL","GHAL","BFAL","LAAL"))
                                
 
-fv_directional %>% filter(spp=="BBAL") |>
+fv_directional %>% filter(Species=="BBAL") |>
   ggplot(aes(x = wind_vel, y = fitted, color=id)) +
   geom_line() +
   # geom_point(m_BBAL,mapping=aes(wind_vel,flaps),color='black',alpha=0.1) +
-  geom_line(fv_directional_global %>% filter(spp=="BBAL"),mapping=aes(wind_vel,fitted),color='black',linewidth=1) +
-  geom_ribbon(fv_directional_global %>% filter(spp=="BBAL"),mapping=aes(ymin = lower, ymax = upper, y = NULL), alpha = 0.1,fill='black') +
+  geom_line(fv_directional_global %>% filter(Species=="BBAL"),mapping=aes(wind_vel,fitted),color='black',linewidth=1) +
+  geom_ribbon(fv_directional_global %>% filter(Species=="BBAL"),mapping=aes(ymin = lower, ymax = upper, y = NULL), alpha = 0.1,fill='black') +
   facet_wrap(~BWA_cat,ncol=3) +
   theme(legend.position="none")
 
@@ -332,7 +427,7 @@ fv_directional_global |>
   geom_line(linewidth=1) +
   geom_ribbon(fv_directional_global,mapping=aes(ymin = lower, ymax = upper, y = NULL,fill=BWA_cat),alpha = 0.3,color=NA) +
   labs(title="Global for three directions") +
-  facet_wrap(~spp,ncol=4)
+  facet_wrap(~Species,ncol=4)
 
   ################################################################################
 # GHAL
@@ -626,7 +721,7 @@ summary(GAM_BBAL_rnd)
 # gam_plot_BBAL <- ggplot(m_BBAL, aes(wind_vel,flaps)) + 
 #   geom_point() +
 #   geom_line(aes(y=predict(GAM_BBAL_rnd,m_BBAL), color="red", group=id)) + 
-#   labs(title = "GAM + scatter plots split by spp (tail-winds)", x="Wind Velocity", y="Flaps per hour")
+#   labs(title = "GAM + scatter plots split by Species (tail-winds)", x="Wind Velocity", y="Flaps per hour")
 # gam_plot_BBAL
 
 # GAM_BBAL_rnd <- gam(flaps ~ s(wind_vel) + s(id, bs = 're'),data=m_BBAL)
@@ -758,10 +853,10 @@ m_selectedWinds <- filter(m_all,bwa>60)
 
 # do i separate into inc and BG? 
 
-lme1<-lmer(flaps~wind_vel+(1+wind_vel|spp)+(1+wind_vel|id),data=m_selectedWinds)
+lme1<-lmer(flaps~wind_vel+(1+wind_vel|Species)+(1+wind_vel|id),data=m_selectedWinds)
 
-# Ok, so including both spp and id leads to singularity
-# lme1<-lmer(flaps~wind_vel + (1|spp) + (1|id),data=m_selectedWinds)
+# Ok, so including both Species and id leads to singularity
+# lme1<-lmer(flaps~wind_vel + (1|Species) + (1|id),data=m_selectedWinds)
 
 lme1 <- lmer(flaps~wind_vel + (1|id),data=m_selectedWinds)
 
