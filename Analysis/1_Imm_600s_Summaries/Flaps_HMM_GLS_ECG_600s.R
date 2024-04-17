@@ -11,7 +11,7 @@ rm(list = ls())
 # User Inputted Values -----------------------------------------------------
 
 location = 'Bird_Island'
-szn = "2021_2022"
+szn = "2019_2020"
 min_peak_prob = 0 # All peaks with a probability less than this value will be removed
 
 # Load Packages -----------------------------------------------------------
@@ -91,16 +91,19 @@ if (location == 'Midway') {
       Immersion_data_wet <- Immersion_data %>% filter(state=="wet")
       
       m$GLS_state <- "dry"
+      
+      # Change this all to 10 mins not an hour !!!!!!
+      
       for (j in 1:nrow(m)) {
-        hour_start <- m$datetime[j]
-        Immersion_data_wet <- Immersion_data_wet %>% mutate(starttime_diff_to_hour = as.numeric(difftime(starttime,hour_start,units="hours")))
-        if (any(Immersion_data_wet$starttime_diff_to_hour>=0 & Immersion_data_wet$starttime_diff_to_hour<1)) {
-          # If a starttime occurs within an hour of the current hour_start, the bird is wet during this hour.
+        ten_min_start <- m$datetime[j]
+        Immersion_data_wet <- Immersion_data_wet %>% mutate(starttime_diff = as.numeric(difftime(starttime,ten_min_start,units="mins")))
+        if (any(Immersion_data_wet$starttime_diff>=0 & Immersion_data_wet$starttime_diff<10)) {
+          # If a starttime occurs within an hour of the current ten_min_start, the bird is wet during this hour.
           m$GLS_state[j] <- "wet"
         } else {
-          # If an endtime occurs within an hour of the current hour_start, the bird is wet during this hour.
-          Immersion_data_wet <- Immersion_data_wet %>% mutate(endtime_diff_to_hour = as.numeric(difftime(endtime,hour_start,units="hours")))
-          if (any(Immersion_data_wet$endtime_diff_to_hour>=0 & Immersion_data_wet$endtime_diff_to_hour<1)) {
+          # If an endtime occurs within an hour of the current ten_min_start, the bird is wet during this hour.
+          Immersion_data_wet <- Immersion_data_wet %>% mutate(endtime_diff = as.numeric(difftime(endtime,ten_min_start,units="mins")))
+          if (any(Immersion_data_wet$endtime_diff>=0 & Immersion_data_wet$endtime_diff<10)) {
             m$GLS_state[j] <- "wet"          
           }
         }
