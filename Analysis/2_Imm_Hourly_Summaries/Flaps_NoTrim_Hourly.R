@@ -12,8 +12,8 @@ rm(list = ls())
 
 # User Inputted Values -----------------------------------------------------
 
-location = 'Midway' # Options: 'Bird_Island', 'Midway'
-szn = "2022_2023"
+location = 'Bird_Island' # Options: 'Bird_Island', 'Midway'
+szn = "2019_2020"
 
 # Load Packages -----------------------------------------------------------
 
@@ -52,6 +52,7 @@ for (i in 1:length(files)) {
     current_hour <- m_hourly$rounded_hour[j]
     current_m <- m %>% filter(rounded_hour == current_hour)
     m_hourly$flaps[j] <- sum(current_m$flaps)
+    m_hourly$Heartbeats[j] <- sum(current_m$Heartbeats)
     if (nrow(current_m) != 6) {
       m_hourly$trim[j] <- 1
     }
