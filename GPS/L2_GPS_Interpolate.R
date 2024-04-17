@@ -9,8 +9,8 @@ rm(list = ls())
 
 # User Inputted Values -----------------------------------------------------
 
-szn = '2022_2023'
-location = 'Midway' # Options: 'Bird_Island', 'Midway'
+szn = '2019_2020'
+location = 'Bird_Island' # Options: 'Bird_Island', 'Midway'
 
 # Set Environment ---------------------------------------------------------
 

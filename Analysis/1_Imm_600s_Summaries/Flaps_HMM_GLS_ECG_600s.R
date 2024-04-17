@@ -12,7 +12,7 @@ rm(list = ls())
 
 location = 'Bird_Island'
 szn = "2021_2022"
-min_peak_prob = 0.85 # All peaks with a probability less than this value will be removed
+min_peak_prob = 0 # All peaks with a probability less than this value will be removed
 
 # Load Packages -----------------------------------------------------------
 
@@ -26,7 +26,7 @@ library(stringr)
 
 GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/Thorne Lab Shared Drive/Data/Albatross/"
 Analysis_dir <- paste0(GD_dir, "Analysis/Maywar/Flaps_600s/Flaps_HMM/",location,"/",szn,"/")
-write_dir <- paste0(GD_dir, "Analysis/Maywar/Flaps_600s/Flaps_HMM_GLS_ECG/",location,"/",szn,"/")
+write_dir <- paste0(GD_dir, "Analysis/Maywar/Flaps_600s/Flaps_HMM_GLS_ECG/p_0/",location,"/",szn,"/")
 
 # Copy files from Flaps_HMM for Midway birds because there are no GLS or ECG deployments
 if (location == 'Midway') {

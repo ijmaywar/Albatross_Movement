@@ -11,10 +11,10 @@
 
 rm(list = ls())
 
-# User Inputed Values -----------------------------------------------------
+# User Inputted Values -----------------------------------------------------
 
-location = 'Bird_Island' # Options: 'Bird_Island', 'Midway'
-spp = "GHAL"
+location = 'Midway' # Options: 'Bird_Island', 'Midway'
+spp = "LAAL"
 numstates = "3_states" # "2_states"
   
 # Set Environment ---------------------------------------------------------
@@ -34,7 +34,12 @@ wrap360 = function(lon) {lon360<-ifelse(lon<0,lon+360,lon);return(lon360)}
 # Loop thru and process ---------------------------------------------------
   
 GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/Thorne Lab Shared Drive/Data/Albatross/"
-compile_dir <- paste0(GD_dir, "L2/",location,"/Tag_Data/GPS/compiled_2019_2022/compiled_by_spp/")
+
+if (location == "Bird_Island") {
+  compile_dir <- paste0(GD_dir, "L2/",location,"/Tag_Data/GPS/compiled_2019_2022/compiled_by_spp/")
+} else if (location == "Midway") {
+  compile_dir <- paste0(GD_dir, "L2/",location,"/Tag_Data/GPS/compiled_2018_2023/compiled_by_spp/")
+}
 L3_dir <- paste0(GD_dir, "L3/",location,"/Tag_Data/GPS/compiled_all_yrs/",numstates,"/",spp,"/")
 
 # Load data ---------------------------------------------------------------

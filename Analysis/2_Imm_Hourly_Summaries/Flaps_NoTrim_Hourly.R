@@ -13,7 +13,7 @@ rm(list = ls())
 # User Inputted Values -----------------------------------------------------
 
 location = 'Bird_Island' # Options: 'Bird_Island', 'Midway'
-szn = "2019_2020"
+szn = "2021_2022"
 
 # Load Packages -----------------------------------------------------------
 
@@ -26,8 +26,8 @@ library(lubridate)
 # Set Environment ---------------------------------------------------------
 
 GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/Thorne Lab Shared Drive/Data/Albatross/"
-read_dir <- paste0(GD_dir, "Analysis/Maywar/Flaps_600s/Flaps_HMM_GLS_ECG/",location,"/",szn,"/")
-write_dir <- paste0(GD_dir, "Analysis/Maywar/Flaps_Hourly/Flaps_HMM_GLS_ECG/",location,"/",szn,"/")
+read_dir <- paste0(GD_dir, "Analysis/Maywar/Flaps_600s/Flaps_HMM_GLS_ECG/p_0/",location,"/",szn,"/")
+write_dir <- paste0(GD_dir, "Analysis/Maywar/Flaps_Hourly/Flaps_HMM_GLS_ECG/p_0/",location,"/",szn,"/")
 
 setwd(read_dir)
 files <- list.files(pattern='*.csv')

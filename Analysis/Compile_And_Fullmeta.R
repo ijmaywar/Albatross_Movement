@@ -19,8 +19,8 @@ library(stringr)
 # Set Environment ---------------------------------------------------------
 
 GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/Thorne Lab Shared Drive/Data/Albatross/"
-read_dir <- paste0(GD_dir, "Analysis/Maywar/Flaps_Hourly/Flaps_HMM_GLS_ECG/")
-write_dir <- paste0(GD_dir, "Analysis/Maywar/Flaps_Hourly/Flaps_HMM_GLS_ECG_Compiled/")
+read_dir <- paste0(GD_dir, "Analysis/Maywar/Flaps_Hourly/Flaps_HMM_GLS_ECG/p_0")
+write_dir <- paste0(GD_dir, "Analysis/Maywar/Flaps_Hourly/Flaps_HMM_GLS_ECG_Compiled/p_0/")
 
 # Load fullmeta
 fullmeta <- read_xlsx(paste0(GD_dir,"metadata/Full_Metadata.xlsx"))
@@ -40,6 +40,7 @@ compiled_m$Species <- NA
 compiled_m$Field_Season <- NA
 compiled_m$Trip_Type <- NA
 compiled_m$Aux_TagType <- NA
+compiled_m$Body_Mass_Kg <- NA
 
 for (i in 1:length(birds)) {
   current_bird <- birds[i]
@@ -52,8 +53,20 @@ for (i in 1:length(birds)) {
   compiled_m$Field_Season[current_bird_rows] <- birdmeta$Field_Season
   compiled_m$Trip_Type[current_bird_rows] <- birdmeta$Trip_Type
   compiled_m$Aux_TagType[current_bird_rows] <- birdmeta$Aux_TagType
+  compiled_m$Body_Mass_Kg[current_bird_rows] <- birdmeta$Body_Mass_Kg
 }
 
 # Save m
 compiled_m$datetime <- as.character(format(compiled_m$datetime)) # safer for writing csv in character format  
 write.csv(compiled_m, file=paste0(write_dir,"Compiled_Flaps_HMM_GLS_ECG_Hourly.csv"), row.names=FALSE)
+
+# Filter for only ECG birds ----------------------------------------------------
+
+ECG_L1_dir <- paste0(GD_dir, "L1/Bird_Island/Tag_Data/ECG/ECG_NRL/")
+setwd(ECG_L1_dir)
+ECG_files <- list.files(pattern='*.csv',recursive = TRUE,full.names = FALSE)
+ECG_birds <- str_sub(ECG_files,11,-12)
+
+compiled_ECG_m <- compiled_m %>% filter(id %in% ECG_birds)
+write.csv(compiled_ECG_m, file=paste0(write_dir,"ECGonly_Compiled_Flaps_HMM_GLS_ECG_Hourly.csv"), row.names=FALSE)
+
