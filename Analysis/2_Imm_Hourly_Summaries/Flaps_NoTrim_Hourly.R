@@ -12,8 +12,8 @@ rm(list = ls())
 
 # User Inputted Values -----------------------------------------------------
 
-location = 'Bird_Island' # Options: 'Bird_Island', 'Midway'
-szn = "2019_2020"
+location = 'Midway' # Options: 'Bird_Island', 'Midway'
+szn = "2022_2023"
 min_peak_prob = 0 # What was the min_peak_prob used to create 600s data?
 
 # Load Packages -----------------------------------------------------------
@@ -60,13 +60,34 @@ for (i in 1:length(files)) {
   for (j in 1:nrow(m_hourly)) {
     current_hour <- m_hourly$rounded_hour[j]
     current_m <- m %>% filter(rounded_hour == current_hour)
-    m_hourly$flaps[j] <- sum(current_m$flaps)
-    m_hourly$Heartbeats[j] <- sum(current_m$Heartbeats)
+    
     if (nrow(current_m) != 6) {
       m_hourly$trim[j] <- 1
-    }
-    if (any(current_m$GLS_state == "wet")) {
-      m_hourly$GLS_state[j] <- "wet"
+    } else {
+      
+      # If any of the flaps are NA, the hour summary needs to also be NA
+      if (any(is.na(current_m$flaps))) {
+        m_hourly$flaps[j] <- NA
+      } else {
+        m_hourly$flaps[j] <- sum(current_m$flaps)
+      }
+      
+      # If any of the heartbeats are NA, the hour summary needs to also be NA
+      if (any(is.na(current_m$Heartbeats))) {
+        m_hourly$Heartbeats[j] <- NA
+      } else {
+        m_hourly$Heartbeats[j] <- sum(current_m$Heartbeats)
+      }
+      
+      # If any of the GLS are NA, the hour summary needs to also be NA
+      if (any(is.na(current_m$GLS_state))) {
+        m_hourly$GLS_state[j] <- NA
+      } else {
+        # If the bird is wet at all during the hour, the GLS_state is wet
+        if (any(current_m$GLS_state == "wet")) {
+          m_hourly$GLS_state[j] <- "wet"
+        }
+      }
     }
   }
   
