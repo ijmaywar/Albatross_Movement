@@ -11,15 +11,17 @@ rm(list = ls())
 
 # User Inputted Values -----------------------------------------------------
 
-location = 'Bird_Island' # Options: 'Bird_Island', 'Midway'
-szn = "2019_2020"
+location = 'Midway' # Options: 'Bird_Island', 'Midway'
+szn = "2022_2023"
 
 # Load Packages -----------------------------------------------------------
 
+library(tidyverse)
 library(dplyr)
 library(stringr)
 library(readxl)
 library(foreach)
+library(readr)
 
 # Set Environment ---------------------------------------------------------
 
@@ -27,6 +29,21 @@ GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu
 Acc_dir <- paste0(GD_dir, "L2/",location,"/Tag_Data/Acc/",szn,"/")
 wind_L2_dir <- paste0(GD_dir,"L2/",location,"/Wind_Data/ERA5_SingleLevels_10m/",szn,"/")
 Acc_L3_dir <- paste0(GD_dir,"L3/",location,"/Tag_Data/Acc/",szn,"/")
+
+# Load Acc_start_stop files
+Acc_start_stop_list <- list.files(paste0(GD_dir,"Analysis/Maywar/Acc_start_stop/"),full.names = TRUE)
+Acc_start_stop_list <- Acc_start_stop_list[grepl(location,Acc_start_stop_list) & grepl(szn,Acc_start_stop_list)]
+if (length(Acc_start_stop_list)==2) {
+  ASS_1 <- read_csv(Acc_start_stop_list[1], col_types = cols(Deployment_ID=col_character(),
+                                                             start_delay=col_character(),
+                                                             stop_early=col_character()))
+  ASS_2 <- read_csv(Acc_start_stop_list[2], col_types = cols(Deployment_ID=col_character(),
+                                                             start_delay=col_character(),
+                                                             stop_early=col_character()))
+  Acc_start_stop <- rbind(ASS_1,ASS_2)
+} else if (length(Acc_start_stop_list)==1) {
+  Acc_start_stop <- read_csv(Acc_start_stop_list)
+}
 
 # Load fullmeta
 fullmeta <- read_xlsx(paste0(GD_dir,"metadata/Full_Metadata.xlsx"))
@@ -71,22 +88,21 @@ for (i in 1:length(files)) {
     frequency_table <- table(categories)
     data <- as.data.frame(frequency_table)
     
-    # Edit data so that values are NA for when the Acc isn't on/isn't being read.
-    L1_data <- read_csv(L1_acc_filepath)
-    L1_data_start <- L1_data$DateTime[1] 
-    L1_data_end <- L1_data$DateTime[nrow(L1_data)]
-  
-    flap_first_sec <- as.numeric(difftime(L1_data_start,m$datetime[1],units='secs'))
-    flap_last_sec <- as.numeric(difftime(L1_data_end,m$datetime[1],units='secs'))
-      
-    if (flap_first_sec>0) {
-      first_break <- findInterval(flap_first_sec,breaks)
-      data$Freq[1:first_break] <- NA
-    }
+    # The last row of data isn't a full 10 minutes
+    # The GPS ends before the final datetime + 10 minutes
+    # So we cannot summarize flaps during this time
+    data$Freq[nrow(data)] <- NA
     
-    last_break <- findInterval(flap_last_sec,breaks)
-    if (last_break<length(breaks)) {
-      data$Freq[last_break:nrow(data)] <- NA
+    # Edit data so that values are NA for when the Acc isn't on/isn't being read.
+    ASS_current <- Acc_start_stop %>% filter(Deployment_ID == birdname)
+    Acc_end_dt <- ASS_current[["Acc_end_dt"]]
+    if (Acc_end_dt!="NaT") {
+      Acc_end_dt <- as.POSIXct(Acc_end_dt,format="%d-%b-%Y %H:%M:%S",tz="GMT")
+      last_acc_sec <- as.numeric(difftime(Acc_end_dt,m$datetime[1],units='secs'))
+      last_break <- findInterval(last_acc_sec,breaks)
+      if (last_break<length(breaks)) {  
+        data$Freq[last_break:nrow(data)] <- NA
+      }
     }
     
     m$flaps <- data$Freq
