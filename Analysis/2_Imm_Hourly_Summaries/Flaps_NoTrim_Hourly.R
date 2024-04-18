@@ -13,7 +13,8 @@ rm(list = ls())
 # User Inputted Values -----------------------------------------------------
 
 location = 'Bird_Island' # Options: 'Bird_Island', 'Midway'
-szn = "2021_2022"
+szn = "2019_2020"
+min_peak_prob = 0 # What was the min_peak_prob used to create 600s data?
 
 # Load Packages -----------------------------------------------------------
 
@@ -26,8 +27,13 @@ library(lubridate)
 # Set Environment ---------------------------------------------------------
 
 GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/Thorne Lab Shared Drive/Data/Albatross/"
-read_dir <- paste0(GD_dir, "Analysis/Maywar/Flaps_600s/Flaps_HMM_GLS_ECG/p_0/",location,"/",szn,"/")
-write_dir <- paste0(GD_dir, "Analysis/Maywar/Flaps_Hourly/Flaps_HMM_GLS_ECG/p_0/",location,"/",szn,"/")
+if (min_peak_prob == 0) {
+  read_dir <- paste0(GD_dir, "Analysis/Maywar/Flaps_600s/Flaps_HMM_GLS_ECG/p_0/",location,"/",szn,"/")
+  write_dir <- paste0(GD_dir, "Analysis/Maywar/Flaps_Hourly/Flaps_HMM_GLS_ECG/p_0/",location,"/",szn,"/")
+} else if (min_peak_prob == 0.85) {
+  read_dir <- paste0(GD_dir, "Analysis/Maywar/Flaps_600s/Flaps_HMM_GLS_ECG/p_085/",location,"/",szn,"/")
+  write_dir <- paste0(GD_dir, "Analysis/Maywar/Flaps_Hourly/Flaps_HMM_GLS_ECG/p_085/",location,"/",szn,"/")
+}
 
 setwd(read_dir)
 files <- list.files(pattern='*.csv')
@@ -48,6 +54,9 @@ for (i in 1:length(files)) {
   m_hourly$trim <- 0
   
   # Remove all rows that have less than 6 measurements within that given hour
+  # and sum flaps and heartbeats
+  # and set GLS_state to wet if any of the 6 rows within an hour are wet.
+  # and remove rows that have less than 6 measurements of GLS/ECG within that given hour
   for (j in 1:nrow(m_hourly)) {
     current_hour <- m_hourly$rounded_hour[j]
     current_m <- m %>% filter(rounded_hour == current_hour)
@@ -55,6 +64,9 @@ for (i in 1:length(files)) {
     m_hourly$Heartbeats[j] <- sum(current_m$Heartbeats)
     if (nrow(current_m) != 6) {
       m_hourly$trim[j] <- 1
+    }
+    if (any(current_m$GLS_state == "wet")) {
+      m_hourly$GLS_state[j] <- "wet"
     }
   }
   

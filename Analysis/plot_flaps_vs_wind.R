@@ -13,6 +13,7 @@ rm(list = ls())
 # User Inputted Values -----------------------------------------------------
 
 locations = c('Bird_Island','Midway')
+min_peak_prob = 0 # What was the min_peak_prob used to create summary data?
 
 # Load Packages -----------------------------------------------------------
 
@@ -31,7 +32,13 @@ library(gratia)
 # Set Environment ---------------------------------------------------------
 
 GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/Thorne Lab Shared Drive/Data/Albatross/"
-read_dir <- paste0(GD_dir,"Analysis/Maywar/Flaps_Hourly/Flaps_HMM_GLS_ECG_Compiled/")
+
+if (min_peak_prob == 0) {
+  read_dir <- paste0(GD_dir, "Analysis/Maywar/Flaps_Hourly/Flaps_HMM_GLS_ECG_Compiled/p_0/")
+} else if (min_peak_prob == 0.85) {
+  read_dir <- paste0(GD_dir, "Analysis/Maywar/Flaps_Hourly/Flaps_HMM_GLS_ECG_Compiled/p_085/")
+}
+
 fullmeta <- read_excel(paste0(GD_dir,"metadata/Full_Metadata.xlsx"))
 
 setwd(read_dir)
