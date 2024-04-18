@@ -33,10 +33,10 @@ warning('off','MATLAB:table:ModifiedAndSavedVarNames')
 
 % set directories
 GD_dir = "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/Thorne Lab Shared Drive/Data/Albatross/";
-% L0_dir = strcat(GD_dir,'L0/',location,'/Tag_Data/',szn,'/Aux/',tagtype,'/');
-L0_dir = strcat(GD_dir,'L0/',location,'/Tag_Data/',szn,'/Aux/',tagtype,'/WAAL/');
-% L1_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/Acc/Acc_Technosmart/',szn,'/');
-L1_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/Acc/Acc_Technosmart/',szn,'/WAAL/');
+L0_dir = strcat(GD_dir,'L0/',location,'/Tag_Data/',szn,'/Aux/',tagtype,'/');
+% L0_dir = strcat(GD_dir,'L0/',location,'/Tag_Data/',szn,'/Aux/',tagtype,'/WAAL/');
+L1_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/Acc/Acc_Technosmart/',szn,'/');
+% L1_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/Acc/Acc_Technosmart/',szn,'/WAAL/');
 GPS_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/GPS/GPS_Catlog/',szn,'/2_buffer2km/');
 
 % Sometimes a select few individuals have been written in a different
@@ -51,7 +51,7 @@ elseif strcmp(L0_split(end),"GMT/")
 end
 
 % Matlab functions toolbox
-addpath(genpath('/Users/ian/Documents/GitHub/AlbatrossFlightDynamics/'))
+addpath(genpath('/Users/ian/Documents/GitHub/'))
 
 % Full_metadata sheet
 fullmeta = readtable(strcat(GD_dir,'metadata/Full_metadata.xlsx'),'TreatAsEmpty',{'NA'});
