@@ -14,17 +14,17 @@ clearvars
  
 %% USER INPUTED VALUES
 
-szn = '2021_2022';
+szn = '2019_2020';
 location = 'Bird_Island'; % Options: 'Bird_Island', 'Midway'
 datalvl = "L1";
-tagtype = "NRL";
+tagtype = "Technosmart";
 
 %% Set environment
 
 % set directories
 GD_dir = "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/Thorne Lab Shared Drive/Data/Albatross/";
-% L1_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/Acc/Acc_Technosmart/',szn,'/');
-L1_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/Acc/Acc_NRL/',szn,'/');
+L1_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/Acc/Acc_Technosmart/',szn,'/');
+% L1_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/Acc/Acc_NRL/',szn,'/');
 
 % Matlab functions toolbox
 addpath(genpath('/Users/ian/Documents/GitHub/'))
@@ -33,16 +33,20 @@ addpath(genpath('/Users/ian/Documents/GitHub/'))
 fullmeta = readtable(strcat(GD_dir,'metadata/Full_metadata.xlsx'),'TreatAsEmpty',{'NA'});
 % Specify the field season and location you are interested in
 % fullmeta = fullmeta(strcmp(fullmeta.Field_season,szn) & strcmp(fullmeta.Location,location),:);
-fullmeta = fullmeta(strcmp(fullmeta.Field_Season,szn) & strcmp(fullmeta.Location,location) & strcmp(fullmeta.Aux_TagType,tagtype),:);
+% fullmeta = fullmeta(strcmp(fullmeta.Field_Season,szn) & strcmp(fullmeta.Location,location) & strcmp(fullmeta.Aux_TagType,tagtype),:);
 
 %% How far did I get?
 
 cd(L1_dir)
-L1_fileList = exFAT_aux_remove(struct2table(dir('*.csv')));
+L1_fileList = dir('*.csv');
+L1_fileList(startsWith({L1_fileList.name},'._')) = [];
+L1_fileNames = string({L1_fileList.name});
 
 metastruct_dir = strcat(L1_dir,'meta_structures/');
 cd(metastruct_dir)
-metastruct_fileList = exFAT_aux_remove(struct2table(dir('*.mat')));
+metastruct_fileList = dir('*.mat');
+metastruct_fileList(startsWith({metastruct_fileList.name},'._')) = [];
+metastruct_fileNames = string({metastruct_fileList.name});
 
 %% Create table
 nBirds = height(fullmeta);
