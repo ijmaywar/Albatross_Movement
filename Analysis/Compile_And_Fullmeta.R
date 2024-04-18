@@ -8,6 +8,10 @@
 
 rm(list = ls())
 
+# User Inputted Values -----------------------------------------------------
+
+min_peak_prob = 0 # What was the min_peak_prob used to create summary data?
+
 # Load Packages -----------------------------------------------------------
 
 library(tidyverse)
@@ -19,8 +23,14 @@ library(stringr)
 # Set Environment ---------------------------------------------------------
 
 GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/Thorne Lab Shared Drive/Data/Albatross/"
-read_dir <- paste0(GD_dir, "Analysis/Maywar/Flaps_Hourly/Flaps_HMM_GLS_ECG/p_0")
-write_dir <- paste0(GD_dir, "Analysis/Maywar/Flaps_Hourly/Flaps_HMM_GLS_ECG_Compiled/p_0/")
+
+if (min_peak_prob == 0) {
+  read_dir <- paste0(GD_dir, "Analysis/Maywar/Flaps_Hourly/Flaps_HMM_GLS_ECG/p_0/")
+  write_dir <- paste0(GD_dir, "Analysis/Maywar/Flaps_Hourly/Flaps_HMM_GLS_ECG_Compiled/p_0/")
+} else if (min_peak_prob == 0.85) {
+  read_dir <- paste0(GD_dir, "Analysis/Maywar/Flaps_Hourly/Flaps_HMM_GLS_ECG/p_085/")
+  write_dir <- paste0(GD_dir, "Analysis/Maywar/Flaps_Hourly/Flaps_HMM_GLS_ECG_Compiled/p_085/")
+}
 
 # Load fullmeta
 fullmeta <- read_xlsx(paste0(GD_dir,"metadata/Full_Metadata.xlsx"))
