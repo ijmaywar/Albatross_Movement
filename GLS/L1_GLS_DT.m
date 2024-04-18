@@ -8,19 +8,18 @@ clearvars
 
 %% USER INPUTED VALUES
 
-szn = '2021_2022';
+szn = '2019_2020';
 location = 'Bird_Island'; % Options: 'Bird_Island', 'Midway', 'Wandering'
-computer = "MacMini";
 
 %% Set envrionment
 
 % set directories
-GD_dir = findGD(computer);
-L0_dir = strcat(GD_dir,"L0/",location,"/Tag_Data/",szn,"/GLS/");
+GD_dir = "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/Thorne Lab Shared Drive/Data/Albatross/";
+L0_dir = strcat(GD_dir,"L0/",location,"/Tag_Data/",szn,"/GLS/Migrate/");
 L1_dir = strcat(GD_dir,"L1/",location,"/Tag_Data/Immersion/",szn,"/");
 
 % Matlab functions toolbox
-addpath(genpath('/Users/ian/Documents/GitHub/AlbatrossFlightDynamics/'))
+addpath(genpath('/Users/ian/Documents/GitHub/'))
 
 % First, bulk rename .deg files as .txt (Much easier to read in .txt files then try to
 % figure out how to tell Matlab to deal with .deg file)
