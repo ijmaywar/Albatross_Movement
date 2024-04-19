@@ -28,6 +28,7 @@ library(mgcViz)
 library(gridExtra)
 library(patchwork)
 library(gratia)
+library(readr)
 
 # Set Environment ---------------------------------------------------------
 
