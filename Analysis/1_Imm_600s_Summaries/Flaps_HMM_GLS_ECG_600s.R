@@ -10,18 +10,64 @@ rm(list = ls())
 
 # User Inputted Values -----------------------------------------------------
 
-location = 'Bird_Island'
-szn = "2021_2022"
+# location = 'Bird_Island'
+# szn = "2019_2020"
+
+locations = c("Bird_Island", "Midway")
 min_peak_prob = 0 # All heartbeats (ECG) with a probability less than this value will be removed
 
 # User defined functions ---------------------------------------------------
 
-HMMstate <- function(m,birdname_trip,states) {
+HMMstate <- function(birdname_trip,states) {
   dir <- paste0(GD_dir, "L3/",location,"/Tag_Data/GPS/compiled_all_yrs/",states,"_states/")
   HMM_filename <- paste0(str_sub(birdname_trip,end=-3),"_GPS_L3_600s.csv")
   HMM_data <- read.csv(paste0(dir,str_sub(birdname_trip,1,4),"/",HMM_filename))
   HMM_data <- HMM_data %>% filter(trip_ID==birdname_trip)
   return(HMM_data$state)
+}
+
+generate_sequence <- function(start, end, rows) {
+  if (is.na(start) & is.na(end)) {
+    NA
+  } else if (is.na(start) & !is.na(end)) {
+    seq(1:end)
+  } else if (!is.na(start) & is.na(end)) {
+    if (start==rows) {
+      start
+    } else {
+      seq(start:rows)
+    }
+  } else {
+    seq(start,end)
+  }
+}
+
+extract_OWB_state <- function(m,OWB_filename) {
+  m_OWB <- read_csv(paste0(Acc_L4_dir,OWB_filename))
+  m_OWB$Start_water_dt <- as.POSIXct(m_OWB$Start_water_dt,format="%d-%b-%Y %H:%M:%S",tz="GMT")
+  m_OWB$Stop_water_dt <- as.POSIXct(m_OWB$Stop_water_dt,format="%d-%b-%Y %H:%M:%S",tz="GMT")
+  m_OWB_data_start <- m_OWB$Start_water_dt[1]
+  m_OWB_data_end <- m_OWB$Stop_water_dt[nrow(m_OWB)]
+  
+  OWB_state <- rep("off",times=nrow(m))
+  
+  # find the seconds passed after the first GPS measurement for all GLS==wet start and stop times
+  m_OWB$GPSsec_start <- as.numeric(difftime(m_OWB$Start_water_dt ,m$datetime[1],units='secs'))
+  m_OWB$GPSsec_end <- as.numeric(difftime(m_OWB$Stop_water_dt,m$datetime[1],units='secs'))
+  
+  breaks <- seq(0,600*nrow(m),by=600)
+  m_OWB$start <- cut(m_OWB$GPSsec_start,breaks,include.lowest=TRUE,right=FALSE,labels=FALSE)
+  m_OWB$end <- cut(m_OWB$GPSsec_end,breaks,include.lowest=TRUE,right=FALSE,labels=FALSE)
+  m_OWB$indexes_covered <- pmap(list(m_OWB$start,m_OWB$end,nrow(m)),generate_sequence)
+  for (z in 1:nrow(m_OWB)) {
+    OWB_state[m_OWB$indexes_covered[[z]]] <- "on"
+  }
+  
+  # Add NAs to 10 min intervals where the Acc is not recording data
+  OWB_state[which(is.na(m$flaps))] <- NA
+  
+  # return m
+  return(list(OWB_state=OWB_state,m_OWB=m_OWB))
 }
 
 # Load Packages -----------------------------------------------------------
@@ -32,10 +78,21 @@ library(lubridate)
 library(dplyr)
 library(stringr)
 
+# Loop thru all samples -----------------------------------------------------------
+for (location in locations) {
+  if (location == "Bird_Island") {
+    szns = c("2019_2020", "2020_2021", "2021_2022")
+  } else if (location == "Midway") {
+    szns = c("2018_2019", "2021_2022", "2022_2023")
+  }
+  for (szn in szns) {
+    cat("Processing location:",location,"Season:",szn,"\n")
+
 # Set Environment ---------------------------------------------------------
 
 GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/Thorne Lab Shared Drive/Data/Albatross/"
 Acc_L3_dir <- paste0(GD_dir,"L3/",location,"/Tag_Data/Acc/",szn,"/")
+Acc_L4_dir <- paste0(GD_dir,"L4/",location,"/Tag_Data/Acc/",szn,"/")
 if (min_peak_prob == 0) {
   write_dir <- paste0(GD_dir, "Analysis/Maywar/Flaps_600s/Flaps_HMM_GLS_ECG/p_0/",location,"/",szn,"/")
 } else if (min_peak_prob == 0.85) {
@@ -48,7 +105,7 @@ fullmeta <- read_xlsx(paste0(GD_dir,"metadata/Full_Metadata.xlsx"))
 setwd(Acc_L3_dir)
 Acc_files <- list.files(pattern='*.csv')
 
-# Add Immersion Data ---------------------------------------------------------------
+# Add Midway Data ---------------------------------------------------------------
 if (location == 'Midway') {
   for (i in 1:length(Acc_files)) {
       m <- read_csv(Acc_files[i])
@@ -63,11 +120,17 @@ if (location == 'Midway') {
       birdname <- str_sub(Acc_files[i],1,-25)
       birdspp <- str_sub(birdname,1,4)
       
-      m$HMM_2S_state <- HMMstate(m,birdname_trip,states=2)
-      m$HMM_3S_state <- HMMstate(m,birdname_trip,states=3)
+      m$HMM_2S_state <- HMMstate(birdname_trip,states=2)
+      m$HMM_3S_state <- HMMstate(birdname_trip,states=3)
       
       m$GLS_state <- NA
       m$Heartbeats <- NA
+      
+      OWB_filename <- paste0(birdname,"_Acc_L4_OWB.csv")
+      # Find OWB
+      OWB_list <- extract_OWB_state(m,OWB_filename)
+      m$OWB_state <- OWB_list$OWB_state
+      m_OWB <- OWB_list$m_OWB
       
       m$datetime <- as.character(format(m$datetime)) # safer for writing csv in character format  
       write.csv(m, file=paste0(write_dir,birdname_trip,"_Flaps_HMM_GLS_ECG_600s.csv"), row.names=FALSE)
@@ -88,7 +151,7 @@ if (location == 'Midway') {
     setwd(Acc_L3_dir)
     Acc_files <- list.files(pattern='*.csv')
     
-    # Add Heartbeat and GLS Data ---------------------------------------------------------------
+# Add Bird_Island Data ---------------------------------------------------------------
     
     for (i in 1:length(Acc_files)) {
       m <- read_csv(Acc_files[i])
@@ -101,11 +164,17 @@ if (location == 'Midway') {
       birdname_trip <- str_sub(Acc_files[i],1,-23)
       birdname <- str_sub(Acc_files[i],1,-25)
       
-      m$HMM_2S_state <- HMMstate(m,birdname_trip,states=2)
-      m$HMM_3S_state <- HMMstate(m,birdname_trip,states=3)
+      m$HMM_2S_state <- HMMstate(birdname_trip,states=2)
+      m$HMM_3S_state <- HMMstate(birdname_trip,states=3)
       
+      OWB_filename <- paste0(birdname,"_Acc_L4_OWB.csv")
       GLS_filename <- paste0(birdname,"_GLS_L1.csv")
       ECG_filename <- paste0(birdname,"_ECG_L1.csv")
+      
+      # Find OWB
+      OWB_list <- extract_OWB_state(m,OWB_filename)
+      m$OWB_state <- OWB_list$OWB_state
+      m_OWB <- OWB_list$m_OWB
       
       if (sum(GLS_files==GLS_filename)==0) {
         m$GLS_state <- NA
@@ -123,19 +192,17 @@ if (location == 'Midway') {
         
         m$GLS_state <- "dry"
         
-        for (j in 1:nrow(m)) {
-          ten_min_start <- m$datetime[j]
-          Immersion_data_wet <- Immersion_data_wet %>% mutate(starttime_diff = as.numeric(difftime(starttime,ten_min_start,units="mins")))
-          if (any(Immersion_data_wet$starttime_diff>=0 & Immersion_data_wet$starttime_diff<10)) {
-            # If a starttime occurs within an hour of the current ten_min_start, the bird is wet during this 10 min interval.
-            m$GLS_state[j] <- "wet"
-          } else {
-            # If an endtime occurs within an hour of the current ten_min_start, the bird is wet during this 10 min interval.
-            Immersion_data_wet <- Immersion_data_wet %>% mutate(endtime_diff = as.numeric(difftime(endtime,ten_min_start,units="mins")))
-            if (any(Immersion_data_wet$endtime_diff>=0 & Immersion_data_wet$endtime_diff<10)) {
-              m$GLS_state[j] <- "wet"          
-            }
-          }
+        # find the seconds passed after the first GPS measurement for all GLS==wet start and stop times
+        Immersion_data_wet$GPSsec_start <- as.numeric(difftime(Immersion_data_wet$starttime,m$datetime[1],units='secs'))
+        Immersion_data_wet$GPSsec_end <- as.numeric(difftime(Immersion_data_wet$endtime,m$datetime[1],units='secs'))
+        
+        breaks <- seq(0,600*nrow(m),by=600)
+        Immersion_data_wet$start <- cut(Immersion_data_wet$GPSsec_start,breaks,include.lowest=TRUE,right=FALSE,labels=FALSE)
+        Immersion_data_wet$end <- cut(Immersion_data_wet$GPSsec_end,breaks,include.lowest=TRUE,right=FALSE,labels=FALSE)
+        Immersion_data_wet$indexes_covered <- pmap(list(Immersion_data_wet$start,Immersion_data_wet$end,nrow(m)),generate_sequence)
+        # Immersion_data_wet$indexes_covered[Immersion_data_wet$indexes_covered == "NA"] <- NA 
+        for (z in 1:nrow(Immersion_data_wet)) {
+          m$GLS_state[Immersion_data_wet$indexes_covered[[z]]] <- "wet"
         }
         
         # Add NAs to 10 min intervals where the GLS is not recording data
@@ -161,7 +228,7 @@ if (location == 'Midway') {
           ECG_data <- read_csv(paste0(ECG_L1_dir,"/",ECG_filename))
           ECG_data$DateTime <- as.POSIXct(ECG_data$DateTime,format="%Y-%m-%d %H:%M:%S",tz="GMT")
           
-          # find the seconds passed after the first GPS measurement for all flaps
+          # find the seconds passed after the first GPS measurement for all HeartBeats
           ECG_data$GPSsec <- as.numeric(difftime(ECG_data$DateTime,m$datetime[1],units='secs'))
           
           # Find the min and max GPSsec
@@ -203,3 +270,5 @@ if (location == 'Midway') {
       write.csv(m, file=paste0(write_dir,birdname_trip,"_Flaps_HMM_GLS_ECG_600s.csv"), row.names=FALSE)
     }
   }
+}
+}

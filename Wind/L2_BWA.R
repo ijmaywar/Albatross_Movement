@@ -13,8 +13,10 @@ rm(list = ls())
 
 # User Inputted Values -----------------------------------------------------
 
-location = 'Bird_Island' # Options: 'Bird_Island', 'Midway'
-szn = "2021_2022"
+# location = 'Bird_Island' # Options: 'Bird_Island', 'Midway'
+# szn = "2021_2022"
+
+locations = c("Bird_Island", "Midway")
 
 # Packages  ---------------------------------------------------------
 
@@ -24,12 +26,20 @@ library(terra)
 library(geosphere)
 library(foehnix)
 
+# Loop to run thru all samples
+for (location in locations) {
+  if (location == "Bird_Island") {
+    szns = c("2019_2020", "2020_2021", "2021_2022")
+  } else if (location == "Midway") {
+    szns = c("2018_2019", "2021_2022", "2022_2023")
+  }
+  for (szn in szns) {
+    cat("Processing location:",location,"Season:",szn,"\n")
+
 # Set Environment ---------------------------------------------------------
 
 GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/Thorne Lab Shared Drive/Data/Albatross/"
 nc_dir <- paste0(GD_dir,"L0/",location,"/Wind_Data/",szn,"/ERA5_SingleLevels_10m/")
-# nc_dir <- paste0(GD_dir,"L0/",location,"/Wind_Data/compiled_2019_2022/ERA5_Monthly_Avg_10m/")
-
 GPS_dir <- paste0(GD_dir,"L2/",location,"/Tag_Data/GPS/",szn,"/")
 wind_L1_dir <- paste0(GD_dir,"L1/",location,"/Wind_Data/ERA5_SingleLevels_10m/allbirds_GPS_with_wind/",szn,"/")
 wind_L2_dir <- paste0(GD_dir,"L2/",location,"/Wind_Data/ERA5_SingleLevels_10m/",szn,"/")
@@ -53,8 +63,7 @@ bearingAngle <- function(bird_bearing,wind_bearing) {
 # Save compiled GPS data with wind U and V --------------------------------
 
 setwd(wind_L1_dir)
-# wind_mat <- read.csv(paste0(szn,"_allbirds_GPS_with_wind.csv"))
-wind_mat <- read.csv(paste0(wind_L1_dir,szn,"_WAAL_GPS_with_wind.csv"))
+wind_mat <- read.csv(paste0(szn,"_allbirds_GPS_with_wind.csv"))
 
 # ADD BIRD BEHAVIOR -------------------------------------------------------
 
@@ -98,11 +107,11 @@ for (i in 1:length(bird_list)) {
       mij$wind_dir <- ddff$dd # [0,360) degrees
       
       # bird-wind angle
-      mij$bwa <- bearingAngle(mij$bird_dir,mij$wind_dir) # [0,180) degrees
+      mij$bwa <- bearingAngle(mij$bird_dir,wrap360(mij$wind_dir-180)) # [0,180) degrees
       
       # In a 360 degree plot which direction is the bird traveling relative to 
       # the wind? 
-      mij$w_rel <- (mij$bird_dir+(360-mij$wind_dir)) %% 360
+      mij$w_rel <- (mij$bird_dir+(360-wrap360(mij$wind_dir-180))) %% 360
       
       # Save file
       mij$datetime <- as.character(format(mij$datetime)) # safer for writing csv in character format
@@ -113,6 +122,5 @@ for (i in 1:length(bird_list)) {
     }
   }
 }
-
-
-
+}
+}

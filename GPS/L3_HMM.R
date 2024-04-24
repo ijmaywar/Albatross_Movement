@@ -13,9 +13,11 @@ rm(list = ls())
 
 # User Inputted Values -----------------------------------------------------
 
-location = 'Midway' # Options: 'Bird_Island', 'Midway'
-spp = "LAAL"
-numstates = "3_states" # "2_states"
+# location = 'Bird_Island' # Options: 'Bird_Island', 'Midway'
+# spp = "BBAL"
+
+NS_list = c("3_states","2_states")
+locations = c("Bird_Island","Midway")
   
 # Set Environment ---------------------------------------------------------
   
@@ -30,6 +32,16 @@ wrapCor = function(cor) {corWrap<-ifelse(cor>180,cor-360,cor);return(corWrap)}
 
 wrap360 = function(lon) {lon360<-ifelse(lon<0,lon+360,lon);return(lon360)}
 
+# Loop thru all samples -----------------------------------------------------------
+for (numstates in NS_list) {
+for (location in locations) {
+  if (location == "Bird_Island") {
+    spps = c("BBAL", "GHAL", "WAAL")
+  } else if (location == "Midway") {
+    spps = c("BFAL", "LAAL")
+  }
+  for (spp in spps) {
+    cat("Processing location:",location,"Species:",spp,"\n")
 
 # Loop thru and process ---------------------------------------------------
   
@@ -70,7 +82,7 @@ df$ID = factor(df$ID)
 # filter out trips less than two hours
 df <- df %>%
   group_by(ID) %>%
-  filter(n() > 12) %>%
+  filter(n() >= 12) %>%
   ungroup()
 
 hmmdata = prepData(
@@ -88,41 +100,46 @@ hist(hmmdata$step, xlab = "step length", main = "")
 # Plot histogram of turning angles
 hist(hmmdata$angle, breaks = seq(-pi, pi, length = 15), xlab = "angle", main = "")
 
-# 2-state model -----------------------------------------------------------
+if (numstates == "2_states") {
+  
+  # 2-state model -----------------------------------------------------------
+  
+  # Set up initial params
+  stepMean0 <- c(0.1,4) #(state1,state2)
+  stepSD0 <- c(0.1,4) #(state1,state2)
+  stepPar0 <- c(stepMean0,stepSD0)
 
-# # Set up initial params
-# stepMean0 <- c(0.1,4) #(state1,state2)
-# stepSD0 <- c(0.1,4) #(state1,state2)
-# stepPar0 <- c(stepMean0,stepSD0)
-# 
-# angleMean0 <- c(pi,0)
-# angleCon0 <- c(1,5)
-# anglePar0 <- c(angleMean0,angleCon0)
-# 
-# # fit the HMM
-# m <- fitHMM(data = hmmdata, 
-#             nbStates = 2, 
-#             stepPar0 = stepPar0, 
-#             anglePar0 = anglePar0)
+  angleMean0 <- c(pi,0)
+  angleCon0 <- c(1,5)
+  anglePar0 <- c(angleMean0,angleCon0)
 
+  # fit the HMM
+  m <- fitHMM(data = hmmdata,
+              nbStates = 2,
+              stepPar0 = stepPar0,
+              anglePar0 = anglePar0)
 
-# 3-state model -----------------------------------------------------------
+} else if (numstates == "3_states") {
+  
+  # 3-state model -----------------------------------------------------------
+  
+  # The 3 proposed states are 1. on-water, 2. foraging, 3. commuting
+  
+  stepMean0 <- c(0.1,1,4) #(state1,state2,state3)
+  stepSD0 <- c(0.1,1,4) #(state1,state2,state3)
+  stepPar0 <- c(stepMean0,stepSD0)
+  
+  angleMean0 <- c(0,pi,0)
+  angleCon0 <- c(5,1,5)
+  anglePar0 <- c(angleMean0,angleCon0)
+  
+  # fit the HMM
+  m <- fitHMM(data = hmmdata, 
+              nbStates = 3, 
+              stepPar0 = stepPar0, 
+              anglePar0 = anglePar0)
+}
 
-# The 3 proposed states are 1. on-water, 2. foraging, 3. commuting
-
-stepMean0 <- c(0.1,1,4) #(state1,state2,state3)
-stepSD0 <- c(0.1,1,4) #(state1,state2,state3)
-stepPar0 <- c(stepMean0,stepSD0)
-
-angleMean0 <- c(0,pi,0)
-angleCon0 <- c(5,1,5)
-anglePar0 <- c(angleMean0,angleCon0)
-
-# fit the HMM
-m <- fitHMM(data = hmmdata, 
-            nbStates = 3, 
-            stepPar0 = stepPar0, 
-            anglePar0 = anglePar0)
 
 # Plot the model -----------------------------------------------------------
 plot(m, animals = 1, ask = TRUE)
@@ -133,8 +150,13 @@ state_probs <- stateProbs(m)
 
 # Create a df with all of the important info -----------------------------------------------------------
 HMMdf <- cbind(df,hmmdata$step,hmmdata$angle,states,state_probs)
-names(HMMdf) <- c("dep_ID", "datetime", "lon",  "lat", "trip_ID",
-                  "step_length", "angle", "state", "prob_1", "prob_2","prob_3")
+if (numstates == "2_states") {
+  names(HMMdf) <- c("dep_ID", "datetime", "lon",  "lat", "trip_ID",
+                  "step_length", "angle", "state", "prob_1", "prob_2")
+} else if (numstates == "3_states") {
+  names(HMMdf) <- c("dep_ID", "datetime", "lon",  "lat", "trip_ID",
+                    "step_length", "angle", "state", "prob_1", "prob_2","prob_3")
+}
 HMMdf$state <- factor(HMMdf$state)
 HMMdf$datetime <- as.character(format(HMMdf$datetime)) # safer for writing csv in character format
 
@@ -157,81 +179,7 @@ for (i in 1:length(birdIDs)) {
       geom_point(size = 3, x = colony_coords[1], y = colony_coords[2])
     ggsave(paste0(L3_dir,"/","Figures/",current_trip,"_600s_path_with_states.png"))
   }
-  
 }
-
-
-
-# Plots time series showing for each position a binary estimate of whether they are in State 1 or 2 (dot plot, based on a threshold of the probability line graphs plotted below)
-# Plots line graphs showing the continuous probability of being in state 1 or 2 (a threshold is used to turn into binary)
-# plotStates(m)
-
-###########################
-### SAVE OUT TWO STATE MODEL
-###########################
-
-# # Add states to the data set #
-# df$predictedState <- viterbi(m)
-# df$probState1 <- stateProbs(m)[,1]
-# df$probState2 <- stateProbs(m)[,2]
-# 
-# #md24 <- md
-# save(df, file = "data-created/2stateHMM_24hr.Rdata")
-# 
-# migState = df[df$predictedState ==1,]
-# resState = df[df$predictedState==2,]
-# 
-# 
-# 
-# 
-# ##################################################
-# ###
-# ### Plot turn angle and step size with GPS track
-# ###
-# ##################################################
-# 
-# hmmdata$predictedstate = viterbi(m)
-# 
-# plotdomain = 500:1000
-# 
-# ggplot(hmmdata[plotdomain,], aes(x=x,y=y)) + 
-#   geom_point(size=2,aes(color=abs(angle))) +
-#   scale_color_gradient(low="yellow",high="black") +
-#   geom_point(x=-38.0658417,y=-54.0101833,color="blue")
-# 
-# ggplot(hmmdata[plotdomain,], aes(x=x,y=y)) + 
-#   geom_point(size=2,aes(color=factor(predictedstate))) +
-#   geom_point(x=-38.0658417,y=-54.0101833,color="blue")
-# 
-# ggplot(hmmdata[plotdomain,], aes(x=x,y=y)) + 
-#   geom_point(size=2,aes(color=abs(step))) +
-#   scale_color_gradient(low="yellow",high="black") +
-#   geom_point(x=-38.0658417,y=-54.0101833,color="blue")
-# 
-
-
-
-
-
-
-
-######################################################################################################
-### PLOT on Pacific MAP, color code State 1 vs State 2 and overlay Clarion-Clipperton Zone boundaries
-## plot selected IDs for Diva's paper with the residence periods shown
-#######################################################################################################
-
-## EXAMPLE PLOTTING CODE (cl45 and cczRGDAL were previously loaded geographic layers, but left this in so you can just see some example)
-# p <- "+proj=robin +lon_0=-110 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs"
-
-# mapPlot(cl45, projection=p, col='gray88')
-# ind = migState
-# mapPoints(ind$lon, ind$lat, pch=19, cex=0.15, col=alpha("lightgrey",0.75))
-# ind = resState
-# mapPoints(ind$lon, ind$lat, pch=19, cex=0.15, col=alpha("darkblue",0.75))
-
-# lines(cczRGDAL, col="red", lwd = 2)
-
-#mapLines(ind$lon, ind$lat, pch=19, cex=0.25, col=alpha("darkblue"))
-
-
-
+}
+}
+}

@@ -3,13 +3,13 @@ clearvars
 
 %% User Inputted Values
 
-location = 'Midway'; % Options: 'Bird_Island', 'Midway'
+location = 'Bird_Island'; % Options: 'Bird_Island', 'Midway'
 szn = '2021_2022';
-AuxType = "Technosmart"; % Options: "Technosmart", "NRL"
+acc-
 
 %% Set directory paths
 GD_dir = '/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/Thorne Lab Shared Drive/Data/Albatross/';
-Acc_dir = strcat(GD_dir, 'L1/', location, '/Tag_Data/Acc/Acc_',AuxType,'/', szn, '/');
+Acc_dir = strcat(GD_dir, 'L1/', location, '/Tag_Data/Acc/Acc_Technosmart/', szn, '/');
 GLS_dir = strcat(GD_dir, 'L1/', location, '/Tag_Data/Immersion/GLS/', szn, '/');
 write_dir = strcat(GD_dir, 'L4/', location, '/Tag_Data/Acc/',szn,'/');
 
@@ -20,7 +20,7 @@ acc_files = dir('*.csv');
 onwaterBaseline = 2.5e-04;
 
 %%
-for i = 1:length(acc_files)
+for i = 122:length(acc_files)
     %%
     current_bird = extractBefore(acc_files(i).name,length(acc_files(i).name)-10);
     

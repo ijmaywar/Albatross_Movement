@@ -125,6 +125,9 @@ m_GLS_wet <- m_all %>% filter(GLS_state=='wet')
 m_all %>% group_by(GLS_state,HMM_2S_state) %>% summarize(count=n())
 m_all %>% group_by(GLS_state,HMM_3S_state) %>% summarize(count=n())
 
+m_all %>% filter(flaps<1000) %>% group_by(GLS_state,HMM_2S_state) %>% summarize(count=n())
+m_all %>% filter(flaps<1000) %>% group_by(GLS_state,HMM_3S_state) %>% summarize(count=n())
+
 
 # Flap plots --------------------------------------------------------------
 
