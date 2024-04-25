@@ -64,9 +64,9 @@ m_all$datetime <- as.POSIXlt(m_all$datetime,format="%Y-%m-%d %H:%M:%S",tz="GMT")
 # m_all <- m_all %>% dplyr::select(-lon,-lat,-u,-v,-datetime,-wind_dir,-bird_dir,-bird_vel)
 
 # Categorize BWAs
-m_all <- m_all %>% mutate(BWA_cat = case_when(bwa<=45 ~ "head",
+m_all <- m_all %>% mutate(BWA_cat = case_when(bwa<=45 ~ "tail",
                                               bwa>45 & bwa<135 ~ "cross",
-                                              bwa>=135 ~ "tail"))
+                                              bwa>=135 ~ "head"))
 
 # Turn variables into factors
 m_all$id <- as.factor(m_all$id)
@@ -125,8 +125,8 @@ m_GLS_wet <- m_all %>% filter(GLS_state=='wet')
 m_all %>% group_by(GLS_state,HMM_2S_state) %>% summarize(count=n())
 m_all %>% group_by(GLS_state,HMM_3S_state) %>% summarize(count=n())
 
-m_all %>% filter(flaps<1000) %>% group_by(GLS_state,HMM_2S_state) %>% summarize(count=n())
-m_all %>% filter(flaps<1000) %>% group_by(GLS_state,HMM_3S_state) %>% summarize(count=n())
+# stats on the performance of OWB in relation to GLS
+m_all %>% group_by(GLS_state,OWB_state) %>% summarize(count=n())
 
 
 # Flap plots --------------------------------------------------------------

@@ -11,8 +11,8 @@ rm(list = ls())
 
 # User Inputted Values -----------------------------------------------------
 
-# location = 'Midway' # Options: 'Bird_Island', 'Midway'
-# szn = "2022_2023"
+# location = 'Bird_Island' # Options: 'Bird_Island', 'Midway'
+# szn = "2021_2022"
 
 locations = c("Bird_Island", "Midway")
 

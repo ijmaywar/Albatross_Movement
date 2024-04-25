@@ -4,7 +4,7 @@ clearvars
 %% User Inputted Values
 
 location = 'Midway'; % Options: 'Bird_Island', 'Midway'
-szn = '2021_2022';
+szn = '2022_2023';
 AuxType = "Technosmart"; % Options: "Technosmart", "NRL"
 
 %% Set directory paths

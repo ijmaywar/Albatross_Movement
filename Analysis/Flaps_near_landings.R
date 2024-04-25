@@ -11,7 +11,8 @@ rm(list = ls())
 # User Inputted Values -----------------------------------------------------
 
 location = 'Bird_Island'
-szn = "2019_2020"
+szns = c("2019_2020","2021_2022")
+int_dur_sec <- 30
 
 # Load Packages -----------------------------------------------------------
 
@@ -22,20 +23,14 @@ library(dplyr)
 library(stringr)
 
 # Loop thru all samples -----------------------------------------------------------
-for (location in locations) {
-  if (location == "Bird_Island") {
-    szns = c("2019_2020", "2020_2021", "2021_2022")
-  } else if (location == "Midway") {
-    szns = c("2018_2019", "2021_2022", "2022_2023")
-  }
-  for (szn in szns) {
-    cat("Processing location:",location,"Season:",szn,"\n")
+for (szn in szns) {
+  cat("Processing location:",location,"Season:",szn,"\n")
 
 # Set Environment ---------------------------------------------------------
 
 GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/Thorne Lab Shared Drive/Data/Albatross/"
 Acc_dir <- paste0(GD_dir, "L2/",location,"/Tag_Data/Acc/",szn,"/")
-write_dir <- paste0(GD_dir, "Analysis/Maywar/Flaps_near_landings/",location,"/",szn,"/")
+write_dir <- paste0(GD_dir, "Analysis/Maywar/Flaps_near_landings/",int_dur_sec,"s/",location,"/",szn,"/")
 GLS_L1_dir <- paste0(GD_dir, "L1/",location,"/Tag_Data/Immersion/GLS/",szn,"/")
 
 # Load Acc_start_stop files
@@ -52,12 +47,10 @@ if (length(Acc_start_stop_list)==2) {
 } else if (length(Acc_start_stop_list)==1) {
   Acc_start_stop <- read_csv(Acc_start_stop_list)
 }
+Acc_start_stop$Acc_end_dt <- as.POSIXct(Acc_start_stop$Acc_end_dt,format="%d-%b-%Y %H:%M:%S",tz="GMT")
 
 setwd(Acc_dir)
 Acc_files <- list.files(pattern='*.csv')
-
-setwd(GPS_L1_dir)
-GPS_files <- list.files(pattern='*.csv')
 
 setwd(GLS_L1_dir)
 GLS_files <- list.files(pattern='*.csv')
@@ -73,15 +66,18 @@ for (i in 1:length(GLS_files)) {
   
   m_GLS_wet <- m_GLS %>% filter(state=="wet")
   
-  birdname <- str_sub(Acc_files[i],1,-12)
+  birdname <- str_sub(GLS_files[i],1,-12)
+  Acc_filename <- paste0(birdname,"_Acc_L2.csv")
+  if (!Acc_filename %in% Acc_files) {
+    next
+  }
   
-  m_Acc <- read_csv(paste0(Acc_dir,birdname,"_Acc_L2.csv"))
+  m_Acc <- read_csv(paste0(Acc_dir,Acc_filename))
   m_Acc$DateTime <- as.POSIXct(m_Acc$DateTime,format="%Y-%m-%d %H:%M:%S",tz="GMT")
   
   m_GLS_wet <- m_GLS_wet %>% mutate(duration_sec = as.numeric(difftime(m_GLS_wet$endtime,m_GLS_wet$starttime,units="secs")))
   
   # Find intervals before and after every GLS == wet bout 
-  int_dur_sec <- 30
   m_GLS_wet$before_dt <- m_GLS_wet$starttime - seconds(int_dur_sec)
   m_GLS_wet$after_dt <- m_GLS_wet$endtime + seconds(int_dur_sec)
   
@@ -118,8 +114,11 @@ for (i in 1:length(GLS_files)) {
   m_GPS$datetime <- as.POSIXct(m_GPS$datetime,format="%Y-%m-%d %H:%M:%S",tz="GMT")
   Acc_start_dt <- m_GPS$datetime[1]
   ASS_current <- Acc_start_stop %>% filter(Deployment_ID == birdname)
+  if (nrow(ASS_current)==0) {
+    next
+  }
   Acc_end_dt <- ASS_current[["Acc_end_dt"]]
-  if (Acc_end_dt=="NaT") {
+  if (is.na(Acc_end_dt)) {
     Acc_end_dt <- m_GPS$datetime[nrow(m_GPS)]
   }
   
@@ -143,6 +142,13 @@ for (i in 1:length(GLS_files)) {
   if (Acc_end_dt < m_GLS_wet$after_dt[nrow(m_GLS_wet)]) {
     m_GLS_wet$flaps_after[(head(which(Acc_end_dt < m_GLS_wet$after_dt),1)):nrow(m_GLS_wet)] <- NA
   }
-}
+  
+  # Write csv file
+  m_GLS_wet$starttime <- as.character(format(m_GLS_wet$starttime)) # safer for writing csv in character format  
+  m_GLS_wet$endtime <- as.character(format(m_GLS_wet$endtime))
+  m_GLS_wet$before_dt <- as.character(format(m_GLS_wet$before_dt))
+  m_GLS_wet$after_dt <- as.character(format(m_GLS_wet$after_dt))
+  write.csv(m_GLS_wet, file=paste0(write_dir,birdname,"_Flaps_near_landings_",int_dur_sec,"s",".csv"), row.names=FALSE)
+  
 }
 }

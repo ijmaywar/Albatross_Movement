@@ -10,8 +10,8 @@ rm(list = ls())
 
 # User Inputted Values -----------------------------------------------------
 
-# location = 'Bird_Island'
-# szn = "2019_2020"
+location = 'Bird_Island'
+szn = "2021_2022"
 
 locations = c("Bird_Island", "Midway")
 min_peak_prob = 0 # All heartbeats (ECG) with a probability less than this value will be removed
@@ -21,7 +21,7 @@ min_peak_prob = 0 # All heartbeats (ECG) with a probability less than this value
 HMMstate <- function(birdname_trip,states) {
   dir <- paste0(GD_dir, "L3/",location,"/Tag_Data/GPS/compiled_all_yrs/",states,"_states/")
   HMM_filename <- paste0(str_sub(birdname_trip,end=-3),"_GPS_L3_600s.csv")
-  HMM_data <- read.csv(paste0(dir,str_sub(birdname_trip,1,4),"/",HMM_filename))
+  HMM_data <- read_csv(paste0(dir,str_sub(birdname_trip,1,4),"/",HMM_filename))
   HMM_data <- HMM_data %>% filter(trip_ID==birdname_trip)
   return(HMM_data$state)
 }

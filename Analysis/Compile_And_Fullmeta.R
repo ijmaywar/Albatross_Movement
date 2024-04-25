@@ -41,8 +41,8 @@ file_list <- list.files(path = read_dir, full.names = TRUE, recursive = TRUE, pa
 compiled_m <- do.call(rbind, lapply(file_list, read_csv))
 
 compiled_m$datetime <- as.POSIXct(compiled_m$datetime,format="%Y-%m-%d %H:%M:%S", tz="GMT")
-birds <- unique(compiled_m$id)
 
+birds <- unique(str_sub(basename(file_list),1,-32))
 # Add fullmeta Data ---------------------------------------------------------------
 
 compiled_m$Location <- NA
@@ -58,6 +58,13 @@ for (i in 1:length(birds)) {
   
   # Add select metadata
   current_bird_rows <- which(compiled_m$id==current_bird)
+  if (length(current_bird_rows)==0) {
+    # If there is a labeling issue with the Deployment_ID. This has occured with 2 WAAL birds...
+    current_bird_rows <- which(str_sub(compiled_m$id,1,-2)==str_sub(current_bird,1,-2))
+    # Amend id and tripID columns
+    compiled_m$id[current_bird_rows] <- current_bird
+    compiled_m$tripID[current_bird_rows] <- paste0(current_bird,str_sub(compiled_m$tripID[current_bird_rows],start=-2))
+  }
   compiled_m$Location[current_bird_rows] <- birdmeta$Location
   compiled_m$Species[current_bird_rows] <- birdmeta$Species
   compiled_m$Field_Season[current_bird_rows] <- birdmeta$Field_Season
