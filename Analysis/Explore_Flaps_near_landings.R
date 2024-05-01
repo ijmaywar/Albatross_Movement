@@ -74,8 +74,8 @@ for (i in 1:n_GLS_birds) {
 
 # Run stats on m ---------------------------------------------------------------
 
-m <- m %>% mutate(mean_Landing_flap_rate = sapply(m$landing_flaps,mean)/(int_dur_sec/(60*60)), # This is flaps/hour
-                  mean_Takeoff_flap_rate = sapply(m$takeoff_flaps,mean)/(int_dur_sec/(60*60)), # flaps/hour
+m <- m %>% mutate(mean_Landing_flap_rate = sapply(m$landing_flaps,mean)/(int_dur_sec), # This is flaps/hour
+                  mean_Takeoff_flap_rate = sapply(m$takeoff_flaps,mean)/(int_dur_sec), # flaps/hour
                   mean_Hourly_flap_rate = sapply(m$hourly_flaps,mean), # flaps/hour 
                   total_Landing_flaps = sapply(m$landing_flaps,sum),
                   total_Takeoff_flaps = sapply(m$takeoff_flaps,sum),
@@ -83,10 +83,14 @@ m <- m %>% mutate(mean_Landing_flap_rate = sapply(m$landing_flaps,mean)/(int_dur
                   num_Landings = sapply(m$landing_flaps,length),
                   num_Takeoffs = sapply(m$takeoff_flaps,length))
                   # ADD A METRIC FOR NUM LANDINGS / TOTAL DURATION OF DATA
+                  # WHY NUM_LANDINGS != NUM_TAKEOFFS?
+
+m$Species <- substr(m$Deployment_ID,1,4)
+m$Species <- as.factor(m$Species)
 
 # Stats across all landings across all individuals
-grand_mean_Landing_flap_rate <- mean(unlist(m$landing_flaps))/(int_dur_sec/(60*60)) # This is flaps/hour
-grand_mean_Takeoff_flap_rate <- mean(unlist(m$takeoff_flaps))/(int_dur_sec/(60*60)) # This is flaps/hour
+grand_mean_Landing_flap_rate <- mean(unlist(m$landing_flaps))/int_dur_sec # This is flaps/hour -> change this to flaps in the 30 seconds
+grand_mean_Takeoff_flap_rate <- mean(unlist(m$takeoff_flaps))/int_dur_sec # This is flaps/hour -> change this to flaps in the 30 seconds.
 grand_mean_Hourly_flap_rate <- mean(unlist(m$hourly_flaps)) # This is flaps/hour
 grand_prop_flaps_Landings <- sum(m$total_Landing_flaps)/sum(m$total_Hourly_flaps)
 grand_prop_flaps_Takeoff <- sum(m$total_Takeoff_flaps)/sum(m$total_Hourly_flaps)
@@ -102,3 +106,9 @@ grand_prop_flaps_Takeoff
 grand_prop_flaps_Either
 grand_mean_num_Landings
 grand_mean_num_Takeoffs
+
+ggplot(m,aes(x=Species,y=mean_Landing_flap_rate)) +
+  geom_boxplot()
+
+ggplot(m,aes(x=Species,y=mean_Takeoff_flap_rate)) +
+  geom_boxplot()
