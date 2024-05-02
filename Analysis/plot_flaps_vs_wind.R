@@ -23,7 +23,6 @@ library(lme4)
 library(stringr)
 library(dplyr)
 library(mgcv)
-# library(gamm4)
 library(mgcViz)
 library(gridExtra)
 library(patchwork)
@@ -87,7 +86,7 @@ m_WAAL <- m_all %>% filter(Species=="WAAL")
 m_LAAL <- m_all %>% filter(Species=="LAAL")
 m_BFAL <- m_all %>% filter(Species=="BFAL")
 
-# How many samples per Species per BWA_cat? ----------------------------------------
+# Sample stats -----------------------------------------------------------------
 
 nrow(m_all)
 m_all %>% count(Species)
@@ -129,35 +128,132 @@ m_all %>% group_by(GLS_state,HMM_3S_state) %>% summarize(count=n())
 m_all %>% group_by(GLS_state,OWB_state) %>% summarize(count=n())
 
 
-# Flap plots --------------------------------------------------------------
+# Flaps/hour vs wind_vel after removing HMM_3S_state == 1 ----------------------
 
 main_k <- 3
 fac_k <- 3
+GAM_list <- list()
 
-m_BBAL <- filter(m_GLS_dry %>% Species=="BBAL")
-m_GHAL <- filter(m_GLS_dry %>% Species=="GHAL")
-m_BBAL <- filter(m_GLS_dry %>% Species=="BBAL")
+for (spp in c("BBAL", "GHAL", "WAAL", "BFAL", "LAAL")) {
 
-GAM_BBAL_directional <- gam(formula = flaps ~ s(wind_vel,bs='tp',k=main_k,m=2) +
+  m_current <- m_all %>% filter((HMM_3S_state != 1) & (Species == spp))
+
+  current_GAM <- gam(formula = flaps ~ s(wind_vel,bs='tp',k=main_k,m=2) +
                               s(wind_vel,BWA_cat,bs='fs',k=fac_k,m=2) + 
-                              s(id,k=length(unique(m_BBAL$id)),bs="re"),
-                            data = m_BBAL,
+                              s(id,k=length(unique(m_current$id)),bs="re"),
+                            data = m_current,
                             family = "poisson",
                             method = "REML")
-m_all |>
-  ggplot(aes(wind_vel,flaps)) +
-  geom_point() +
-  geom_point(m_GLS_wet,mapping=aes(wind_vel,flaps),color='red',alpha=1)
+  
+  GAM_list[[spp]] <- current_GAM
+  
+  current_ds  <- data_slice(current_GAM, wind_vel = evenly(wind_vel, n = 100), 
+                                id = unique(m_current$id)[1:10],
+                                BWA_cat = unique(m_current$BWA_cat))
+  
+  current_fv <- fitted_values(current_GAM, data = current_ds, scale = "response",
+                                  terms = c("(Intercept)","s(wind_vel)","s(wind_vel,BWA_cat)","s(id)"))
+  
+  current_fv_global <- fitted_values(current_GAM, data = current_ds, scale = "response",
+                                         terms = c("(Intercept)","s(wind_vel)","s(wind_vel,BWA_cat)"))
+  
+  # Add metadata for the current species and GLS category
+  current_ds$Species <- rep(spp,nrow(current_ds))
+  current_fv$Species <- rep(spp,nrow(current_fv))
+  current_fv_global$Species <- rep(spp,nrow(current_fv_global))
+  
+  if (spp == "BBAL") {
+    ds_df <- current_ds
+    fv_df <- current_fv
+    fv_global_df <- current_fv_global
+  } else {
+    ds_df <- rbind(ds_df,current_ds)
+    fv_df <- rbind(fv_df,current_fv)
+    fv_global_df <- rbind(fv_global_df,current_fv_global)
+  }
+}
+  
+fv_global_df$Species <- factor(fv_global_df$Species , levels=c("BBAL", "GHAL", "WAAL", "BFAL", "LAAL"))
 
-m_GLS_dry |>
-  ggplot(aes(wind_vel,flaps)) +
-  geom_point() +
-  geom_point(m_GLS_wet,mapping=aes(wind_vel,flaps),color='red',alpha=.3)
+fv_global_df |>
+  ggplot(aes(wind_vel,fitted,color=BWA_cat)) +
+  geom_line() +
+  geom_ribbon(mapping=aes(ymin = lower, ymax = upper, y = NULL, color = BWA_cat),alpha = 0.3) +
+  # labs(title="BBAL") +
+  xlim(0,25) + 
+  ylim(0,1000) +
+  facet_wrap(~Species)
 
-m_GLS_wet |>
-  ggplot(aes(wind_vel,flaps)) +
-  geom_point() +
-  geom_point(m_GLS_dry,mapping=aes(wind_vel,flaps),color='red',alpha=.3)
+
+# Flaps/hour vs wind_vel after removing GLS == "wet" ---------------------------
+
+main_k <- 3
+fac_k <- 3
+GAM_list_GLS <- list()
+
+for (spp in c("BBAL", "GHAL", "WAAL")) {
+  
+  m_current <- m_all %>% filter((GLS_state == "dry") & (Species == spp))
+  
+  current_GAM_GLS <- gam(formula = flaps ~ s(wind_vel,bs='tp',k=main_k,m=2) +
+                       s(wind_vel,BWA_cat,bs='fs',k=fac_k,m=2) + 
+                       s(id,k=length(unique(m_current$id)),bs="re"),
+                     data = m_current,
+                     family = "poisson",
+                     method = "REML")
+  
+  GAM_list_GLS[[spp]] <- current_GAM_GLS
+  
+  current_ds_GLS  <- data_slice(current_GAM_GLS, wind_vel = evenly(wind_vel, n = 100), 
+                            id = unique(m_current$id)[1:10],
+                            BWA_cat = unique(m_current$BWA_cat))
+  
+  current_fv_GLS <- fitted_values(current_GAM_GLS, data = current_ds_GLS, scale = "response",
+                              terms = c("(Intercept)","s(wind_vel)","s(wind_vel,BWA_cat)","s(id)"))
+  
+  current_fv_GLS_global <- fitted_values(current_GAM_GLS, data = current_ds_GLS, scale = "response",
+                                     terms = c("(Intercept)","s(wind_vel)","s(wind_vel,BWA_cat)"))
+  
+  # Add metadata for the current species and GLS category
+  current_ds_GLS$Species <- rep(spp,nrow(current_ds_GLS))
+  current_fv_GLS$Species <- rep(spp,nrow(current_fv_GLS))
+  current_fv_GLS_global$Species <- rep(spp,nrow(current_fv_GLS_global))
+  
+  if (spp == "BBAL") {
+    ds_df_GLS <- current_ds_GLS
+    fv_df_GLS <- current_fv_GLS
+    fv_global_df_GLS <- current_fv_GLS_global
+  } else {
+    ds_df_GLS <- rbind(ds_df_GLS,current_ds_GLS)
+    fv_df_GLS <- rbind(fv_df_GLS,current_fv_GLS)
+    fv_global_df_GLS <- rbind(fv_global_df_GLS,current_fv_GLS_global)
+  }
+}
+
+fv_global_df_GLS$Species <- factor(fv_global_df_GLS$Species , levels=c("BBAL", "GHAL", "WAAL"))
+
+fv_global_df_GLS |>
+  ggplot(aes(wind_vel,fitted,color=BWA_cat)) +
+  geom_line() +
+  geom_ribbon(mapping=aes(ymin = lower, ymax = upper, y = NULL, color = BWA_cat),alpha = 0.3) +
+  # labs(title="BBAL") +
+  xlim(0,25) + 
+  ylim(0,1000) +
+  facet_wrap(~Species)
+
+
+
+
+
+# new sections ------------------------------------------------------------
+
+
+
+
+
+
+
+
 
 
 # Create GAMs for "usable" and "unusable" data according to the GLS...
@@ -172,12 +268,14 @@ for (spp in levels(m_GLS_dry$Species)) {
       print("invalid GLS_cat.")
       break
     }
+    
     current_GAM_GLS <- gam(formula = flaps ~ s(wind_vel,bs='tp',k=3,m=2) +
                        s(wind_vel,BWA_cat,bs='fs',k=3,m=2) + 
                        s(id,k=length(unique(m_current$id)),bs="re"),
                      data = m_current,
                      family = "poisson",
                      method = "REML")
+    
     current_ds_GLS  <- data_slice(current_GAM_GLS, wind_vel = evenly(wind_vel, n = 100), 
                               id = unique(m_current$id)[1:10],
                               BWA_cat = unique(m_current$BWA_cat))
