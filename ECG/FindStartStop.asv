@@ -16,7 +16,7 @@ clearvars
 
 %% USER INPUTED VALUES
 
-szn = '2019_2020';
+szn = '2021_2022';
 location = "Bird_Island"; % Options: 'Bird_Island', 'Midway', 'Wandering'
 
 %% Set Environment
@@ -68,9 +68,9 @@ L0_fileNames = string({L0_fileList.name});
 
     %% Find start_idx
     fig_start = 1;
-    HFF = 000000; % How Far Forward (How much of the head is plotted)
+    HFF = 1000000; % How Far Forward (How much of the head is plotted)
     figure
-    plot(fig_start:HFF,L0_data(fig_start:HFF))
+    plot(fig_start:fig_start+HFF,L0_data(fig_start:HFF))
     ylim([-6 6])
     disp('Click where the usable data starts')
     [start_idx,~] = ginput(1);
@@ -109,6 +109,6 @@ L0_fileNames = string({L0_fileList.name});
     writetable(idx_tbl,strcat(L0_dir,"start_stop_indices.csv"));
     disp("Table saved.")
     close all
-    clearvars -except i idx_tbl L0_fileNames
+    clearvars -except i idx_tbl L0_fileNames fs L0_dir
     i = i+1
 

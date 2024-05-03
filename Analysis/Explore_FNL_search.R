@@ -60,11 +60,12 @@ bird_list <- list()
 for (i in 1:length(FNL_list)) {
   
   birdname <- str_sub(FNL_list[i],-33,-16)
-  # Remove NRL tags bc they are not as accurate time-wise
-  birdmeta <- fullmeta %>% filter(Deployment_ID == birdname)
-  if (birdmeta$Aux_TagCat == "NRL") {
-    next
-  }
+  
+  # # Remove NRL tags bc they are not as accurate time-wise
+  # birdmeta <- fullmeta %>% filter(Deployment_ID == birdname)
+  # if (birdmeta$Aux_TagCat == "NRL") {
+  #   next
+  # }
   
   landing_flaps <- list()
   takeoff_flaps <- list()
@@ -79,8 +80,8 @@ for (i in 1:length(FNL_list)) {
   
   m_FNL <- m_FNL %>% mutate(across(starts_with("after_dt_"), convert_to_POSIXct))
   
-  # Remove 5 second landings
-  m_FNL <- m_FNL %>% filter(duration_sec > 5)
+  # # Remove 5 second landings
+  # m_FNL <- m_FNL %>% filter(duration_sec > 5)
     
   for (j in 1:60) {
     
@@ -103,18 +104,18 @@ for (i in 1:length(FNL_list)) {
 }
 
 # Run stats on bird_list -------------------------------------------------------
-m <- data.frame(landing_flaps = numeric(60),
-                   takeoff_flaps = numeric(60),
-                   landing_flaps_NoOvr = numeric(60),
-                   takeoff_flaps_NoOvr = numeric(60),
-                   num_landings = numeric(60),
-                   num_takeoffs = numeric(60),
-                   num_landings_NoOvr = numeric(60),
-                   num_takeoffs_NoOvr = numeric(60))
+
 fig_list <- list()
 
 for (spp in c("BBAL","GHAL","WAAL")) {
-# for (spp in c("BBAL","GHAL")) {
+  m <- data.frame(landing_flaps = numeric(60),
+                  takeoff_flaps = numeric(60),
+                  landing_flaps_NoOvr = numeric(60),
+                  takeoff_flaps_NoOvr = numeric(60),
+                  num_landings = numeric(60),
+                  num_takeoffs = numeric(60),
+                  num_landings_NoOvr = numeric(60),
+                  num_takeoffs_NoOvr = numeric(60))
   for (k in which(substr(names(bird_list),1,4) == spp)) {
     for (l in 1:60) {
       m$landing_flaps[l] <- m$landing_flaps[l] + sum(bird_list[[k]]$landing_flaps[[l]])
@@ -131,36 +132,65 @@ for (spp in c("BBAL","GHAL","WAAL")) {
 }
 
 
-# Plot some stuff---------------------------------------------------------------
+# Flaps/second vs. window duration ---------------------------------------------
 
 for (spp in c("BBAL","GHAL","WAAL")) {
   fig_landings <- ggplot(fig_list[[spp]],aes(x=(1:60),y=(landing_flaps/num_landings)/(1:60))) +
     geom_point() +
     labs(y = "flaps per second", x = "window in seconds") + 
     ggtitle(paste(spp,"landings")) +
-    ylim(0,0.6)
+    ylim(0,1)
   
   fig_takeoffs <- ggplot(fig_list[[spp]],aes(x=(1:60),y=(takeoff_flaps/num_takeoffs)/(1:60))) +
     geom_point() +
     labs(y = "flaps per second", x = "window in seconds") + 
     ggtitle(paste(spp,"takeoffs")) +
-    ylim(0,0.6)
+    ylim(0,1)
   
   fig_landings_NoOvr <- ggplot(fig_list[[spp]],aes(x=(1:60),y=(landing_flaps_NoOvr/num_landings_NoOvr)/(1:60))) +
     geom_point() +
     labs(y = "flaps per second", x = "window in seconds") + 
     ggtitle(paste(spp,"landings (no overlap)")) +
-    ylim(0,0.6)
+    ylim(0,1)
   
   fig_takeoffs_NoOvr <- ggplot(fig_list[[spp]],aes(x=(1:60),y=(takeoff_flaps_NoOvr/num_takeoffs_NoOvr)/(1:60))) +
     geom_point() +
     labs(y = "flaps per second", x = "window in seconds") + 
     ggtitle(paste(spp,"takeoffs (no overlap")) +
-    ylim(0,0.6)
+    ylim(0,1)
   
   grid.arrange(fig_landings,fig_takeoffs,fig_landings_NoOvr,fig_takeoffs_NoOvr,nrow=2)
 }
 
+
+# FPS Boxplot ------------------------------------------------------------------
+m_Boxplot <- data.frame(ID = character(),
+                   Type = character(),
+                   FPS = numeric())
+
+for (b in 1:length(bird_list)) {
+    current_FPS <- c((bird_list[[b]]$landing_flaps_NoOvr[[8]]/8),
+                     (bird_list[[b]]$takeoff_flaps_NoOvr[[14]]/14),
+                     (bird_list[[b]]$hourly_flaps/(60*60)))
+    current_ID <- rep(names(bird_list)[b],length(current_FPS))
+    current_Type <- c(rep("Landings_NoOvr",length(bird_list[[b]]$landing_flaps_NoOvr[[8]])),
+                      rep("Takeoffs_NoOvr",length(bird_list[[b]]$takeoff_flaps_NoOvr[[14]])),
+                      rep("GLS_dry",length(bird_list[[b]]$hourly_flaps)))
+    
+    m_current <- data.frame(ID = current_ID,
+                            Type = current_Type,
+                            FPS = current_FPS)
+
+    m_Boxplot <- rbind(m_Boxplot,m_current)
+}
+
+m_Boxplot <- m_Boxplot %>% mutate(Species = substr(ID,1,4))
+
+fig_landings <- ggplot(m_Boxplot,aes(x=Species,y=FPS)) +
+  geom_boxplot() +
+  labs(y = "flaps per second", x = "Species") + 
+  facet_wrap(~Type)
+fig_landings
 
 # Flaps don't seem to be on the order of 3 Hz as the literature suggests.
 # I think this may be because we cannot assume such precision in our data.
