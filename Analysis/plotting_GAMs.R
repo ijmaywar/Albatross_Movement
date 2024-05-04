@@ -52,15 +52,6 @@ m_all <- m_all %>% mutate(Trip_Type = factor(replace(as.character(Trip_Type),Tri
 
 # Datetime stuff
 m_all$datetime <- as.POSIXlt(m_all$datetime,format="%Y-%m-%d %H:%M:%S",tz="GMT")
-# m_all$julian <- m_all$datetime$yday + 1 
-# # plotday are the days since the beginning of the year (January 1 of the first
-# # year is 1)
-# m_all$plotday <- ifelse(m_all$julian > 200, m_all$julian, m_all$julian + 365)
-# # adjust for leap years
-# m_all$plotday <- ifelse(m_all$plotday > 365 & m_all$datetime$year+1900 == 2021, m_all$plotday+1, m_all$plotday)
-
-# Remove unnecessary columns
-# m_all <- m_all %>% dplyr::select(-lon,-lat,-u,-v,-datetime,-wind_dir,-bird_dir,-bird_vel)
 
 # Categorize BWAs
 m_all <- m_all %>% mutate(BWA_cat = case_when(bwa<=45 ~ "tail",
@@ -85,6 +76,14 @@ m_GHAL <- m_all %>% filter(Species=="GHAL")
 m_WAAL <- m_all %>% filter(Species=="WAAL")
 m_LAAL <- m_all %>% filter(Species=="LAAL")
 m_BFAL <- m_all %>% filter(Species=="BFAL")
+
+# df without the flaps==NA rows:
+m_all_nonaflaps <- m_all %>% drop_na(flaps)
+m_BBAL_nonaflaps <- m_all_nonaflaps %>% filter(Species=="BBAL")
+m_GHAL_nonaflaps <- m_all_nonaflaps %>% filter(Species=="GHAL")
+m_WAAL_nonaflaps <- m_all_nonaflaps %>% filter(Species=="WAAL")
+m_BFAL_nonaflaps <- m_all_nonaflaps %>% filter(Species=="BFAL")
+m_LAAL_nonaflaps <- m_all_nonaflaps %>% filter(Species=="LAAL")
 
 # Sample stats -----------------------------------------------------------------
 

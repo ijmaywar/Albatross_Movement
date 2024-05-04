@@ -16,7 +16,7 @@ clearvars
 
 %% USER INPUTED VALUES
 
-szn = '2021_2022';
+szn = '2019_2020';
 location = "Bird_Island"; % Options: 'Bird_Island', 'Midway', 'Wandering'
 
 %% Set Environment
@@ -67,8 +67,8 @@ L0_fileNames = string({L0_fileList.name});
     disp("Data loaded.")
 
     %% Find start_idx
-    fig_start = 208525450;
-    HFF = 2000000; % How Far Forward (How much of the head is plotted)
+    fig_start = 1;
+    HFF = 8000000; % How Far Forward (How much of the head is plotted)
     figure
     plot(fig_start:fig_start+HFF-1,L0_data(fig_start:fig_start+HFF-1))
     ylim([-6 6])
@@ -81,7 +81,7 @@ L0_fileNames = string({L0_fileList.name});
 
     %% Find stop_idx
     stop_idx = fig_start+og_length-1; % stop_idx is the last data point unless user finds and clicks a better value.
-    HFB = 10000000; % How Far Back (How much of the tail is plotted)
+    HFB = 4000000; % How Far Back (How much of the tail is plotted)
     figure
     plot(og_length-HFB:og_length,L0_data(og_length-HFB:og_length))
     ylim([-6 6])

@@ -85,7 +85,7 @@ L0_fileList(startsWith({L0_fileList.name},'._')) = [];
 L0_fileNames = string({L0_fileList.name});
 
 %% Loop thru and process birds
-redos = [18, 20, 21, 22, 23];
+redos = [12:14,20];
 for i = redos(1:end)
 % for i = 28:length(L0_fileNames)
     %% load data to be deteced.
@@ -109,7 +109,7 @@ for i = redos(1:end)
     stop_idx = idx_tbl(strcmp(string(idx_tbl.bird),dep_ID),:).stop;
 
     %% Trim data even more if necessary
-    % extra_trim = 400;
+    % extra_trim = 1000;
     % start_idx = extra_trim + start_idx;
     % idx_tbl(strcmp(string(idx_tbl.bird),dep_ID),:).start = start_idx;
     % 
