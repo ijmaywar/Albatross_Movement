@@ -284,7 +284,7 @@ for (spp in c("BBAL", "GHAL", "WAAL", "BFAL", "LAAL")) {
                        fitted_values(current_GAM, data = current_ds, scale = "link",
                                      terms = c("s(id)"))[,4:7]
   )
-  colnames(response_df) <- c("wind_vel","id","BWA_cat","Species",
+  colnames(response_df) <- c("wind_vel","id","bwa","Species",
                              "fitted_all","se_all","lower_all","upper_all",
                              "fitted_global","se_global","lower_global","upper_global",
                              "fitted_wind","se_wind","lower_wind","upper_wind",
@@ -306,7 +306,7 @@ for (spp in c("BBAL", "GHAL", "WAAL", "BFAL", "LAAL")) {
                    fitted_values(current_GAM, data = current_ds, scale = "link",
                                  terms = c("s(id)"))[,4:7]
   )
-  colnames(link_df) <- c("wind_vel","id","BWA_cat","Species",
+  colnames(link_df) <- c("wind_vel","id","bwa","Species",
                          "fitted_all","se_all","lower_all","upper_all",
                          "fitted_global","se_global","lower_global","upper_global",
                          "fitted_wind","se_wind","lower_wind","upper_wind",

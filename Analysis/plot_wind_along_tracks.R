@@ -3,6 +3,13 @@
 # Create plots from L2 wind data that show the winds experienced by albatrosses
 #
 ################################################################################
+################################################################################
+#
+# Wind data: create plots with wind data.
+# This will need to be edited in order to account for times removed by on-water
+# and foraging/resting (HMM)
+#
+################################################################################
 
 # Clear environment -------------------------------------------------------
 
@@ -10,61 +17,89 @@ rm(list = ls())
 
 # User Inputted Values -----------------------------------------------------
 
-location = 'Bird_Island' # Options: 'Bird_Island', 'Midway'
-szn = "2019_2020"
+locations = c('Bird_Island','Midway')
+min_peak_prob = 0 # What was the min_peak_prob used to create summary data?
 
 # Load Packages -----------------------------------------------------------
 
 library(ggplot2)
 library(readxl)
-library(Matrix)
 library(lme4)
 library(stringr)
 library(dplyr)
-library(sjPlot)
+library(mgcv)
+library(mgcViz)
+library(gridExtra)
+library(patchwork)
+library(gratia)
+library(readr)
 
 # Set Environment ---------------------------------------------------------
 
-fullmeta <- read_excel("/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/metadata/Full_Metadata.xlsx")
+GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/Thorne Lab Shared Drive/Data/Albatross/"
 
-GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/"
-wind_L4_dir <- paste0(GD_dir,"L4/",location,"/Wind_Data/",szn,"/")
-
-setwd(wind_L4_dir)
-files <- list.files(pattern='*.csv')
-all_trips <- sub("_wind_and_flaps.csv$","",files)
-
-for (i in 1:length(files)) {
-  m <- read.csv(files[i])
-  if (i==1) {
-    m_all <- m
-  } else {
-    m_all <- rbind(m_all,m)
-  }
-  
+if (min_peak_prob == 0) {
+  read_dir <- paste0(GD_dir, "Analysis/Maywar/Flaps_Hourly/Flaps_HMM_GLS_ECG_Compiled/p_0/")
+} else if (min_peak_prob == 0.85) {
+  read_dir <- paste0(GD_dir, "Analysis/Maywar/Flaps_Hourly/Flaps_HMM_GLS_ECG_Compiled/p_085/")
 }
 
-# Add metadata to all rows and remove some extra columns -----------------------
+fullmeta <- read_excel(paste0(GD_dir,"metadata/Full_Metadata.xlsx"))
 
-m_all <- m_all %>% dplyr::select(-lon,-lat,-u,-v,-datetime,-wind_dir,-bird_dir,-bird_vel)
-m_all$triptype <- character(nrow(m_all))
+setwd(read_dir)
+files <- list.files(pattern = '*.csv')
+m_all <- read_csv(files[1])
 
-all_birds <- unique(m_all$id)
+# Classify 2BEP, E_pip, Ep as BG
+m_all <- m_all %>% mutate(Trip_Type = factor(replace(as.character(Trip_Type),Trip_Type=="2BEP","BG")))
+m_all <- m_all %>% mutate(Trip_Type = factor(replace(as.character(Trip_Type),Trip_Type=="E_pip","BG")))
+m_all <- m_all %>% mutate(Trip_Type = factor(replace(as.character(Trip_Type),Trip_Type=="Ep","BG")))
 
-for (i in 1:length(all_birds)) {
-  birdmeta <- fullmeta %>% dplyr::filter(Deployment_ID == all_birds[i])
-  m_all <- m_all %>% mutate(triptype = if_else(id == all_birds[i],birdmeta$Trip_Type,triptype))  
-}
+# Datetime stuff
+m_all$datetime <- as.POSIXlt(m_all$datetime,format="%Y-%m-%d %H:%M:%S",tz="GMT")
+# m_all$julian <- m_all$datetime$yday + 1 
+# # plotday are the days since the beginning of the year (January 1 of the first
+# # year is 1)
+# m_all$plotday <- ifelse(m_all$julian > 200, m_all$julian, m_all$julian + 365)
+# # adjust for leap years
+# m_all$plotday <- ifelse(m_all$plotday > 365 & m_all$datetime$year+1900 == 2021, m_all$plotday+1, m_all$plotday)
 
-# Add a species column and make it a factor
-m_all$spp <- str_sub(m_all$id,1,4)
-m_all$spp <- as.factor(m_all$spp)
+# Remove unnecessary columns
+# m_all <- m_all %>% dplyr::select(-lon,-lat,-u,-v,-datetime,-wind_dir,-bird_dir,-bird_vel)
 
-# Turn individual and trip ID into factors
+# Categorize BWAs
+m_all <- m_all %>% mutate(BWA_cat = case_when(bwa<=45 ~ "tail",
+                                              bwa>45 & bwa<135 ~ "cross",
+                                              bwa>=135 ~ "head"))
+
+# Turn variables into factors
 m_all$id <- as.factor(m_all$id)
 m_all$tripID <- as.factor(m_all$tripID) 
+m_all$Field_Season <- as.factor(m_all$Field_Season)
+m_all$Location <- as.factor(m_all$Location)
+m_all$Trip_Type <- as.factor(m_all$Trip_Type)
+m_all$Species <- as.factor(m_all$Species)
+m_all$BWA_cat <- as.factor(m_all$BWA_cat)
 
+# Re-order Species groups
+m_all$Species <- factor(m_all$Species , levels=c("BBAL", "GHAL", "WAAL", "BFAL", "LAAL"))
 
+# Split data between species
+m_BBAL <- m_all %>% filter(Species=="BBAL")
+m_GHAL <- m_all %>% filter(Species=="GHAL")
+m_WAAL <- m_all %>% filter(Species=="WAAL")
+m_LAAL <- m_all %>% filter(Species=="LAAL")
+m_BFAL <- m_all %>% filter(Species=="BFAL")
+
+# Box plots -------------------------------------------------------------
+
+m_all |>
+  ggplot(aes(Species,wind_vel)) +
+  geom_boxplot()
+
+m_all |>
+  ggplot(aes(Species,flaps)) +
+  geom_boxplot()
 
 # Wind angle plots -------------------------------------------------------------
 
