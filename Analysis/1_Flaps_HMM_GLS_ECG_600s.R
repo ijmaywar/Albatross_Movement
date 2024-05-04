@@ -11,7 +11,7 @@ rm(list = ls())
 # User Inputted Values -----------------------------------------------------
 
 location = 'Bird_Island'
-szn = "2021_2022"
+szn = "2019_2020"
 
 locations = c("Bird_Island", "Midway")
 min_peak_prob = 0 # All heartbeats (ECG) with a probability less than this value will be removed

@@ -15,22 +15,22 @@ clearvars
 %% USER INPUTED VALUES
 
 % Paste the path name for the desired folder here:
-directory = "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1ZwIQqcVnA34cxm_324gF2ie4UtWb8-Qb/Thorne Lab Shared Drive/Data/Albatross/L0/Bird_Island/Tag_Data/2021_2022/Aux/AGM/WAAL/";
+directory = "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1ZwIQqcVnA34cxm_324gF2ie4UtWb8-Qb/Thorne Lab Shared Drive/Data/Albatross/L1/Bird_Island/Tag_Data/GPS/GPS_Catlog/2019_2020/2_buffer2km/WAAL_processed/";
 % What is the format of the file? (e.g. .csv)
 fileExt = "csv";
 
-szn = '2021_2022';
+szn = '2018_2019';
 location = 'Bird_Island'; % Options: 'Bird_Island', 'Midway', 'Wandering'
 % Genus = "great";
-Tag = "Aux"; % Options: "Aux", "GPS", "GLS" 
-datatype = "AGM";
-TagType = "AGM"; % Options: 
+Tag = "GPS"; % Options: "Aux", "GPS", "GLS" 
+datatype = "GPS";
+TagType = "Catlog"; % Options: 
                   % GPS: "Catlog", "iGotU"
                   % Aux: "AGM", "Axy5", "AxyAir", "GCDC", "NRL", "uMoth"
                   % GLS 
                   % AxyTrek
-datalvl = 0; % Options: 0, 1, 2
-% datasublvl = 2; % Options: 1, 2, 3
+datalvl = 1; % Options: 0, 1, 2
+datasublvl = 2; % Options: 1, 2, 3
 
 % Are the files currently written under the naming convention?
 nam_conv = false; % Options: true, false
@@ -72,7 +72,8 @@ for id = 1:nfiles
     % Find metadata
     if ~nam_conv % For OG_IDs   
         if ismember(Tag,["GPS","AxyTrek"])
-            num_ = count(string(fullmeta.Pos_OG_ID(1)),"_");
+            % num_ = count(string(fullmeta.Pos_OG_ID(1)),"_");
+            num_=1;
             Old_BirdName = findOBN(num_,nameSplit);
             findmeta = find(strcmp(fullmeta.Pos_OG_ID,Old_BirdName));
         elseif ismember(Tag,["Aux"])           
@@ -120,7 +121,8 @@ for id = 1:nfiles
         rename = strcat(Dep_ID,'_',TagType,'_L0',ext); 
         % rename = strcat(Dep_ID,'_',TagType,'_L0_1_3_HeaderPos',ext); 
     elseif datalvl == 1
-        rename = strcat(Dep_ID,'_',datatype,'_L1',ext);
+        % rename = strcat(Dep_ID,'_',datatype,'_L1',ext);
+        rename = strcat(Dep_ID,'_',datatype,'_L1_',string(datasublvl),ext);
     elseif datalvl == 2
         rename = strcat(Dep_ID,'_',datatype,'_L2',ext);
     elseif datalvl == 3
@@ -161,7 +163,7 @@ end
 
 %% Write rename file
 mkdir rename_info
-writetable(rename_table,strcat(directory,'/rename_info/rename_table.csv'),'delimiter',',');
+writetable(rename_table,strcat(directory,'rename_info/rename_table.csv'),'delimiter',',');
 
 %% Safety
 
