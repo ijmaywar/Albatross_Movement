@@ -83,7 +83,6 @@ m_all$BWA_cat <- as.factor(m_all$BWA_cat)
 m_all$HMM_2S_state <- as.factor(m_all$HMM_2S_state)
 m_all$HMM_3S_state <- as.factor(m_all$HMM_3S_state)
 
-
 # Re-order Species groups
 m_all$Species <- factor(m_all$Species , levels=c("BBAL", "GHAL", "WAAL", "BFAL", "LAAL"))
 
@@ -122,10 +121,17 @@ ds_m_all_nonaflaps <- m_all_nonaflaps %>% filter(id %in% downsampled_ids)
 
 m_all_nonaflaps |>
   ggplot(aes(Species,wind_vel)) +
-  geom_boxplot() + 
+  geom_violin() + 
   theme_minimal() +
   ylim(0,30) +
-  labs(title="All data")
+  labs(y="wind velocity (m/s)",x="Species")
+
+m_all_nonaflaps |>
+  ggplot(aes(Species,bwa)) +
+  geom_violin() + 
+  theme_minimal() +
+  ylim(0,180) +
+  labs(title="All data",y="bird-wind angle (degrees)",x="Species")
 
 m_all_nonaflaps %>% filter(HMM_3S_state!=1) |>
   ggplot(aes(Species,wind_vel)) +
