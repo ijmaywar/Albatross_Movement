@@ -80,6 +80,9 @@ m_all$Location <- as.factor(m_all$Location)
 m_all$Trip_Type <- as.factor(m_all$Trip_Type)
 m_all$Species <- as.factor(m_all$Species)
 m_all$BWA_cat <- as.factor(m_all$BWA_cat)
+m_all$HMM_2S_state <- as.factor(m_all$HMM_2S_state)
+m_all$HMM_3S_state <- as.factor(m_all$HMM_3S_state)
+
 
 # Re-order Species groups
 m_all$Species <- factor(m_all$Species , levels=c("BBAL", "GHAL", "WAAL", "BFAL", "LAAL"))
@@ -91,15 +94,149 @@ m_WAAL <- m_all %>% filter(Species=="WAAL")
 m_LAAL <- m_all %>% filter(Species=="LAAL")
 m_BFAL <- m_all %>% filter(Species=="BFAL")
 
+m_all_nonaflaps <- m_all %>% drop_na(flaps)
+m_BBAL_nonaflaps <- m_all_nonaflaps %>% filter(Species=="BBAL")
+m_GHAL_nonaflaps <- m_all_nonaflaps %>% filter(Species=="GHAL")
+m_WAAL_nonaflaps <- m_all_nonaflaps %>% filter(Species=="WAAL")
+m_BFAL_nonaflaps <- m_all_nonaflaps %>% filter(Species=="BFAL")
+m_LAAL_nonaflaps <- m_all_nonaflaps %>% filter(Species=="LAAL")
+
+# Downsampling Bird_Island to Midway --------------------------------------
+
+downsampled_ids <- c(sample(unique(m_BBAL_nonaflaps$id),
+                            size=length(unique(m_BFAL_nonaflaps$id)),
+                            replace=FALSE),
+                     sample(unique(m_GHAL_nonaflaps$id),
+                            size=length(unique(m_BFAL_nonaflaps$id)),
+                            replace=FALSE),
+                     sample(unique(m_WAAL_nonaflaps$id),
+                            size=length(unique(m_BFAL_nonaflaps$id)),
+                            replace=FALSE),
+                     sample(unique(m_LAAL_nonaflaps$id),
+                            size=length(unique(m_BFAL_nonaflaps$id)),
+                            replace=FALSE),
+                     unique(m_BFAL_nonaflaps$id))
+ds_m_all_nonaflaps <- m_all_nonaflaps %>% filter(id %in% downsampled_ids)
+
 # Box plots -------------------------------------------------------------
 
-m_all |>
+m_all_nonaflaps |>
   ggplot(aes(Species,wind_vel)) +
-  geom_boxplot()
+  geom_boxplot() + 
+  theme_minimal() +
+  ylim(0,30) +
+  labs(title="All data")
 
-m_all |>
+m_all_nonaflaps %>% filter(HMM_3S_state!=1) |>
+  ggplot(aes(Species,wind_vel)) +
+  geom_boxplot() + 
+  theme_minimal() +
+  ylim(0,30) +
+  labs(title="Resting removed data")
+
+m_all_nonaflaps |>
   ggplot(aes(Species,flaps)) +
-  geom_boxplot()
+  geom_boxplot() +
+  ylim(0,1000) +
+  theme_minimal()
+
+m_all_nonaflaps |>
+  ggplot(aes(Species,flaps)) +
+  geom_violin(draw_quantiles = TRUE) +
+  ylim(0,1000) +
+  theme_minimal()
+
+m_all_nonaflaps |>
+  ggplot(aes(Species,bwa)) +
+  geom_violin(draw_quantiles = TRUE) +
+  ylim(0,180) +
+  theme_minimal()
+
+m_all_nonaflaps |>
+  ggplot(aes(wind_vel)) +
+  geom_histogram() +
+  ylim(0,2500) +
+  xlim(0,30) +
+  theme_minimal() +
+  facet_wrap(~Species) +
+  labs(title="All data")
+
+m_all_nonaflaps %>% filter(HMM_3S_state!=1) |>
+  ggplot(aes(wind_vel)) +
+  geom_histogram() +
+  ylim(0,2500) +
+  xlim(0,30) +
+  theme_minimal() +
+  facet_wrap(~Species) +
+  labs(title="Resting removed data")
+
+m_all_nonaflaps %>% filter(HMM_3S_state==1) |>
+  ggplot(aes(wind_vel)) +
+  geom_histogram() +
+  ylim(0,2500) +
+  xlim(0,30) +
+  theme_minimal() +
+  facet_wrap(~Species) +
+  labs(title="Resting only data")
+
+m_all_nonaflaps |>
+  ggplot(aes(bwa)) +
+  geom_histogram() +
+  ylim(0,2000) +
+  theme_minimal() +
+  facet_wrap(~Species)
+
+m_all_nonaflaps |>
+  ggplot(aes(Species,wind_vel)) +
+  geom_boxplot() +
+  # ylim(0,2000) +
+  theme_minimal() +
+  facet_wrap(~HMM_3S_state)
+
+m_all_nonaflaps |>
+  ggplot(aes(Species,flaps)) +
+  geom_boxplot() +
+  ylim(0,2000) +
+  theme_minimal() +
+  facet_wrap(~HMM_3S_state)
+
+m_all_nonaflaps %>% filter(HMM_3S_state!=1) |>
+  ggplot(aes(Species,flaps)) +
+  geom_boxplot() +
+  # ylim(0,2000) +
+  theme_minimal()
+
+m_all_nonaflaps %>% filter(HMM_3S_state!=1) |>
+  ggplot(aes(Species,wind_vel)) +
+  geom_boxplot() +
+  ylim(0,25) +
+  theme_minimal()
+
+m_all_nonaflaps |>
+  ggplot(aes(Species,wind_vel)) +
+  geom_boxplot() +
+  ylim(0,25) +
+  theme_minimal()
+
+# Downsampled plots
+
+ds_m_all_nonaflaps |>
+  ggplot(aes(Species,wind_vel)) +
+  geom_boxplot() + 
+  theme_minimal()
+
+ds_m_all_nonaflaps |>
+  ggplot(aes(Species,flaps)) +
+  geom_boxplot() +
+  ylim(0,1000) +
+  theme_minimal()
+
+ds_m_all_nonaflaps |>
+  ggplot(aes(Species,flaps)) +
+  geom_violin(draw_quantiles = TRUE) +
+  ylim(0,1000) +
+  theme_minimal()
+
 
 # Wind angle plots -------------------------------------------------------------
 

@@ -1,7 +1,7 @@
 # Create a map of wind_vel
 
-map_lat_range <- seq(25,35,0.25) # Latitude (rows)
-map_lon_range <- c(seq(175,180,0.25), seq(-179.75,-175,0.25)) # Longitude (columns)
+map_lat_range <- seq(-70,-30,0.25) # Latitude (rows)
+map_lon_range <- seq(-120,-10,0.25) # Longitude (columns)
 
 output <- matrix(ncol=4,nrow=length(map_lat_range)*length(map_lon_range))
 

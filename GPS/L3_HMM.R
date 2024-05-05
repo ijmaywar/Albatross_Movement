@@ -13,8 +13,9 @@ rm(list = ls())
 
 # User Inputted Values -----------------------------------------------------
 
-# location = 'Bird_Island' # Options: 'Bird_Island', 'Midway'
-# spp = "BBAL"
+location = 'Bird_Island' # Options: 'Bird_Island', 'Midway'
+spp = "BBAL"
+numstates = "3_states"
 
 NS_list = c("3_states","2_states")
 locations = c("Bird_Island","Midway")

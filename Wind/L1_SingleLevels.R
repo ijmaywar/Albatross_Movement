@@ -49,8 +49,6 @@ bearingAngle <- function(bird_bearing,wind_bearing) {
 
 setwd(GPS_dir)
 files <- list.files(pattern='*.csv') # GPS files 
-# Select for only WAAL
-files <- files[grep("^WAAL", files)]
 
 # Create compiled file
 for (i in 1:length(files)) {

@@ -15,9 +15,9 @@ clearvars
 
 %% USER INPUTED VALUES
 
-szn = '2019_2020';
-location = 'Bird_Island'; % Options: 'Bird_Island', 'Midway'
-AccType = 'NRL'; % Options: 'Technosmart', 'NRL'
+szn = '2018_2019';
+location = 'Midway'; % Options: 'Bird_Island', 'Midway'
+AccType = 'Technosmart'; % Options: 'Technosmart', 'NRL'
 
 %% Set envrionment
 
@@ -130,7 +130,7 @@ for j = 15:15%1:height(L1_fileList)
 
     % th
 
-    nFlaps_movslp_th = figure('visible','off');
+    nFlaps_movslp_th = figure('visible','on');
     yyaxis left
         scatter(th_range,num_flaps_th)
         hold on
@@ -146,7 +146,7 @@ for j = 15:15%1:height(L1_fileList)
 
     % m
 
-    nFlaps_movslp_m = figure('visible','off');
+    nFlaps_movslp_m = figure('visible','on');
     yyaxis left
         scatter(m_range,num_flaps_m)
         hold on 
@@ -203,3 +203,14 @@ end
 %% Plot data
 
 plot(filtered(1:10000))
+
+%% Plot data
+    range = 10000:20000;
+    filt_fig = figure('visible','on');
+    plot(Acc.DateTime(range),raw(range))
+    hold on
+    plot(Acc.DateTime(range),filtered(range))
+    hold on
+    ylabel('z-axis acceleration (g)')
+    xlabel('datetime')
+    yline(th)
