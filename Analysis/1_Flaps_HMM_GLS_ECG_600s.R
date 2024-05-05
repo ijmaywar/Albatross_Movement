@@ -10,8 +10,8 @@ rm(list = ls())
 
 # User Inputted Values -----------------------------------------------------
 
-location = 'Bird_Island'
-szn = "2019_2020"
+location = 'Midway'
+szn = "2018_2019"
 
 locations = c("Bird_Island", "Midway")
 min_peak_prob = 0 # All heartbeats (ECG) with a probability less than this value will be removed

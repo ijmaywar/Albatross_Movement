@@ -85,7 +85,7 @@ L0_fileList(startsWith({L0_fileList.name},'._')) = [];
 L0_fileNames = string({L0_fileList.name});
 
 %% Loop thru and process birds
-redos = [12:14,20];
+redos = [20];
 for i = redos(1:end)
 % for i = 28:length(L0_fileNames)
     %% load data to be deteced.

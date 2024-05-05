@@ -12,8 +12,8 @@ rm(list = ls())
 
 # User Inputted Values -----------------------------------------------------
 
-location = 'Bird_Island' # Options: 'Bird_Island', 'Midway'
-szn = "2019_2020"
+location = 'Midway'
+szn = "2018_2019"
 
 locations = c("Bird_Island", "Midway")
 min_peak_prob = 0 # What was the min_peak_prob used to create 600s data?
