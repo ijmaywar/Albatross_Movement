@@ -1,13 +1,6 @@
 ################################################################################
 #
-# Create plots from L2 wind data that show the winds experienced by albatrosses
-#
-################################################################################
-################################################################################
-#
-# Wind data: create plots with wind data.
-# This will need to be edited in order to account for times removed by on-water
-# and foraging/resting (HMM)
+# Create plots from L2 wind data that show the winds experienced in the KDE areas
 #
 ################################################################################
 
@@ -56,13 +49,13 @@ m_all <- m_all %>% mutate(Trip_Type = factor(replace(as.character(Trip_Type),Tri
 m_all <- m_all %>% mutate(Trip_Type = factor(replace(as.character(Trip_Type),Trip_Type=="Ep","BG")))
 
 # Datetime stuff
-m_all$datetime <- as.POSIXct(m_all$datetime,format="%Y-%m-%d %H:%M:%S",tz="GMT")
-# m_all$julian <- m_all$datetime$yday + 1 
-# # plotday are the days since the beginning of the year (January 1 of the first
-# # year is 1)
-# m_all$plotday <- ifelse(m_all$julian > 200, m_all$julian, m_all$julian + 365)
-# # adjust for leap years
-# m_all$plotday <- ifelse(m_all$plotday > 365 & m_all$datetime$year+1900 == 2021, m_all$plotday+1, m_all$plotday)
+m_all$datetime <- as.POSIXlt(m_all$datetime,format="%Y-%m-%d %H:%M:%S",tz="GMT")
+m_all$julian <- m_all$datetime$yday + 1
+# plotday are the days since the beginning of the year (January 1 of the first
+# year is 1)
+m_all$plotday <- ifelse(m_all$julian > 200, m_all$julian, m_all$julian + 365)
+# adjust for leap years
+m_all$plotday <- ifelse(m_all$plotday > 365 & m_all$datetime$year+1900 == 2021, m_all$plotday+1, m_all$plotday)
 
 # Remove unnecessary columns
 # m_all <- m_all %>% dplyr::select(-lon,-lat,-u,-v,-datetime,-wind_dir,-bird_dir,-bird_vel)
@@ -99,23 +92,6 @@ m_GHAL_nonaflaps <- m_all_nonaflaps %>% filter(Species=="GHAL")
 m_WAAL_nonaflaps <- m_all_nonaflaps %>% filter(Species=="WAAL")
 m_BFAL_nonaflaps <- m_all_nonaflaps %>% filter(Species=="BFAL")
 m_LAAL_nonaflaps <- m_all_nonaflaps %>% filter(Species=="LAAL")
-
-# Downsampling Bird_Island to Midway --------------------------------------
-
-downsampled_ids <- c(sample(unique(m_BBAL_nonaflaps$id),
-                            size=length(unique(m_BFAL_nonaflaps$id)),
-                            replace=FALSE),
-                     sample(unique(m_GHAL_nonaflaps$id),
-                            size=length(unique(m_BFAL_nonaflaps$id)),
-                            replace=FALSE),
-                     sample(unique(m_WAAL_nonaflaps$id),
-                            size=length(unique(m_BFAL_nonaflaps$id)),
-                            replace=FALSE),
-                     sample(unique(m_LAAL_nonaflaps$id),
-                            size=length(unique(m_BFAL_nonaflaps$id)),
-                            replace=FALSE),
-                     unique(m_BFAL_nonaflaps$id))
-ds_m_all_nonaflaps <- m_all_nonaflaps %>% filter(id %in% downsampled_ids)
 
 # Box plots -------------------------------------------------------------
 
@@ -179,8 +155,7 @@ polar_plot
 
 polar_plot_bar <- ggplot(data, aes(x = categories, y = Freq)) +
   # geom_bar(stat = "identity", width = 1, fill = "skyblue") +
-  geom_bar(stat="identity", alpha=1, fill="black") + 
-  labs(main="Polar plot of wind angle relative to bird heading",y="Frequency",x="") +
+  geom_bar(stat="identity", alpha=0.5, fill="blue") + 
   coord_polar(start = 0)  # Adjust the starting angle if needed
 # scale_y_continuous(limits=c(0,1200))
 

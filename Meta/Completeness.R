@@ -11,8 +11,8 @@ rm(list = ls())
 # User Inputed Values -----------------------------------------------------
 
 location = 'Bird_Island' # Options: 'Bird_Island', 'Midway'
-szn = "2020_2021"
-interp = "600s"
+szn = "2021_2022"
+Acc_Type = "Technosmart"
 
 # Load Packages -----------------------------------------------------------
 
@@ -22,15 +22,14 @@ library(readxl)
 library(foreach)
 library(doParallel)
 
-
 # Set Environment ---------------------------------------------------------
 
-GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/"
-L1_Acc_dir <- paste0(GD_dir,"L1/",location,"/Tag_Data/Acc/Acc_Technosmart/",szn,"/")
-L1_wind_dir <- paste0(GD_dir,"L1/",location,"/Wind_Data/",szn,"/",interp,"/")
+GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/Thorne Lab Shared Drive/Data/Albatross/"
+L1_Acc_dir <- paste0(GD_dir,"L1/",location,"/Tag_Data/Acc/","Acc_",Acc_Type,"/",szn,"/")
+L1_wind_dir <- paste0(GD_dir,"L1/",location,"/Wind_Data/ERA5_SingleLevels_10m/allbirds_GPS_with_wind/",szn,"/")
 L1_GPS_summary_dir <- paste0(GD_dir,"L1/",location,"/Tag_Data/GPS/GPS_Catlog/",szn,"/GPS_Summaries/")
 
-fullmeta <- read_excel("/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/metadata/Full_Metadata.xlsx")
+fullmeta <- read_excel(paste0(GD_dir,"metadata/Full_Metadata.xlsx"))
 
 setwd(L1_GPS_summary_dir)
 L1_GPS_summary <- list.files(pattern='*.csv')
@@ -39,21 +38,20 @@ L1_GPS_summary <- read.csv(L1_GPS_summary)
 setwd(L1_Acc_dir)
 acc_files <- list.files(pattern='*.csv')
 
-
 # Parallelize to load Acc info --------------------------------------------
 
 # Setup parallel backend
 my.cluster <- parallel::makeCluster(
-  6, 
+  6,
   type = "FORK"
 )
-# Memory overload with 9 cores. Trying 6... 
+# Memory overload with 9 cores. Trying 6...
 
 doParallel::registerDoParallel(cl = my.cluster)
 
 # Load Acc files and extract start and stop times
 Acc_times <- foreach(
-  i = 1:length(acc_files), 
+  i = 1:length(acc_files),
   .combine = 'rbind'
 ) %dopar% {
   setwd(L1_Acc_dir)
@@ -71,18 +69,18 @@ parallel::stopCluster(cl = my.cluster)
 
 # Alternatively, extract acc data sequentially if parallel processing isn't working
 
-# setwd(L1_Acc_dir)
-# Acc_times <- data.frame(matrix(ncol=3,nrow=length(acc_files)))
-# colnames(Acc_times) <- c("birdname","start","stop")
-# for (i in 1:length(acc_files)) {
-#   m <- read.csv(acc_files[i])
-#   birdname <- sub("_Acc_L1.csv$","",acc_files[i])
-#   start <- m$DateTime[1]
-#   stop <- m$DateTime[nrow(m)]
-#   Acc_times$birdname[i] <- birdname
-#   Acc_times$start[i] <- start
-#   Acc_times$stop[i] <- stop
-# }
+setwd(L1_Acc_dir)
+Acc_times <- data.frame(matrix(ncol=3,nrow=length(acc_files)))
+colnames(Acc_times) <- c("birdname","start","stop")
+for (i in 1:length(acc_files)) {
+  m <- read.csv(acc_files[i])
+  birdname <- sub("_Acc_L1.csv$","",acc_files[i])
+  start <- m$DateTime[1]
+  stop <- m$DateTime[nrow(m)]
+  Acc_times$birdname[i] <- birdname
+  Acc_times$start[i] <- start
+  Acc_times$stop[i] <- stop
+}
 
 
 # Extract GPS start and stop ----------------------------------------------
@@ -90,9 +88,13 @@ parallel::stopCluster(cl = my.cluster)
 setwd(L1_wind_dir)
 GPS_files <- list.files(pattern='*.csv')
 m <- read.csv(GPS_files[1])
+m <- m[which(substr(m$id,1,4)=="WAAL"),]
+# m$datetime <- as.POSIXct(m$datetime,format="%Y-%m-%d %H:%M:%S",tz="GMT")
 all_trips <- unique(m$tripID)
 
-GPS_times <- data.frame(matrix(ncol=3,nrow=length(all_trips)))
+GPS_times <- data.frame(tripID = character(length(all_trips)),
+                        start = character(length(all_trips)),
+                        stop = character(length(all_trips)))
 colnames(GPS_times) <- c("tripID", "start", "stop")
 for (i in 1:length(all_trips)) {
   mi <- filter(m,tripID==all_trips[i])
@@ -165,11 +167,10 @@ allignment$GPS_start <- as.character(format(allignment$GPS_start)) # safer for w
 allignment$GPS_stop <- as.character(format(allignment$GPS_stop)) # safer for writing csv in character format
 allignment$meta_recap <- as.character(format(allignment$meta_recap)) # safer for writing csv in character format
 
-write.csv(allignment,file=paste0("/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/metadata/Tag_completeness_allignment/",
-                                 location,"_",szn,"_allignment.csv"))
+write.csv(allignment,file=paste0(GD_dir,"/metadata/Tag_completeness_allignment/", location,"_",szn,"_allignment.csv"))
 
 # read allignment file
-allignment <- read.csv("/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/metadata/Tag_completeness_allignment/Bird_Island_2020_2021_allignment.csv")
+# allignment <- read.csv("/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/metadata/Tag_completeness_allignment/Bird_Island_2020_2021_allignment.csv")
 
 
 

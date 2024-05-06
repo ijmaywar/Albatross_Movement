@@ -70,9 +70,6 @@ m_all$BWA_cat <- as.factor(m_all$BWA_cat)
 # Re-order Species groups
 m_all$Species <- factor(m_all$Species , levels=c("BBAL", "GHAL", "WAAL", "BFAL", "LAAL"))
 
-# Remove outliers
-m_all %>% filter()
-
 # Split data between species
 m_BBAL <- m_all %>% filter(Species=="BBAL")
 m_GHAL <- m_all %>% filter(Species=="GHAL")
@@ -436,14 +433,14 @@ for (spp in c("BBAL", "GHAL", "WAAL", "BFAL", "LAAL")) {
 
 fv_df_cont_link$Species <- factor(fv_df_cont_link$Species , levels=c("BBAL", "GHAL", "WAAL", "BFAL", "LAAL"))
 
+
+mycolors <- colorRampPalette(brewer.pal(8, "OrRd"))(14)
 # Link
 fv_df_cont_link |>
   ggplot(aes(wind_vel,bwa,z=exp(fitted_global))) +
-  geom_contour_filled(breaks=seq(0,2000,by=100)) +
-  # scale_fill_viridis_b(begin=0,end=2000) +
-  labs(title="With the ID term") +
-  # xlim(0,25) + 
-  # ylim(0,1000) +
+  geom_contour_filled(binwidth = 100) +
+  scale_fill_manual(values=mycolors) +
+  labs(fill = "Flaps/hour", x="Wind Velocity (m/s)", y="Bird-wind angle (degrees)") +
   facet_wrap(~Species)
 
 fv_df_cont_link |>

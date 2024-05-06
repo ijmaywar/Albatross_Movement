@@ -89,12 +89,13 @@ write_dir <- paste0("/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@ston
 
 fullmeta <- read_excel(paste0(GD_dir,"/metadata/Full_Metadata.xlsx"))
 
-GPS_dir <- paste0(GD_dir,"L2/",loc,"/Tag_Data/GPS/compiled_by_spp/")
+GPS_dir <- paste0(GD_dir,"L2/",loc,"/Tag_Data/GPS/compiled_2019_2022/compiled_by_spp/")
 setwd(GPS_dir)
 files <- list.files(pattern='*.csv')
 
 for (i in 1:length(files)) {
   m <- read_csv(files[i])
+  m$datetime <- as.POSIXlt(m$datetime,format="%Y-%m-%d %H:%M:%S",tz="GMT")
   
   if (i==1) {
     all_data <- m
@@ -146,6 +147,8 @@ if (loc == "Bird_Island") {
   BBAL_BG_data <- all_data %>% filter((substr(all_data$id,1,4)=="BBAL") & (TripType=="BG"))
   GHAL_Inc_data <- all_data %>% filter((substr(all_data$id,1,4)=="GHAL") & (TripType=="Inc"))
   GHAL_BG_data <- all_data %>% filter((substr(all_data$id,1,4)=="GHAL") & (TripType=="BG"))
+  WAAL_Inc_data <- all_data %>% filter((substr(all_data$id,1,4)=="WAAL") & (TripType=="Inc"))
+  WAAL_BG_data <- all_data %>% filter((substr(all_data$id,1,4)=="WAAL") & (TripType=="BG"))
 } else if (loc == "Midway") {
   BFAL_Inc_data <- all_data %>% filter((substr(all_data$id,1,4)=="BFAL") & (TripType=="Inc"))
   BFAL_BG_data <- all_data %>% filter((substr(all_data$id,1,4)=="BFAL") & (TripType=="BG"))
@@ -191,6 +194,20 @@ if (loc == "Bird_Island") {
   sp::proj4string(GHAL_BG.sp) <- sp::CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
   GHAL_BG.sp <- spTransform(GHAL_BG.sp,CRS(paste0("+proj=utm +zone=",utmzone," +ellps=WGS84 +datum=WGS84 +units=m +no_defs")))
   GHAL_BG.Href.kernel <- kernelUD(GHAL_BG.sp, h="href", same4all = TRUE, grid=250)
+  
+  # Create WAAL Inc Href Kernel
+  WAAL_Inc.sp <- WAAL_Inc_data %>% dplyr::select(tripID,lon,lat)
+  sp::coordinates(WAAL_Inc.sp) <- c("lon","lat")
+  sp::proj4string(WAAL_Inc.sp) <- sp::CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+  WAAL_Inc.sp <- spTransform(WAAL_Inc.sp,CRS(paste0("+proj=utm +zone=",utmzone," +ellps=WGS84 +datum=WGS84 +units=m +no_defs")))
+  WAAL_Inc.Href.kernel <- kernelUD(WAAL_Inc.sp, h="href", same4all = TRUE, grid=250)
+  
+  # Create WAAL BG Href Kernel
+  WAAL_BG.sp <- WAAL_BG_data %>% dplyr::select(tripID,lon,lat)
+  sp::coordinates(WAAL_BG.sp) <- c("lon","lat")
+  sp::proj4string(WAAL_BG.sp) <- sp::CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+  WAAL_BG.sp <- spTransform(WAAL_BG.sp,CRS(paste0("+proj=utm +zone=",utmzone," +ellps=WGS84 +datum=WGS84 +units=m +no_defs")))
+  WAAL_BG.Href.kernel <- kernelUD(WAAL_BG.sp, h="href", same4all = TRUE, grid=250)
   
 } else if (loc == "Midway") {
   
