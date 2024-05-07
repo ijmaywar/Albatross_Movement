@@ -8,10 +8,10 @@
 
 rm(list = ls())
 
-# User Inputed Values -----------------------------------------------------
+# User Inputted Values -----------------------------------------------------
 
 location = 'Bird_Island' # Options: 'Bird_Island', 'Midway'
-szn = "2021_2022"
+szn = "2020_2021"
 Acc_Type = "Technosmart"
 
 # Load Packages -----------------------------------------------------------
@@ -45,7 +45,7 @@ my.cluster <- parallel::makeCluster(
   6,
   type = "FORK"
 )
-# Memory overload with 9 cores. Trying 6...
+# Memory overload with 9 cores. Use 6
 
 doParallel::registerDoParallel(cl = my.cluster)
 
@@ -67,20 +67,20 @@ parallel::stopCluster(cl = my.cluster)
 
 
 
-# Alternatively, extract acc data sequentially if parallel processing isn't working
-
-setwd(L1_Acc_dir)
-Acc_times <- data.frame(matrix(ncol=3,nrow=length(acc_files)))
-colnames(Acc_times) <- c("birdname","start","stop")
-for (i in 1:length(acc_files)) {
-  m <- read.csv(acc_files[i])
-  birdname <- sub("_Acc_L1.csv$","",acc_files[i])
-  start <- m$DateTime[1]
-  stop <- m$DateTime[nrow(m)]
-  Acc_times$birdname[i] <- birdname
-  Acc_times$start[i] <- start
-  Acc_times$stop[i] <- stop
-}
+# # Alternatively, extract acc data sequentially if parallelization isn't working for some reason
+# 
+# setwd(L1_Acc_dir)
+# Acc_times <- data.frame(matrix(ncol=3,nrow=length(acc_files)))
+# colnames(Acc_times) <- c("birdname","start","stop")
+# for (i in 1:length(acc_files)) {
+#   m <- read.csv(acc_files[i])
+#   birdname <- sub("_Acc_L1.csv$","",acc_files[i])
+#   start <- m$DateTime[1]
+#   stop <- m$DateTime[nrow(m)]
+#   Acc_times$birdname[i] <- birdname
+#   Acc_times$start[i] <- start
+#   Acc_times$stop[i] <- stop
+# }
 
 
 # Extract GPS start and stop ----------------------------------------------
@@ -88,8 +88,6 @@ for (i in 1:length(acc_files)) {
 setwd(L1_wind_dir)
 GPS_files <- list.files(pattern='*.csv')
 m <- read.csv(GPS_files[1])
-m <- m[which(substr(m$id,1,4)=="WAAL"),]
-# m$datetime <- as.POSIXct(m$datetime,format="%Y-%m-%d %H:%M:%S",tz="GMT")
 all_trips <- unique(m$tripID)
 
 GPS_times <- data.frame(tripID = character(length(all_trips)),
@@ -107,58 +105,36 @@ for (i in 1:length(all_trips)) {
 
 GPS_times$birdID <- str_sub(GPS_times$tripID,1,-3)
 
-# trim out trips less than 2 hours
-# GPS_times$trip_dur <- as.numeric(difftime(GPS_times$stop,GPS_times$start,units="hours"))
-# GPS_times <- GPS_times %>% filter(trip_dur>=2)
-
-
 # Pass thru acc files -----------------------------------------------------
 allignment <- Acc_times
 colnames(allignment) <- c("bird","acc_start","acc_stop")
-
-# allignment$GPS_start <- NA
-# allignment$GPS_stop <- NA
-# allignment$start_diff <- NA
-# allignment$stop_diff <- NA
-# 
-# allignment$meta_recap <- NA
-# allignment$ntrips <- NA
-# allignment$finaltripcomplete <- NA
-# allignment$last_loc_km_from_col <- NA
-
 
 for (i in 1:nrow(Acc_times)) {
   current_bird <- Acc_times$birdname[i]
   birdmeta <- filter(fullmeta,Deployment_ID == current_bird)
   birdGPSsummary <- filter(L1_GPS_summary,bird == current_bird)
   birdGPS <- filter(GPS_times,birdID==current_bird)
-  
-  allignment$acc_dur_days[i] <- as.numeric(difftime(allignment$acc_stop[i],allignment$acc_start[i],units="days"))
-  
-  allignment$GPS_start[i] <- birdGPS$start[1]
+  allignment$GPS_start[i] <-birdGPS$start[1]
   allignment$GPS_stop[i] <- birdGPS$stop[nrow(birdGPS)]
-  allignment$GPS_dur_days[i] <- as.numeric(difftime(allignment$GPS_stop[i],allignment$GPS_start[i],units="days"))
-  
-  allignment$start_diff_mins[i] <- as.numeric(difftime(allignment$acc_start[i],allignment$GPS_start[i],units="mins"))
-  allignment$stop_diff_mins[i] <- as.numeric(difftime(allignment$acc_stop[i],allignment$GPS_stop[i],units="mins"))
-  
-  allignment$meta_recap[i] <- as.POSIXct(strptime(paste(birdmeta$Recapture_Date_yyyymmdd, birdmeta$Recapture_Time_hhmm), format = "%Y%m%d %H%M"),tz="UTC")
-  allignment$meta_acc_diff_mins[i] <- as.numeric(difftime(allignment$meta_recap[i],allignment$acc_stop[i],units="mins"))
-  allignment$meta_GPS_diff_mins[i] <- as.numeric(difftime(allignment$meta_recap[i],allignment$GPS_stop[i],units="mins"))
-  
+  allignment$meta_recap[i] <- paste(birdmeta$Recapture_Date_yyyymmdd, birdmeta$Recapture_Time_hhmm)
   allignment$ntrips[i] <- birdGPSsummary$ntrips 
   allignment$finish_on_colony[i] <- birdGPSsummary$tripcomplete
   allignment$last_loc_km_from_col[i] <- birdGPSsummary$last_loc_km_from_col
 }
 
-# format datetime columns
-GPS_start_formatted <- as.POSIXct(allignment$GPS_start,tz="UTC")
-GPS_stop_formatted <- as.POSIXct(allignment$GPS_stop,tz="UTC")
-meta_recap_formatted <- as.POSIXct(allignment$meta_recap,tz="UTC")
+# format datetime columns for duration calculations
+allignment$acc_start <- as.POSIXct(allignment$acc_start,format="%Y-%m-%d %H:%M:%S",tz="GMT")
+allignment$acc_stop <- as.POSIXct(allignment$acc_stop,format="%Y-%m-%d %H:%M:%S",tz="GMT")
+allignment$GPS_start <- as.POSIXct(allignment$GPS_start,format="%Y-%m-%d %H:%M:%S",tz="GMT")
+allignment$GPS_stop <- as.POSIXct(allignment$GPS_stop,format="%Y-%m-%d %H:%M:%S",tz="GMT")
+allignment$meta_recap <- as.POSIXct(allignment$meta_recap,format="%Y%m%d %H%M",tz="GMT")
 
-allignment$GPS_start <- GPS_start_formatted
-allignment$GPS_stop <- GPS_stop_formatted
-allignment$meta_recap <- meta_recap_formatted
+allignment <- allignment %>% mutate(acc_dur_days = as.numeric(difftime(acc_stop,acc_start,units="days")),
+                                    GPS_dur_days = as.numeric(difftime(GPS_stop,GPS_start,units="days")),
+                                    start_diff_mins = as.numeric(difftime(acc_start,GPS_start,units="mins")),
+                                    stop_diff_mins = as.numeric(difftime(acc_stop,GPS_stop,units="mins")),
+                                    meta_acc_diff_mins = as.numeric(difftime(meta_recap,acc_stop,units="mins")),
+                                    meta_GPS_diff_mins = as.numeric(difftime(meta_recap,GPS_stop,units="mins")))
 
 # Save file
 allignment$acc_start <- as.character(format(allignment$acc_start)) # safer for writing csv in character format
@@ -167,10 +143,24 @@ allignment$GPS_start <- as.character(format(allignment$GPS_start)) # safer for w
 allignment$GPS_stop <- as.character(format(allignment$GPS_stop)) # safer for writing csv in character format
 allignment$meta_recap <- as.character(format(allignment$meta_recap)) # safer for writing csv in character format
 
-write.csv(allignment,file=paste0(GD_dir,"/metadata/Tag_completeness_allignment/", location,"_",szn,"_allignment.csv"))
-
-# read allignment file
-# allignment <- read.csv("/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/metadata/Tag_completeness_allignment/Bird_Island_2020_2021_allignment.csv")
+write.csv(allignment,file=paste0(GD_dir,"/metadata/Tag_completeness_allignment/", location,"_",szn,"_allignment.csv"),row.names = FALSE)
 
 
-
+# fix meta_acc_diff_mins and meta_GPS_diff_mins --------------------------------
+#
+# # read allignment file
+# szn = "2020_2021"
+# location = "Bird_Island"
+# 
+# allignment <- read.csv(paste0(GD_dir,"/metadata/Tag_completeness_allignment/", location,"_",szn,"_allignment.csv"))
+# allignment$acc_stop <- as.POSIXct(allignment$acc_stop,format="%Y-%m-%d %H:%M:%S",tz="GMT")
+# allignment$GPS_stop <- as.POSIXct(allignment$GPS_stop,format="%Y-%m-%d %H:%M:%S",tz="GMT")
+# # allignment$meta_recap <- as.POSIXct(allignment$meta_recap,format="%Y-%m-%d %H:%M:%S",tz="GMT")
+# allignment$meta_recap <- as.POSIXct(allignment$meta_recap,format="%Y%m%d %H%M",tz="GMT")
+# 
+# allignment <- allignment %>% mutate(meta_acc_diff_mins = as.numeric(difftime(meta_recap,acc_stop,units="mins")),
+#                                     meta_GPS_diff_mins = as.numeric(difftime(meta_recap,GPS_stop,units="mins")))
+# 
+# write.csv(allignment,
+#           file=paste0(GD_dir,"/metadata/Tag_completeness_allignment/", location,"_",szn,"_allignment.csv"),
+#           row.names = FALSE)
