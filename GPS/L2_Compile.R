@@ -9,7 +9,7 @@
 
 rm(list = ls())
 
-# User Inputed Values -----------------------------------------------------
+# User Inputted Values -----------------------------------------------------
 
 location = 'Midway' # Options: 'Bird_Island', 'Midway'
 
@@ -53,7 +53,7 @@ for (i in 1:length(species)) {
     gpsfiles<-list.files(pattern='*.csv')
     for (k in 1:length(gpsfiles)) {
       if (substr(gpsfiles[k],1,4)==spp) {
-        current_file <- read.csv(gpsfiles[k])
+        current_file <- read_csv(gpsfiles[k])
         current_file$datetime <- as.POSIXct(current_file$datetime, format = "%Y-%m-%d %H:%M:%S", tz = "GMT")
         if (!exists("compiled600s")){
           compiled600s <- current_file

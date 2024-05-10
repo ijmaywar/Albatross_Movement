@@ -11,7 +11,6 @@ rm(list = ls())
 # User Inputted Values -----------------------------------------------------
 
 location = 'Bird_Island' # Options: 'Bird_Island', 'Midway'
-szn = "2021_2022"
 
 # Packages  ---------------------------------------------------------
 
@@ -31,8 +30,8 @@ if (location == 'Bird_Island') {
   nc_dir <- paste0(GD_dir,"L0/",location,"/Wind_Data/compiled_2018_2023/ERA5_Monthly_Avg_10m/")
 }
 
-GPS_dir <- paste0(GD_dir,"L2/",location,"/Tag_Data/GPS/",szn,"/")
-wind_L1_dir <- paste0(GD_dir,"L1/",location,"/Wind_Data/ERA5_SingleLevels_10m/allbirds_GPS_with_wind/",szn,"/")
+GPS_dir <- paste0(GD_dir,"L4/",location,"/Tag_Data/GPS/")
+wind_L1_dir <- paste0(GD_dir,"L1/",location,"/Wind_Data/ERA5_Monthly_Avg_10m/KDEs/",szn,"/")
 # ? Where is this directory???
 
 # User Functions ----------------------------------------------------------
@@ -54,8 +53,6 @@ bearingAngle <- function(bird_bearing,wind_bearing) {
 
 setwd(GPS_dir)
 files <- list.files(pattern='*.csv') # GPS files 
-# Select for only WAAL
-# files <- files[grep("^WAAL", files)]
 
 # Create compiled file
 for (i in 1:length(files)) {
@@ -78,8 +75,6 @@ max(m$lat)
 min(m$lat)                         
 Lon360to180(max(m$lon))
 Lon360to180(min(m$lon))
-min(m$datetime)
-max(m$datetime)
 
 
 # Download the netcdf files from https://cds.climate.copernicus.eu/cdsapp#!/dataset/reanalysis-era5-single-levels?tab=form
@@ -110,6 +105,24 @@ all_times_num <- as.numeric(all_times)
 
 # For Bird Island wind data -----------------------------------------------
 # DON'T RUN THIS FOR MIDWAY
+
+# COMBINE E AND W COMPONENTS OF NETCDF FILES for Bird_Island
+wind_t1 <- rast(wind_files[1])
+
+# Create data vectors
+wind_t1 # Make sure you got the right stuff!
+times_t1 <- time(wind_t1)  # stores times from each file 
+times_t1 <- unique(times_t1) # find unique values because there should be two of every datetime (for u and v)
+wind_t1_u <- subset(wind_t1, 1:(nlyr(wind_t1)/2)) 
+wind_t1_v <- subset(wind_t1, (nlyr(wind_t1)/2)+1:nlyr(wind_t1))
+
+u_stack <- c(wind_t1_u)
+v_stack <- c(wind_t1_v)
+all_times <- c(times_t1)
+all_times_num <- as.numeric(all_times)
+
+
+
 
 # Load netcdf file directly for Bird Island
 wind_t1 <- rast(wind_files[1])

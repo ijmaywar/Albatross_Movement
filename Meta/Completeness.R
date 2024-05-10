@@ -11,8 +11,8 @@ rm(list = ls())
 # User Inputted Values -----------------------------------------------------
 
 location = 'Bird_Island' # Options: 'Bird_Island', 'Midway'
-szn = "2020_2021"
-Acc_Type = "Technosmart"
+szn = "2021_2022"
+Acc_Type = "NRL"
 
 # Load Packages -----------------------------------------------------------
 
@@ -67,8 +67,8 @@ parallel::stopCluster(cl = my.cluster)
 
 
 
-# # Alternatively, extract acc data sequentially if parallelization isn't working for some reason
-# 
+# Alternatively, extract acc data sequentially if parallelization isn't working for some reason
+
 # setwd(L1_Acc_dir)
 # Acc_times <- data.frame(matrix(ncol=3,nrow=length(acc_files)))
 # colnames(Acc_times) <- c("birdname","start","stop")
@@ -143,7 +143,8 @@ allignment$GPS_start <- as.character(format(allignment$GPS_start)) # safer for w
 allignment$GPS_stop <- as.character(format(allignment$GPS_stop)) # safer for writing csv in character format
 allignment$meta_recap <- as.character(format(allignment$meta_recap)) # safer for writing csv in character format
 
-write.csv(allignment,file=paste0(GD_dir,"/metadata/Tag_completeness_allignment/", location,"_",szn,"_allignment.csv"),row.names = FALSE)
+# Make sure you're not overwriting something !!!!! -----------------------------
+write.csv(allignment,file=paste0(GD_dir,"/metadata/Tag_completeness_allignment/", location,"_",szn,"_",Acc_Type,"_allignment.csv"),row.names = FALSE)
 
 
 # fix meta_acc_diff_mins and meta_GPS_diff_mins --------------------------------
@@ -151,8 +152,9 @@ write.csv(allignment,file=paste0(GD_dir,"/metadata/Tag_completeness_allignment/"
 # # read allignment file
 # szn = "2020_2021"
 # location = "Bird_Island"
+# Acc_Type = "Technosmart"
 # 
-# allignment <- read.csv(paste0(GD_dir,"/metadata/Tag_completeness_allignment/", location,"_",szn,"_allignment.csv"))
+# allignment <- read.csv(paste0(GD_dir,"/metadata/Tag_completeness_allignment/", location,"_",szn,"_",Acc_Type,"_allignment.csv"))
 # allignment$acc_stop <- as.POSIXct(allignment$acc_stop,format="%Y-%m-%d %H:%M:%S",tz="GMT")
 # allignment$GPS_stop <- as.POSIXct(allignment$GPS_stop,format="%Y-%m-%d %H:%M:%S",tz="GMT")
 # # allignment$meta_recap <- as.POSIXct(allignment$meta_recap,format="%Y-%m-%d %H:%M:%S",tz="GMT")

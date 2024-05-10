@@ -19,6 +19,7 @@ require(tidyverse)
 library(lubridate)
 library(terra)
 library(geosphere)
+library(raster)
 
 # User Functions ----------------------------------------------------------
 
@@ -37,14 +38,19 @@ bearingAngle <- function(bird_bearing,wind_bearing) {
 
 # Process both sites -----------------------------------------------------------
 
+GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/Thorne Lab Shared Drive/Data/Albatross/"
+write_dir <- paste0(GD_dir,"/Analysis/Maywar/Wind_KDEs")
 
 for (loc_idx in 1:length(locations)) {
   location <- locations[loc_idx]
 
   # Set Environment ---------------------------------------------------------
   
-  GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1-mLOKt79AsOpkCFrunvcUj54nuqPInxf/THORNE_LAB/Data/Albatross/NEW_STRUCTURE/"
-  nc_dir <- paste0(GD_dir,"L0/",location,"/Wind_Data/ERA5_Monthly_Avg_10m/")
+  if (location == 'Bird_Island') {
+    nc_dir <- paste0(GD_dir,"L0/",location,"/Wind_Data/compiled_2019_2022/ERA5_Monthly_Avg_10m/")
+  } else if (location == 'Midway') {
+    nc_dir <- paste0(GD_dir,"L0/",location,"/Wind_Data/compiled_2018_2023/ERA5_Monthly_Avg_10m/")
+  }
   GPS_dir <- paste0(GD_dir,"L4/",location,"/Tag_Data/GPS/")
   
   # Get wind data raster ---------------------------------------------------------
@@ -57,7 +63,7 @@ for (loc_idx in 1:length(locations)) {
   if (location == "Bird_Island") {
     
     # Load netcdf file directly for Bird Island
-    wind_t1 <- rast(wind_files[1])
+    wind_t1 <- rast("Bird_Island_19_22.nc")
     # Create data vectors
     wind_t1 # Make sure you got the right stuff!
     times_t1 <- time(wind_t1)  # stores times from each file 
@@ -67,12 +73,31 @@ for (loc_idx in 1:length(locations)) {
   } else if (location == "Midway") {
     
     # Load netcdf file directly for Midway
-    wind_neg_t1 <- rast(wind_files[1]) # negative longitudinal coordinates
-    wind_pos_t1 <- rast(wind_files[2]) # positive longitudinal coordinates
-    wind_t1 <- merge(wind_neg_t1,wind_pos_t1)
+    wind_t1 <- rast("Midway_18_23.nc")
+    wind_t1 # Make sure you got the right stuff!
+    
+    # Wrap -180 to 180
+    wind_crds <- as.data.frame(crds(wind_t1[[1]]))
+    for (lyr_name in names(wind_t1)) {
+      new_crds <- cbind(wind_crds,as.data.frame(values(wind_t1[[lyr_name]])))
+      new_crds_neg180 <- new_crds %>% filter(x==-180)
+      new_crds_neg180$x <- 180
+      new_crds <- rbind(new_crds,new_crds_neg180)
+      new_crds <- arrange(new_crds,desc(y),x)
+      current_lyr <- rast(new_crds,type="xyz")
+      if (lyr_name == names(wind_t1)[1]) {
+        wind_t1_new <- current_lyr
+      } else {
+        wind_t1_new <- c(wind_t1_new,current_lyr)
+      }
+    }
+    time(wind_t1_new) <- time(wind_t1)
+    units(wind_t1_new) <- units(wind_t1)
     
     # Create data vectors
-    wind_t1 # Make sure you got the right stuff!
+    wind_t1 <- wind_t1_new # Make sure you got the right stuff!
+    wind_t1
+
     times_t1 <- time(wind_t1)  # stores times from each file 
     all_times <- unique(times_t1) # find unique values because there should be two of every datetime (for u and v)
     all_times_num <- as.numeric(all_times)
@@ -85,8 +110,8 @@ for (loc_idx in 1:length(locations)) {
   files <- list.files(pattern='*.csv') # GPS files 
   
   for (file_idx in 1:length(files)) {
-    m <- read.csv(files[file_idx])
-    m_all_mths <- m
+    m <- read_csv(files[file_idx])
+    m$WindSpeed <- NA
     
     BirdSpp <- strsplit(files[file_idx],"_")[[1]][1] 
     TripType <- strsplit(files[file_idx],"_")[[1]][2]
@@ -98,16 +123,32 @@ for (loc_idx in 1:length(locations)) {
         # months <- c("October","November","December")
         months <- c(10,11,12)
       } else if (TripType == "BG") {
-        # months <- c("December","January","February")
-        months <- c(12,1,2)
+        # months <- c("January-April")
+        months <- 1:4
+      } else if (TripType == "all") {
+        months <- c(10:12,1:4)
+        off_months <- 6:8
       }
     } else if (BirdSpp %in% c("BFAL","LAAL")) {
       if (TripType == "Inc") {
         # months <- c("November", "December","January")
         months <- c(11,12,1)
       } else if (TripType == "BG") {
-        # months <- c("January","February","March")
-        months <- c(1,2,3)
+        # months <- c("Feb-Jun")
+        months <- 2:6
+      } else if (TripType == "all") {
+        months <- c(11:12,1:6)
+        off_months <- 8:10
+      }
+    } else if (BirdSpp == "WAAL") {
+      if (TripType == "Inc") {
+        # months <- c("December","January","February")
+        months <- c(12,1,2)
+      } else if (TripType == "BG") {
+        # months <- c("March","April-November")
+        months <- 3:11
+      } else if (TripType == "all") {
+        months <- c(1:12)
       }
     }
     
@@ -115,6 +156,12 @@ for (loc_idx in 1:length(locations)) {
     # Loop through coordinates and find wind speed data --------------------------
     
     ncoords <- nrow(m)
+    
+    # Create off-colony figures for all spp except WAAL (never off-colony)
+    if (BirdSpp != "WAAL" & TripType=="all") {
+      off_m <- m
+    }
+    
     for (j in 1:ncoords) {
       
       # isolate coordinates
@@ -123,6 +170,10 @@ for (loc_idx in 1:length(locations)) {
       
       # Extract speed for time j at location x and y
       speed_j <- extract(wind_t1, xy_j, ID=FALSE)
+      
+      if (nrow(speed_j)==0) {
+        
+      }
       
       monthly_avgs <- as.data.frame(t(speed_j))
       colnames(monthly_avgs) <- c("speed")
@@ -140,63 +191,71 @@ for (loc_idx in 1:length(locations)) {
           (datetime > as.Date("2018-06-01") & datetime < as.Date("2019-06-01")) |
             (datetime > as.Date("2021-06-01") & datetime < as.Date("2023-06-01")))
       }
-      
-      # Subset into seasons
-      all_monthly_avgs <- monthly_avgs
+
+      # Create off-colony figures for all spp except WAAL (never off-colony)
+      if (BirdSpp != "WAAL" & TripType=="all") {
+        off_monthly_avgs <- monthly_avgs
+      }
       
       # Trim data so that only the months you are interested are kept
       monthly_avgs <- monthly_avgs %>% filter(month(datetime) %in% months)
+      if (BirdSpp != "WAAL" & TripType=="all") {
+        off_monthly_avgs <- off_monthly_avgs %>% filter(month(datetime) %in% off_months)
+      }
       
       # Add Speed data to m and m_all_mths
       m$WindSpeed[j] <- mean(monthly_avgs$speed)
-      
-      m_all_mths$Jan[j] <- mean((all_monthly_avgs %>% filter(month(datetime)==1))$speed)
-      m_all_mths$Feb[j] <- mean((all_monthly_avgs %>% filter(month(datetime)==2))$speed)
-      m_all_mths$Mar[j] <- mean((all_monthly_avgs %>% filter(month(datetime)==3))$speed)
-      m_all_mths$Apr[j] <- mean((all_monthly_avgs %>% filter(month(datetime)==4))$speed)
-      m_all_mths$May[j] <- mean((all_monthly_avgs %>% filter(month(datetime)==5))$speed)
-      m_all_mths$Jun[j] <- mean((all_monthly_avgs %>% filter(month(datetime)==6))$speed)
-      m_all_mths$Jul[j] <- mean((all_monthly_avgs %>% filter(month(datetime)==7))$speed)
-      m_all_mths$Aug[j] <- mean((all_monthly_avgs %>% filter(month(datetime)==8))$speed)
-      m_all_mths$Sep[j] <- mean((all_monthly_avgs %>% filter(month(datetime)==9))$speed)
-      m_all_mths$Oct[j] <- mean((all_monthly_avgs %>% filter(month(datetime)==10))$speed)
-      m_all_mths$Nov[j] <- mean((all_monthly_avgs %>% filter(month(datetime)==11))$speed)
-      m_all_mths$Dec[j] <- mean((all_monthly_avgs %>% filter(month(datetime)==12))$speed)
-      
+      if (BirdSpp != "WAAL" & TripType=="all") {
+        off_m$WindSpeed[j] <- mean(off_monthly_avgs$speed)
+      }
     }
     
-    # Store everything in a dataframe
+    # Add species and trip type info
     m$Spp <- BirdSpp
     m$TripType <- TripType
-    m_all_mths$Spp <- BirdSpp
-    m_all_mths$TripType <- TripType
     
-    if (loc_idx == 1 & file_idx == 1) {
-      Spp_TT_df <- m
-      Spp_TT_df_all_mths <- m_all_mths
+    if (BirdSpp != "WAAL" & TripType=="all") {
+      off_m$Spp <- BirdSpp
+      off_m$TripType <- "off"
+      Spp_TT_df <- rbind(m,off_m)
     } else {
-      Spp_TT_df <- rbind(Spp_TT_df,m)
-      Spp_TT_df_all_mths <- rbind(Spp_TT_df_all_mths,m_all_mths)
+      Spp_TT_df <- m
     }
     
+    if (loc_idx == 1 & file_idx == 1) {
+      compiled_df <- Spp_TT_df
+    } else {
+      compiled_df <- rbind(compiled_df,Spp_TT_df)
+    }
   }
-
 }
 
+write_csv(compiled_df,file=paste0(write_dir,"KDEs_compiled_breeding_szn_avgs.csv"))
 
 
 # Plot wind data ----------------------------------------------------------
 
-# Re-order spp groups
-Spp_TT_df$Spp <- factor(Spp_TT_df$Spp , levels=c("BBAL", "GHAL", "BFAL", "LAAL"))
+# Read csv if necessary
+compiled_df <- read_csv(paste0(write_dir,"KDEs_compiled_breeding_szn_avgs.csv"))
 
-# Create plot
-plot_Spp_TT <- ggplot(Spp_TT_df, aes(x = Spp, y = WindSpeed, fill=TripType)) +
+# Re-order spp groups
+compiled_df$Spp <- factor(compiled_df$Spp , levels=c("BBAL","GHAL","WAAL","BFAL","LAAL"))
+compiled_df$TripType <- factor(compiled_df$TripType , levels=c("all","off","Inc","BG"))
+compiled_df$TripType <- recode(compiled_df$TripType,"all"="on")
+
+# Create plot for on and off colony wind data
+ggplot(compiled_df %>% filter(TripType=="on" | TripType=="off"), aes(x = Spp, y = WindSpeed, fill=TripType)) +
+  scale_fill_brewer(palette = "Set1") +
   geom_boxplot() +
   labs(title = "", x = "Species", y = "Average WindSpeed") +
-  theme_minimal() +
-  ylim(0,13)
-plot_Spp_TT
+  ylim(0,12)
+
+# Create plot for Inc and BG wind data
+ggplot(compiled_df %>% filter(TripType=="Inc" | TripType=="BG"), aes(x = Spp, y = WindSpeed, fill=TripType)) +
+  scale_fill_brewer(palette = "Set2") +
+  geom_boxplot() +
+  labs(title = "", x = "Species", y = "Average WindSpeed") +
+  ylim(0,12)
 
 
 # Plot wind data for all months-------------------------------------------------
@@ -204,7 +263,7 @@ plot_Spp_TT
 # Re-order spp groups
 Spp_TT_df_all_mths$Spp <- factor(Spp_TT_df_all_mths$Spp , levels=c("BBAL", "GHAL", "BFAL", "LAAL"))
 
-# Create plot for Jan wind data
+
 plot_Spp_TT_mth <- ggplot(Spp_TT_df_all_mths, aes(x = Spp, y = Nov, fill=TripType)) +
   geom_boxplot() +
   labs(title = "Nov", x = "Species", y = "Average WindSpeed") +
