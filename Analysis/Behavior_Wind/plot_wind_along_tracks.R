@@ -22,6 +22,7 @@ min_peak_prob = 0 # What was the min_peak_prob used to create summary data?
 
 # Load Packages -----------------------------------------------------------
 
+library(tidyverse)
 library(ggplot2)
 library(readxl)
 library(lme4)
@@ -142,6 +143,27 @@ m_all_nonaflaps %>% filter(HMM_3S_state!=1) |>
 
 
 # Downsampled plots
+
+ds_m_all_nonaflaps |>
+  ggplot(aes(Species,wind_vel)) +
+  geom_violin() + 
+  # theme_minimal() +
+  ylim(0,30) +
+  labs(y="Wind velocity (m/s)",x="Species")
+
+ds_m_all_nonaflaps |>
+  ggplot(aes(Species,bwa)) +
+  geom_violin() + 
+  # theme_minimal() +
+  ylim(0,180) +
+  labs(y="Bird-wind angle (degrees)",x="Species")
+
+ds_m_all_nonaflaps %>% filter(HMM_3S_state!=1) |>
+  ggplot(aes(Species,flaps)) +
+  geom_violin() + 
+  # theme_minimal() +
+  ylim(0,2000) +
+  labs(y="Flaps/hour",x="Species")
 
 ds_m_all_nonaflaps |>
   ggplot(aes(Species,wind_vel)) +
