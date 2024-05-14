@@ -107,6 +107,15 @@ BWA_cat_hist_data <- as.data.frame(m_all_nonaflapsbwas %>% group_by(Species,id,B
          Species = factor(replace(as.character(Species),Species=="WAAL","Wandering")),
          Species = factor(replace(as.character(Species),Species=="BFAL","Black-footed")),
          Species = factor(replace(as.character(Species),Species=="LAAL","Laysan"))))
+
+BWA_cat_hist_data_low <- as.data.frame(m_all_nonaflapsbwas %>% filter(wind_vel<=5) %>% group_by(Species,id,BWA_cat) %>% 
+                                     summarize(count=n()) %>% 
+                                     mutate(proportion = count/sum(count),
+                                            Species = factor(replace(as.character(Species),Species=="BBAL","Black-browed")),
+                                            Species = factor(replace(as.character(Species),Species=="GHAL","Grey-headed")),
+                                            Species = factor(replace(as.character(Species),Species=="WAAL","Wandering")),
+                                            Species = factor(replace(as.character(Species),Species=="BFAL","Black-footed")),
+                                            Species = factor(replace(as.character(Species),Species=="LAAL","Laysan"))))
   
 
 ggplot(BWA_cat_hist_data) +
@@ -121,6 +130,22 @@ ggplot(BWA_cat_hist_data) +
         legend.background = element_rect(fill = NA, colour = NA)) +
   guides(fill=guide_legend(title="Relative wind")) +
   theme(text = element_text(size = 24))
+
+
+
+ggplot(BWA_cat_hist_data_low %>% filter()) +
+  geom_density(aes(x=proportion,fill=BWA_cat)) +
+  scale_fill_manual(values=cat_hist_colors) + 
+  labs(y="Density") +
+  theme_bw() + 
+  scale_x_continuous(name ="Proportion of time", breaks=c(0,0.25,0.5,0.75,1),
+                     labels = c("0","0.25","0.5","0.75","1")) + 
+  facet_wrap(~Species) +
+  theme(legend.position = c(0.85, 0.2), # c(0,0) bottom left, c(1,1) top-right.
+        legend.background = element_rect(fill = NA, colour = NA)) +
+  guides(fill=guide_legend(title="Relative wind")) +
+  theme(text = element_text(size = 24))
+
 
 ggplot(BWA_cat_hist_data) +
   geom_(aes(x=BWA_cat,y=count,fill=BWA_cat)) +
@@ -266,9 +291,10 @@ grid.arrange(wind_vel_hist_BBAL,wind_vel_hist_GHAL,wind_vel_hist_WAAL,wind_vel_h
 
 
 
-m_all_nonaflaps |>
+m_all_nonaflapsbwas |>
   ggplot(aes(Species,wind_vel)) +
   geom_boxplot() + 
+  # add scatter points
   # theme_minimal() +
   ylim(0,30) +
   labs(y="Wind velocity (m/s)",x="Species") +

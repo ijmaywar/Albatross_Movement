@@ -153,15 +153,15 @@ fv_df_cont <- fv_df_cont %>%  mutate(Species = factor(replace(as.character(Speci
 
 # mycolors <- colorRampPalette(brewer.pal(8, "OrRd"))(13)
 
-# Continuous figure for all species
-ggplot(fv_df_cont) +
+# # Continuous figure for all species
+cont_all <- ggplot(fv_df_cont) +
   geom_contour_filled(aes(wind_vel,bwa,z=exp(fitted_global)),binwidth = 100) +
   # geom_contour(aes(wind_vel,bwa,z=exp(fitted_global)),breaks=550) +
   scale_fill_manual(values=inferno(13),drop=FALSE) +
   geom_hline(yintercept=45,linetype=2) +
   geom_hline(yintercept=135,linetype=2) +
   labs(fill = "Flaps/hour", x="Wind Velocity (m/s)", y="Bird-wind angle (degrees)") +
-  facet_wrap(~Species,nrow=1) + 
+  facet_wrap(~Species,nrow=1) +
   theme(text = element_text(size = 24))
 
 # Continuous for SO species
@@ -176,16 +176,16 @@ cont_SO <- ggplot(fv_df_cont %>% filter (Species %in% c("Black-browed","Grey-hea
   theme_bw() +
   theme(text = element_text(size = 24))
 
-# Link for NP species
-ggplot(fv_df_cont %>% filter (Species %in% c("BFAL","LAAL"))) +
-  geom_contour_filled(aes(wind_vel,bwa,z=exp(fitted_global)),binwidth = 100) +
-  # geom_contour(aes(wind_vel,bwa,z=exp(fitted_global)),breaks=550) +
-  scale_fill_manual(values=mycolors,drop=FALSE) +
-  geom_hline(yintercept=45,linetype=2) +
-  geom_hline(yintercept=135,linetype=2) +
-  labs(fill = "Flaps/hour", x="Wind Velocity (m/s)", y="Bird-wind angle (degrees)") +
-  facet_wrap(~Species,nrow=1) + 
-  theme(text = element_text(size = 24))
+# # Link for NP species
+# ggplot(fv_df_cont %>% filter (Species %in% c("BFAL","LAAL"))) +
+#   geom_contour_filled(aes(wind_vel,bwa,z=exp(fitted_global)),binwidth = 100) +
+#   # geom_contour(aes(wind_vel,bwa,z=exp(fitted_global)),breaks=550) +
+#   scale_fill_manual(values=mycolors,drop=FALSE) +
+#   geom_hline(yintercept=45,linetype=2) +
+#   geom_hline(yintercept=135,linetype=2) +
+#   labs(fill = "Flaps/hour", x="Wind Velocity (m/s)", y="Bird-wind angle (degrees)") +
+#   facet_wrap(~Species,nrow=1) + 
+#   theme(text = element_text(size = 24))
 
 # # Add scatter plots of (wind_vel,bwa) data
 # ggplot(fv_df_cont) +
@@ -254,7 +254,7 @@ fv_df_cat <- fv_df_cat %>%  mutate(Species = factor(replace(as.character(Species
                Species = factor(replace(as.character(Species),Species=="LAAL","Laysan")))
 
 # Link: global for all app
-fv_df_cat |>
+cat_all <- fv_df_cat |>
   ggplot(aes(wind_vel,exp(fitted_global),color=BWA_cat)) +
   geom_line() +
   # geom_line(aes(wind_vel,exp(fitted_int+fitted_wind+fitted_id),color=id)) +
@@ -262,11 +262,11 @@ fv_df_cat |>
   guides(color=guide_legend(title="Relative wind condition")) +
   scale_color_manual(values=c("head" = "#440154FF",
                               "cross" = "#1F968BFF",
-                              "tail" = "#FDE725FF")) + 
+                              "tail" = "#FDE725FF")) +
   labs(y="Flaps per hour",x="Wind velocity (m/s)") +
-  # xlim(0,25) + 
+  # xlim(0,25) +
   ylim(0,1500) +
-  facet_wrap(~Species,nrow = 1) + 
+  facet_wrap(~Species,nrow = 1) +
   theme(text = element_text(size = 24))
 
 # Link: global for SO spp
@@ -286,24 +286,26 @@ cat_SO <- fv_df_cat %>% filter(Species %in% c("Black-browed","Grey-headed","Wand
   theme_bw() +
   theme(text = element_text(size = 24))
 
-# Link: global for NP spp
-fv_df_cat %>% filter(Species %in% c("BFAL","LAAL"))|>
-  ggplot(aes(wind_vel,exp(fitted_global),color=BWA_cat)) +
-  geom_line() +
-  # geom_line(aes(wind_vel,exp(fitted_int+fitted_wind+fitted_id),color=id)) +
-  geom_ribbon(mapping=aes(ymin=exp(lower_global),ymax=exp(upper_global),y=NULL,color=BWA_cat),alpha=0.3) +
-  guides(color=guide_legend(title="Relative wind condition")) +
-  scale_color_manual(values=c("head" = "#e74c3c",
-                              "cross" = "#2980b9",
-                              "tail" = "#27ae60")) + 
-  labs(y="Flaps per hour",x="Wind velocity (m/s)") +
-  # xlim(0,25) + 
-  ylim(0,1500) +
-  facet_wrap(~Species,nrow = 1) + 
-  theme(text = element_text(size = 24))
+# # Link: global for NP spp
+# fv_df_cat %>% filter(Species %in% c("BFAL","LAAL"))|>
+#   ggplot(aes(wind_vel,exp(fitted_global),color=BWA_cat)) +
+#   geom_line() +
+#   # geom_line(aes(wind_vel,exp(fitted_int+fitted_wind+fitted_id),color=id)) +
+#   geom_ribbon(mapping=aes(ymin=exp(lower_global),ymax=exp(upper_global),y=NULL,color=BWA_cat),alpha=0.3) +
+#   guides(color=guide_legend(title="Relative wind condition")) +
+#   scale_color_manual(values=c("head" = "#e74c3c",
+#                               "cross" = "#2980b9",
+#                               "tail" = "#27ae60")) + 
+#   labs(y="Flaps per hour",x="Wind velocity (m/s)") +
+#   # xlim(0,25) + 
+#   ylim(0,1500) +
+#   facet_wrap(~Species,nrow = 1) + 
+#   theme(text = element_text(size = 24))
 
 
 
 # Plot figures on top of eaechother --------------------------------------------
 
 cont_SO / cat_SO
+
+cont_all / cat_all

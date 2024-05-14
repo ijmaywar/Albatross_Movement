@@ -71,6 +71,8 @@ for (i in 1:length(birds)) {
   compiled_m$Trip_Type[current_bird_rows] <- birdmeta$Trip_Type
   compiled_m$Aux_TagType[current_bird_rows] <- birdmeta$Aux_TagType
   compiled_m$Body_Mass_Kg[current_bird_rows] <- birdmeta$Body_Mass_Kg
+  compiled_m$Pos_complete[current_bird_rows] <- birdmeta$Pos_complete
+  compiled_m$Aux_complete[current_bird_rows] <- birdmeta$Aux_complete
 }
 
 # Save m
@@ -86,4 +88,5 @@ ECG_birds <- str_sub(ECG_files,11,-12)
 
 compiled_ECG_m <- compiled_m %>% filter(id %in% ECG_birds)
 write.csv(compiled_ECG_m, file=paste0(write_dir,"ECGonly_Compiled_Flaps_HMM_GLS_ECG_Hourly.csv"), row.names=FALSE)
+
 
