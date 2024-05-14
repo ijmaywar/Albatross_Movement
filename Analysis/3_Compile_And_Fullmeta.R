@@ -51,6 +51,8 @@ compiled_m$Field_Season <- NA
 compiled_m$Trip_Type <- NA
 compiled_m$Aux_TagType <- NA
 compiled_m$Body_Mass_Kg <- NA
+compiled_m$Pos_complete <- NA
+compiled_m$Aux_complete <- NA
 
 for (i in 1:length(birds)) {
   current_bird <- birds[i]
