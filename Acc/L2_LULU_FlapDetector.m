@@ -15,8 +15,8 @@ clearvars
 
 %% USER INPUTED VALUES
 
-szn = '2018_2019';
-location = 'Midway'; % Options: 'Bird_Island', 'Midway'
+szn = '2019_2020';
+location = 'Bird_Island'; % Options: 'Bird_Island', 'Midway'
 AccType = 'Technosmart'; % Options: 'Technosmart', 'NRL'
 
 %% Set envrionment
@@ -205,12 +205,22 @@ end
 plot(filtered(1:10000))
 
 %% Plot data
-    range = 10000:20000;
-    filt_fig = figure('visible','on');
+    
+    range = 251:500;
+   %  tiledlayout(1,2)
+%%
+    nexttile
     plot(Acc.DateTime(range),raw(range))
-    hold on
-    plot(Acc.DateTime(range),filtered(range))
-    hold on
     ylabel('z-axis acceleration (g)')
     xlabel('datetime')
+    ylim([-0.5,2.5])
+    fontsize(20,"points")
+%%
+    nexttile
+    plot(Acc.DateTime(range),filtered(range))
+    hold on
+    ylabel('filtered z-axis acceleration')
+    xlabel('datetime')
+    ylim([-2.1,0.1])
     yline(th)
+    fontsize(20,"points")

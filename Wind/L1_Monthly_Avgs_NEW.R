@@ -216,8 +216,8 @@ write_csv(compiled_df,file=paste0(write_dir,"KDEs_compiled_breeding_szn_avgs.csv
 # Plot wind data ----------------------------------------------------------
 
 # Read csv if necessary
-# write_dir <- paste0(GD_dir,"/Analysis/Maywar/Wind_KDEs/")
-# compiled_df <- read_csv(paste0(write_dir,"KDEs_compiled_breeding_szn_avgs.csv"))
+write_dir <- paste0(GD_dir,"/Analysis/Maywar/Wind_KDEs/")
+compiled_df <- read_csv(paste0(write_dir,"KDEs_compiled_breeding_szn_avgs.csv"))
 
 # Re-order spp groups
 compiled_df$Species <- factor(compiled_df$Species, levels=c("BBAL","GHAL","WAAL","BFAL","LAAL"))
@@ -231,7 +231,8 @@ ggplot(compiled_df %>% filter(TripType=="on" | TripType=="off"), aes(x = Species
   labs(title = "", x = "Species", y = "Average WindSpeed") +
   # ylim(0,12) + 
   scale_y_continuous(limits=c(0,12),
-                     breaks=seq(0,12,by=2))
+                     breaks=seq(0,12,by=2)) +
+  theme_bw()
 
 # Create plot for Inc and BG wind data
 ggplot(compiled_df %>% filter(TripType=="Inc" | TripType=="BG"), aes(x = Species, y = WindVel, fill=TripType)) +
@@ -245,4 +246,6 @@ ggplot(compiled_df %>% filter(TripType=="on"), aes(x = Species, y = WindVel)) +
   scale_fill_brewer(palette = "Set2") +
   geom_boxplot() +
   labs(title = "", x = "Species", y = "Average WindSpeed") +
-  ylim(0,12)
+  scale_y_continuous(limits=c(0,12),
+                     breaks=seq(0,12,by=2)) +
+  theme_bw()

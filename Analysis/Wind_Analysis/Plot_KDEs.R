@@ -229,6 +229,19 @@ worldmap <- ne_countries(scale = 'medium', type = 'map_units',
                          returnclass = 'sf')
 fullmeta <- read_excel(paste0(GD_dir,"/metadata/Full_Metadata.xlsx"))
 
+
+# Plot the two study sites -----------------------------------------------------
+
+# ggplot() +
+#   geom_sf(data = st_shift_longitude(st_crop(worldmap,xmin=-120,xmax=120,ymin=-70,ymax=50))) + 
+#   # geom_sf(data = st_crop(worldmap,xmin=-90,xmax=120,ymin=-70,ymax=50)) + 
+#   geom_point(aes(x=-177.3813+360,y=28.19989),size=1) + 
+#   geom_point(aes(x=-38.0658417,y=-54.0101833),size=1) + 
+#   # coord_sf(xlim = c(120,480), ylim = c(-70,50), expand = FALSE) +
+#   theme_bw() +
+#   labs(x="Longitude",y="Latitude")
+
+
 # Plot the SO KDEs -------------------------------------------------------------
 
 GPS_dir <- paste0(GD_dir,"L4/Bird_Island/Tag_Data/GPS/")
@@ -244,18 +257,58 @@ crs(WAAL_Polygon) <- crs(worldmap)
 
 min_lon <- as.numeric(-90)
 max_lon <- as.numeric(-10)
-min_lat <- as.numeric(-70)
-max_lat <- as.numeric(-35)
+min_lat <- as.numeric(-80)
+max_lat <- as.numeric(-30)
 
 ggplot() +
   geom_sf(data = (worldmap)) + 
-  geom_sf(data = st_as_sf(BBAL_Polygon),fill=NA,color="Blue",linewidth=1,alpha=0.5) + 
-  geom_sf(data = st_as_sf(GHAL_Polygon),fill=NA,color="Green",linewidth=1,alpha=0.5) + 
+  geom_sf(data = st_as_sf(BBAL_Polygon),fill=NA,color="Blue",linewidth=1,alpha=0.5) +
+  geom_sf(data = st_as_sf(GHAL_Polygon),fill=NA,color="Green",linewidth=1,alpha=0.5) +
   geom_sf(data = st_as_sf(WAAL_Polygon),fill=NA,color="Black",linewidth=1,alpha=0.5) +
   coord_sf(xlim = c(min_lon,max_lon), ylim = c(min_lat,max_lat), expand = FALSE) +
-  # geom_point(aes(x=-38.0658417,y=-54.0101833),size=1) + 
+  geom_point(aes(x=-38.0658417,y=-54.0101833),size=5,color="Blue") + 
   theme_bw() +
   labs(x="Longitude",y="Latitude")
+
+
+
+
+
+
+
+# Plot the NP KDEs -------------------------------------------------------------
+
+GPS_dir <- paste0(GD_dir,"L4/Midway/Tag_Data/GPS/")
+setwd(GPS_dir)
+KDEs <- list.dirs(recursive = FALSE) # GPS files 
+KDEs <- str_sub(KDEs,3,)
+BFAL_Polygon <- vect(paste0("BFAL_all_KDE_95/BFAL_all_KDE_95",".shp"))
+crs(BFAL_Polygon) <- crs(worldmap)
+LAAL_Polygon <- vect(paste0("LAAL_all_KDE_95/LAAL_all_KDE_95",".shp"))
+crs(LAAL_Polygon) <- crs(worldmap)
+
+ggplot() +
+  geom_sf(data = st_shift_longitude(st_crop(worldmap,xmin=-120,xmax=120,ymin=10,ymax=70))) + 
+  geom_sf(data = sf::st_shift_longitude(st_as_sf(BFAL_Polygon)),fill=NA,color="Blue",linewidth=1,alpha=0.5) + 
+  geom_sf(data = sf::st_shift_longitude(st_as_sf(LAAL_Polygon)),fill=NA,color="Green",linewidth=1,alpha=0.5) + 
+  coord_sf(xlim = c(120,240), ylim = c(10,70), expand = FALSE) +
+  geom_point(aes(x=-177.3813+360,y=28.19989),size=1) + 
+  # geom_path(data=Midway_GPS_compiled_complete %>% filter(substr(id,1,4)=="BFAL"),aes(x=lon,y=lat,group=tripID),linewidth=0.1) +
+  theme_bw() +
+  labs(x="Longitude",y="Latitude")
+
+
+
+Midway_GPS_compiled_complete <- read_csv(paste0(GD_dir,"L2/Midway/Tag_Data/GPS/compiled_2018_2023/compiled_complete/Midway_compiled_complete.csv"))
+Midway_GPS_compiled_complete$datetime <- as.POSIXlt(Midway_GPS_compiled_complete$datetime,format="%Y-%m-%d %H:%M:%S",tz="GMT")
+
+
+
+
+
+
+
+
 
 
 
@@ -272,20 +325,27 @@ times_t1 <- time(wind_t1)  # stores times from each file
 all_times <- unique(times_t1) # find unique values because there should be two of every datetime (for u and v)
 all_times_num <- as.numeric(all_times)
 
+grid_res <- 2.5
+
+min_lon <- as.numeric(-90)
+max_lon <- as.numeric(-10)
+min_lat <- as.numeric(-70)
+max_lat <- as.numeric(-30)
+
 # Create a grid with 0.25-degree spacing
-grid <- expand.grid(lon = seq(min_lon,max_lon,0.25), lat = seq(min_lat,max_lat,0.25))
+grid <- expand.grid(lon = seq(min_lon,max_lon,grid_res), lat = seq(min_lat,max_lat,grid_res))
 grid_sf <- st_as_sf(grid, coords = c("lon", "lat"), crs = 4326)
 
 # Create a grid of polygons
 grid_polys <- st_make_grid(
   st_as_sfc(st_bbox(grid_sf)),
-  cellsize = c(0.25,0.25),  # Grid cell size based on latitude and longitude intervals
+  cellsize = c(grid_res,grid_res),  # Grid cell size based on latitude and longitude intervals
   what = "polygons"
 )
 
 # Convert the grid to a data frame for easier manipulation
 grid_polys_df <- st_sf(as.data.frame(grid_polys))
-grid_polys_df$WindSpeed <- NA
+
 
 for (j in 1:nrow(grid_polys_df)) {
   
@@ -305,10 +365,10 @@ for (j in 1:nrow(grid_polys_df)) {
   monthly_avgs$datetime <- time(wind_t1)
   
   # Sometimes there are NA values for some reason...
-  if (sum(is.na(monthly_avgs))>0) {
-    disp("There is an NA value")
-    break
-  }
+  # if (sum(is.na(monthly_avgs))>0) {
+  #   disp("There is an NA value")
+  #   break
+  # }
   
   # Remove unwanted mth/yrs...
   if (location == "Bird_Island") {
@@ -323,24 +383,27 @@ for (j in 1:nrow(grid_polys_df)) {
   # # Trim data so that only the months you are interested are kept
   for (mth_idx in 1:12) {
     current_mth_avg <- monthly_avgs %>% filter(month(datetime) == (mth_idx))
-    grid_polys_df <- cbind(grid_polys_df,mean(current_mth_avg$speed))
+    grid_polys_df[j,mth_idx+3] <- mean(current_mth_avg$speed)
   }
   
 }
 
+colnames(grid_polys_df) <- c("geometry","centroid_lon","centroid_lat",
+                             "Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec")
+
 
 # WRITE THIS FUCKING FILE BECAUSE IT TAKES FOREVER TO CREATE
-write_csv(grid_polys_df,paste0(GD_dir,"Analysis/Maywar/Wind_KDEs/SO_grid_polys_df.csv"))
+# write_csv(grid_polys_df,paste0(GD_dir,"Analysis/Maywar/Wind_KDEs/SO_grid_polys_df.csv"))
 
-# Wind in October
+# Wind in Jan
 ggplot() +
-  geom_sf(data = (worldmap)) + 
-  geom_sf(grid_polys_df,mapping=aes(geometry=geometry,fill=WindSpeed),color=NA,alpha=1) +
+  geom_sf(grid_polys_df,mapping=aes(geometry=geometry,fill=Jan),color=NA,alpha=1) +
   scale_fill_gradient(low = "white", high = "red", na.value = NA,
                       limits = c(0,15),
                       breaks = c(0,5,10,15),
                       labels = c("0","5","10","15"),
                       name = "Wind velocity (m/s)") +
+  geom_sf(data = (worldmap)) + 
   geom_sf(data = st_as_sf(BBAL_Polygon),fill=NA,color="Blue",linewidth=1,alpha=0.5) + 
   geom_sf(data = st_as_sf(GHAL_Polygon),fill=NA,color="Green",linewidth=1,alpha=0.5) + 
   geom_sf(data = st_as_sf(WAAL_Polygon),fill=NA,color="Black",linewidth=1,alpha=0.5) +
@@ -349,32 +412,6 @@ ggplot() +
   theme_bw() +
   labs(x="Longitude",y="Latitude")
 
-
-# Plot the NP KDEs -------------------------------------------------------------
-
-GPS_dir <- paste0(GD_dir,"L4/Midway/Tag_Data/GPS/")
-setwd(GPS_dir)
-KDEs <- list.dirs(recursive = FALSE) # GPS files 
-KDEs <- str_sub(KDEs,3,)
-BFAL_Polygon <- vect(paste0("BFAL_all_KDE_95/BFAL_all_KDE_95",".shp"))
-crs(BFAL_Polygon) <- crs(worldmap)
-LAAL_Polygon <- vect(paste0("LAAL_all_KDE_95/LAAL_all_KDE_95",".shp"))
-crs(LAAL_Polygon) <- crs(worldmap)
-
-ggplot() +
-  geom_sf(data = st_shift_longitude(st_crop(worldmap,xmin=-120,xmax=120,ymin=10,ymax=50))) + 
-  geom_sf(data = sf::st_shift_longitude(st_as_sf(BFAL_Polygon)),fill=NA,color="Blue",linewidth=1,alpha=0.5) + 
-  geom_sf(data = sf::st_shift_longitude(st_as_sf(LAAL_Polygon)),fill=NA,color="Green",linewidth=1,alpha=0.5) + 
-  coord_sf(xlim = c(120,240), ylim = c(20,50), expand = FALSE) +
-  geom_point(aes(x=-177.3813+360,y=28.19989),size=1) + 
-  geom_path(data=Midway_GPS_compiled_complete %>% filter(substr(id,1,4)=="BFAL"),aes(x=lon,y=lat,group=tripID),linewidth=0.1) +
-  theme_bw() +
-  labs(x="Longitude",y="Latitude")
-
-
-
-Midway_GPS_compiled_complete <- read_csv(paste0(GD_dir,"L2/Midway/Tag_Data/GPS/compiled_2018_2023/compiled_complete/Midway_compiled_complete.csv"))
-Midway_GPS_compiled_complete$datetime <- as.POSIXlt(Midway_GPS_compiled_complete$datetime,format="%Y-%m-%d %H:%M:%S",tz="GMT")
 
 # Sanity check - plot all GPS tracks for BFAL
 ggplot() +

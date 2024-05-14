@@ -34,6 +34,8 @@ library(gridExtra)
 library(patchwork)
 library(gratia)
 library(readr)
+library(viridis)
+library(grid)
 
 # Set Environment ---------------------------------------------------------
 
@@ -69,9 +71,9 @@ m_all$datetime <- as.POSIXct(m_all$datetime,format="%Y-%m-%d %H:%M:%S",tz="GMT")
 # m_all <- m_all %>% dplyr::select(-lon,-lat,-u,-v,-datetime,-wind_dir,-bird_dir,-bird_vel)
 
 # Categorize BWAs
-m_all <- m_all %>% mutate(BWA_cat = case_when(bwa<=45 ~ "tail",
-                                              bwa>45 & bwa<135 ~ "cross",
-                                              bwa>=135 ~ "head"))
+m_all <- m_all %>% mutate(BWA_cat = case_when(bwa<60 ~ "tail",
+                                              bwa>=60 & bwa<120 ~ "cross",
+                                              bwa>=120 ~ "head"))
 
 # Turn variables into factors
 m_all$id <- as.factor(m_all$id)
@@ -86,20 +88,224 @@ m_all$HMM_3S_state <- as.factor(m_all$HMM_3S_state)
 
 # Re-order Species groups
 m_all$Species <- factor(m_all$Species , levels=c("BBAL", "GHAL", "WAAL", "BFAL", "LAAL"))
-
-# Split data between species
-m_BBAL <- m_all %>% filter(Species=="BBAL")
-m_GHAL <- m_all %>% filter(Species=="GHAL")
-m_WAAL <- m_all %>% filter(Species=="WAAL")
-m_LAAL <- m_all %>% filter(Species=="LAAL")
-m_BFAL <- m_all %>% filter(Species=="BFAL")
+m_all$BWA_cat <- factor(m_all$BWA_cat , levels=c("head", "cross", "tail"))
 
 m_all_nonaflaps <- m_all %>% drop_na(flaps)
-m_BBAL_nonaflaps <- m_all_nonaflaps %>% filter(Species=="BBAL")
-m_GHAL_nonaflaps <- m_all_nonaflaps %>% filter(Species=="GHAL")
-m_WAAL_nonaflaps <- m_all_nonaflaps %>% filter(Species=="WAAL")
-m_BFAL_nonaflaps <- m_all_nonaflaps %>% filter(Species=="BFAL")
-m_LAAL_nonaflaps <- m_all_nonaflaps %>% filter(Species=="LAAL")
+m_all_nonaflapsbwas <- m_all_nonaflaps %>% drop_na(bwa)
+
+
+
+# Box plots -------------------------------------------------------------
+
+cat_hist_colors <- c("#440154FF","#1F968BFF","#FDE725FF")
+
+BWA_cat_hist_data <- as.data.frame(m_all_nonaflapsbwas %>% group_by(Species,id,BWA_cat) %>% 
+  summarize(count=n()) %>% 
+  mutate(proportion = count/sum(count),
+         Species = factor(replace(as.character(Species),Species=="BBAL","Black-browed")),
+         Species = factor(replace(as.character(Species),Species=="GHAL","Grey-headed")),
+         Species = factor(replace(as.character(Species),Species=="WAAL","Wandering")),
+         Species = factor(replace(as.character(Species),Species=="BFAL","Black-footed")),
+         Species = factor(replace(as.character(Species),Species=="LAAL","Laysan"))))
+  
+
+ggplot(BWA_cat_hist_data) +
+  geom_density(aes(x=proportion,fill=BWA_cat)) +
+  scale_fill_manual(values=cat_hist_colors) + 
+  labs(y="Density") +
+  theme_bw() + 
+  scale_x_continuous(name ="Proportion of time", breaks=c(0,0.25,0.5,0.75,1),
+                     labels = c("0","0.25","0.5","0.75","1")) + 
+  facet_wrap(~Species) +
+  theme(legend.position = c(0.85, 0.2), # c(0,0) bottom left, c(1,1) top-right.
+        legend.background = element_rect(fill = NA, colour = NA)) +
+  guides(fill=guide_legend(title="Relative wind")) +
+  theme(text = element_text(size = 24))
+
+ggplot(BWA_cat_hist_data) +
+  geom_(aes(x=BWA_cat,y=count,fill=BWA_cat)) +
+  scale_fill_manual(values=cat_hist_colors) + 
+  # labs(x="Relative wind",y="Proportion of time") +
+  theme_bw() + 
+  theme(text = element_text(size = 24)) +
+  facet_wrap(~Species)
+
+
+# Pie graphic --------------------------------------------------
+
+pie_colors <- c("#440154FF","#1F968BFF","#FDE725FF","#1F968BFF")
+ggplot(data.frame(cat=factor(c("head","cross","tail","cross_2"),levels=c("head","cross","tail","cross_2")),
+                  value=c(6,3,6,3)),
+       aes(x="",y=value,fill=cat)) +
+  geom_bar(width=1,stat="identity") +
+  coord_polar(theta="y",start=60*(pi/180)) +
+  scale_fill_manual(values=pie_colors) +
+  theme_void() +
+  guides(fill=FALSE)
+
+
+w_rel_polar_BBAL <- ggplot(m_all_nonaflaps %>% filter(Species=="BBAL"),aes(x=w_rel)) +
+  geom_histogram(aes(y=after_stat(count/sum(count))),breaks=seq(0,360,by=10)-5,
+                 fill=w_rel_colors) +
+  labs(y="Proportion of time",x="Relative wind angle") +
+  ggtitle("BBAL") +
+  theme_bw() +
+  ylim(0,0.06) +
+  coord_polar(start=-0.0873)
+w_rel_polar_GHAL <- ggplot(m_all_nonaflaps %>% filter(Species=="GHAL"),aes(x=w_rel)) +
+  geom_histogram(aes(y=after_stat(count/sum(count))),breaks=seq(0,360,by=10)-5,
+                 fill=w_rel_colors) +
+  labs(y="Proportion of time",x="Relative wind angle") +
+  ggtitle("GHAL") +
+  theme_bw() +
+  ylim(0,0.06) +
+  coord_polar(start=-0.0873)
+w_rel_polar_WAAL <- ggplot(m_all_nonaflaps %>% filter(Species=="WAAL"),aes(x=w_rel)) +
+  geom_histogram(aes(y=after_stat(count/sum(count))),breaks=seq(0,360,by=10)-5,
+                 fill=w_rel_colors) +
+  labs(y="Proportion of time",x="Relative wind angle") +
+  ggtitle("WAAL") +
+  theme_bw() +
+  ylim(0,0.06) +
+  coord_polar(start=-0.0873)
+w_rel_polar_BFAL <- ggplot(m_all_nonaflaps %>% filter(Species=="BFAL"),aes(x=w_rel)) +
+  geom_histogram(aes(y=after_stat(count/sum(count))),breaks=seq(0,360,by=10)-5,
+                 fill=w_rel_colors) +
+  labs(y="Proportion of time",x="Relative wind angle") +
+  ggtitle("BFAL") +
+  theme_bw() +
+  ylim(0,0.06) +
+  coord_polar(start=-0.0873)
+w_rel_polar_LAAL <- ggplot(m_all_nonaflaps %>% filter(Species=="LAAL"),aes(x=w_rel)) +
+  geom_histogram(aes(y=after_stat(count/sum(count))),breaks=seq(0,360,by=10)-5,
+                 fill=w_rel_colors) +
+  labs(y="Proportion of time",x="Relative wind angle") +
+  ggtitle("LAAL") +
+  theme_bw() +
+  ylim(0,0.06) +
+  coord_polar(start=-0.0873)
+
+grid.arrange(w_rel_polar_BBAL,w_rel_polar_GHAL,w_rel_polar_WAAL,w_rel_polar_BFAL,w_rel_polar_LAAL,
+             nrow=2)
+
+
+
+
+ggplot(m_all_nonaflaps %>% filter(Species=="LAAL"),aes(x=w_rel)) +
+  geom_histogram(aes(y=after_stat(count/sum(count))),breaks=seq(0,360,by=10)-5,
+                 fill=w_rel_colors) +
+  labs(y="Proportion of time",x="Relative wind angle") +
+  ggtitle("LAAL") +
+  theme_bw() +
+  ylim(0,0.06) +
+  coord_polar(start=-0.0873)
+
+w_rel_colors = c(rep("#e74c3c",5),rep("#2980b9",9),rep("#27ae60",9),rep("#2980b9",9),rep("#e74c3c",4))
+
+
+
+
+  
+
+
+polar_plot_bar <- ggplot(data, aes(x = categories, y = Freq)) +
+  # geom_bar(stat = "identity", width = 1, fill = "skyblue") +
+  geom_bar(stat="identity", alpha=1, fill="black") + 
+  labs(main="Polar plot of wind angle relative to bird heading",y="Frequency",x="") +
+  coord_polar(start = 0)  # Adjust the starting angle if needed
+# scale_y_continuous(limits=c(0,1200))
+
+seq(0,360,by=10)-5
+
+
+
+
+
+
+
+
+wind_vel_hist_BBAL <- ggplot(m_all_nonaflaps %>% filter(Species=="BBAL"),aes(x=wind_vel)) +
+  geom_histogram(aes(y=after_stat(count/sum(count))),bins=20) +
+  labs(y="Proportion of time",x="Wind velocity (m/s)") +
+  ggtitle("BBAL") +
+  theme_bw() +
+  ylim(0,0.15)
+wind_vel_hist_GHAL <- ggplot(m_all_nonaflaps %>% filter(Species=="GHAL"),aes(x=wind_vel)) +
+  geom_histogram(aes(y=after_stat(count/sum(count))),bins=20) +
+  labs(y="Proportion of time",x="Wind velocity (m/s)") +
+  ggtitle("GHAL") +
+  theme_bw() +
+  ylim(0,0.15)
+wind_vel_hist_WAAL <- ggplot(m_all_nonaflaps %>% filter(Species=="WAAL"),aes(x=wind_vel)) +
+  geom_histogram(aes(y=after_stat(count/sum(count))),bins=20) +
+  labs(y="Proportion of time",x="Wind velocity (m/s)") +
+  ggtitle("WAAL") +
+  theme_bw() +
+  ylim(0,0.15)
+wind_vel_hist_BFAL <- ggplot(m_all_nonaflaps %>% filter(Species=="BFAL"),aes(x=wind_vel)) +
+  geom_histogram(aes(y=after_stat(count/sum(count))),bins=20) +
+  labs(y="Proportion of time",x="Wind velocity (m/s)") +
+  ggtitle("BFAL") +
+  theme_bw() +
+  ylim(0,0.15)
+wind_vel_hist_LAAL <- ggplot(m_all_nonaflaps %>% filter(Species=="LAAL"),aes(x=wind_vel)) +
+  geom_histogram(aes(y=after_stat(count/sum(count))),bins=20) +
+  labs(y="Proportion of time",x="Wind velocity (m/s)") +
+  ggtitle("LAAL") +
+  theme_bw() +
+  ylim(0,0.15)
+
+grid.arrange(wind_vel_hist_BBAL,wind_vel_hist_GHAL,wind_vel_hist_WAAL,wind_vel_hist_BFAL,wind_vel_hist_LAAL,
+             nrow=2)
+
+
+
+
+
+
+
+
+
+m_all_nonaflaps |>
+  ggplot(aes(Species,wind_vel)) +
+  geom_boxplot() + 
+  # theme_minimal() +
+  ylim(0,30) +
+  labs(y="Wind velocity (m/s)",x="Species") +
+  ggtitle("Wind velocities experienced") +
+  theme_bw()
+
+m_all_nonaflaps |>
+  ggplot(aes(wind_vel)) +
+  geom_histogram() + 
+  # theme_minimal() +
+  # ylim(0,30) +
+  labs(y="Wind velocity (m/s)",x="Species") +
+  ggtitle("Wind velocities experienced") +
+  theme_bw() + 
+  facet_wrap(~Species)
+
+m_all_nonaflaps |>
+  ggplot(aes(Species,bwa)) +
+  geom_violin() + 
+  # theme_minimal() +
+  ylim(0,180) +
+  labs(y="Relative wind angle (degrees)",x="Species")
+
+m_all_nonaflaps %>% filter(HMM_3S_state!=1) |>
+  ggplot(aes(Species,flaps)) +
+  geom_violin() + 
+  # theme_minimal() +
+  ylim(0,2000) +
+  labs(y="Flaps/hour",x="Species")
+
+
+
+
+
+
+
+
 
 # Downsampling Bird_Island to Midway --------------------------------------
 
@@ -118,28 +324,6 @@ downsampled_ids <- c(sample(unique(m_BBAL_nonaflaps$id),
                      unique(m_BFAL_nonaflaps$id))
 ds_m_all_nonaflaps <- m_all_nonaflaps %>% filter(id %in% downsampled_ids)
 
-# Box plots -------------------------------------------------------------
-
-m_all_nonaflaps |>
-  ggplot(aes(Species,wind_vel)) +
-  geom_violin() + 
-  # theme_minimal() +
-  ylim(0,30) +
-  labs(y="Wind velocity (m/s)",x="Species")
-
-m_all_nonaflaps |>
-  ggplot(aes(Species,bwa)) +
-  geom_violin() + 
-  # theme_minimal() +
-  ylim(0,180) +
-  labs(y="Bird-wind angle (degrees)",x="Species")
-
-m_all_nonaflaps %>% filter(HMM_3S_state!=1) |>
-  ggplot(aes(Species,flaps)) +
-  geom_violin() + 
-  # theme_minimal() +
-  ylim(0,2000) +
-  labs(y="Flaps/hour",x="Species")
 
 
 # Downsampled plots
@@ -156,7 +340,7 @@ ds_m_all_nonaflaps |>
   geom_violin() + 
   # theme_minimal() +
   ylim(0,180) +
-  labs(y="Bird-wind angle (degrees)",x="Species")
+  labs(y="Relative wind angle (degrees)",x="Species")
 
 ds_m_all_nonaflaps %>% filter(HMM_3S_state!=1) |>
   ggplot(aes(Species,flaps)) +

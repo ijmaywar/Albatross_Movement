@@ -12,11 +12,25 @@ rm(list = ls())
 
 # User Inputted Values -----------------------------------------------------
 
-location = 'Midway'
-szn = "2018_2019"
+location = 'Bird_Island'
+szn = "2019_2020"
 
 locations = c("Bird_Island", "Midway")
 min_peak_prob = 0 # What was the min_peak_prob used to create 600s data?
+
+# User Functions ----------------------------------------------------------
+wrap360 <- function(lon) {lon360<-ifelse(lon<0,lon+360,lon);return(lon360)}
+
+Lon360to180 <- function(lon){
+  ((lon + 180) %% 360) - 180
+}
+
+# Both bearings must be [0,360)
+bearingAngle <- function(bird_bearing,wind_bearing) {
+  LHturn <- wrap360(bird_bearing - wind_bearing)
+  RHturn <- wrap360(wind_bearing - bird_bearing)
+  return(pmin(LHturn,RHturn))
+}
 
 # Load Packages -----------------------------------------------------------
 
@@ -26,6 +40,7 @@ library(readxl)
 library(foreach)
 library(lubridate)
 library(purrr)
+library(geosphere)
 
 for (location in locations) {
   if (location == "Bird_Island") {
@@ -107,6 +122,15 @@ for (i in 1:length(files)) {
         m_hourly$GLS_state[j] <- "wet"
       }
     }
+  }
+  
+  # Re-calculate bird_dir, bird_vel, bwa, and w_rel
+  for (trip in unique(m_hourly$tripID)) {
+    m_hourly$bird_vel <- c(distHaversine(m_hourly %>% dplyr::select(lon,lat))/1000,NA)
+    m_hourly$bird_dir <- geosphere::bearing(m_hourly %>% dplyr::select(lon,lat))
+    m_hourly$bird_dir <- m_hourly(mij$bird_dir) # set bearing to [0,360)
+    m_hourly$bwa <- bearingAngle(m_hourly$bird_dir,wrap360(m_hourly$wind_dir-180)) # [0,180) degrees
+    m_hourly$w_rel <- (m_hourly$bird_dir+(360-wrap360(m_hourly$wind_dir-180))) %% 360
   }
   
   m_hr_trim <- m_hourly %>% filter(trim == 0)

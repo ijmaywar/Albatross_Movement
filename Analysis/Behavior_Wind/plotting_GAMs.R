@@ -56,9 +56,9 @@ m_all <- m_all %>% mutate(Trip_Type = factor(replace(as.character(Trip_Type),Tri
 m_all$datetime <- as.POSIXlt(m_all$datetime,format="%Y-%m-%d %H:%M:%S",tz="GMT")
 
 # Categorize BWAs
-m_all <- m_all %>% mutate(BWA_cat = case_when(bwa<=45 ~ "tail",
-                                              bwa>45 & bwa<135 ~ "cross",
-                                              bwa>=135 ~ "head"))
+m_all <- m_all %>% mutate(BWA_cat = case_when(bwa<60 ~ "tail",
+                                              bwa>=60 & bwa<120 ~ "cross",
+                                              bwa>=120 ~ "head"))
 
 # Turn variables into factors
 m_all$id <- as.factor(m_all$id)
@@ -71,27 +71,17 @@ m_all$BWA_cat <- as.factor(m_all$BWA_cat)
 
 # Re-order Species groups
 m_all$Species <- factor(m_all$Species , levels=c("BBAL", "GHAL", "WAAL", "BFAL", "LAAL"))
-
-# Split data between species
-m_BBAL <- m_all %>% filter(Species=="BBAL")
-m_GHAL <- m_all %>% filter(Species=="GHAL")
-m_WAAL <- m_all %>% filter(Species=="WAAL")
-m_LAAL <- m_all %>% filter(Species=="LAAL")
-m_BFAL <- m_all %>% filter(Species=="BFAL")
+m_all$BWA_cat <- factor(m_all$BWA_cat , levels=c("head", "cross", "tail"))
 
 # df without the flaps==NA rows:
 m_all_nonaflaps <- m_all %>% drop_na(flaps)
-m_BBAL_nonaflaps <- m_all_nonaflaps %>% filter(Species=="BBAL")
-m_GHAL_nonaflaps <- m_all_nonaflaps %>% filter(Species=="GHAL")
-m_WAAL_nonaflaps <- m_all_nonaflaps %>% filter(Species=="WAAL")
-m_BFAL_nonaflaps <- m_all_nonaflaps %>% filter(Species=="BFAL")
-m_LAAL_nonaflaps <- m_all_nonaflaps %>% filter(Species=="LAAL")
+m_all_nonaflapsbwas <- m_all_nonaflaps %>% drop_na(bwa)
 
 # Sample stats -----------------------------------------------------------------
 
 nrow(m_all)
-m_all %>% count(Species)
-m_all %>% group_by(Species) %>% summarize(unique_IDs=n_distinct(id))
+m_all_nonaflaps %>% count(Species)
+m_all_nonaflaps %>% group_by(Species) %>% summarize(unique_IDs=n_distinct(id))
 
 # stats on the performance of HMM in relation to GLS
 m_all %>% group_by(GLS_state,HMM_2S_state) %>% summarize(count=n())
@@ -99,6 +89,7 @@ m_all %>% group_by(GLS_state,HMM_3S_state) %>% summarize(count=n())
 
 # stats on the performance of OWB in relation to GLS
 m_all %>% group_by(GLS_state,OWB_state) %>% summarize(count=n())
+
 
 # Flaps/hour vs wind_vel (continuous) after removing HMM_3S_state == 1 ----------------------
 # WITHOUT A WIND TERM ON ITS OWN.
@@ -109,12 +100,9 @@ GAM_list <- list()
 
 for (spp in c("BBAL", "GHAL", "WAAL", "BFAL", "LAAL")) {
   
-  m_current <- m_all %>% filter((HMM_3S_state != 1) & (Species == spp))
+  m_current <- m_all_nonaflapsbwas %>% filter((HMM_3S_state != 1) & (Species == spp))
   
-  current_GAM <- gam(formula = flaps ~
-                       ti(wind_vel,k=fac_k,bs='tp') +
-                       ti(bwa,k=fac_k,bs='tp') +
-                       ti(wind_vel,bwa,k=c(fac_k,fac_k),bs=c('tp','tp')) + 
+  current_GAM <- gam(formula = flaps ~ te(wind_vel,bwa,k=c(fac_k,fac_k),bs=c('tp','tp')) + 
                        s(id,k=length(unique(m_current$id)),bs="re"),
                      data = m_current,
                      family = "poisson",
@@ -129,15 +117,11 @@ for (spp in c("BBAL", "GHAL", "WAAL", "BFAL", "LAAL")) {
   link_df <- cbind(current_ds,
                    rep(spp,nrow(current_ds)),
                    fitted_values(current_GAM, data = current_ds, scale = "link",
-                                 terms = c("(Intercept)","ti(wind_vel)","ti(bwa)","ti(wind_vel,bwa)","s(id)"))[,4:7],
+                                 terms = c("(Intercept)","te(wind_vel,bwa)","s(id)"))[,4:7],
                    fitted_values(current_GAM, data = current_ds, scale = "link",
-                                 terms = c("(Intercept)","ti(wind_vel)","ti(bwa)","ti(wind_vel,bwa)"))[,4:7],
+                                 terms = c("(Intercept)","te(wind_vel,bwa)"))[,4:7],
                    fitted_values(current_GAM, data = current_ds, scale = "link",
-                                 terms = c("ti(wind_vel)"))[,4:7],
-                   fitted_values(current_GAM, data = current_ds, scale = "link",
-                                 terms = c("ti(bwa)"))[,4:7],
-                   fitted_values(current_GAM, data = current_ds, scale = "link",
-                                 terms = c("ti(wind_vel,bwa)"))[,4:7],
+                                 terms = c("te(wind_vel,bwa)"))[,4:7],
                    fitted_values(current_GAM, data = current_ds, scale = "link",
                                  terms = c("(Intercept)"))[,4:7],
                    fitted_values(current_GAM, data = current_ds, scale = "link",
@@ -146,57 +130,70 @@ for (spp in c("BBAL", "GHAL", "WAAL", "BFAL", "LAAL")) {
   colnames(link_df) <- c("wind_vel","id","bwa","Species",
                          "fitted_all","se_all","lower_all","upper_all",
                          "fitted_global","se_global","lower_global","upper_global",
-                         "fitted_windvel","se_windvel","lower_windvel","upper_windvel",
-                         "fitted_bwa","se_bwa","lower_bwa","upper_bwa",
                          "fitted_intrxn","se_intrxn","lower_intrxn","upper_intrxn",
                          "fitted_int","se_int","lower_int","upper_int",
                          "fitted_id","se_id","lower_id","upper_id")
   
   if (spp == "BBAL") {
     ds_df_cont <- current_ds
-    fv_df_cont_link <- link_df
+    fv_df_cont <- link_df
   } else {
     ds_df_cont <- rbind(ds_df_cont,current_ds)
-    fv_df_cont_link <- rbind(fv_df_cont_link,link_df)
+    fv_df_cont <- rbind(fv_df_cont,link_df)
   }
 }
 
-fv_df_cont_link$Species <- factor(fv_df_cont_link$Species , levels=c("BBAL", "GHAL", "WAAL", "BFAL", "LAAL"))
+fv_df_cont$Species <- factor(fv_df_cont$Species , levels=c("BBAL", "GHAL", "WAAL", "BFAL", "LAAL"))
 
-mycolors <- colorRampPalette(brewer.pal(8, "OrRd"))(18)
-# Link
-ggplot(fv_df_cont_link) +
+fv_df_cont <- fv_df_cont %>%  mutate(Species = factor(replace(as.character(Species),Species=="BBAL","Black-browed")),
+                                   Species = factor(replace(as.character(Species),Species=="GHAL","Grey-headed")),
+                                   Species = factor(replace(as.character(Species),Species=="WAAL","Wandering")),
+                                   Species = factor(replace(as.character(Species),Species=="BFAL","Black-footed")),
+                                   Species = factor(replace(as.character(Species),Species=="LAAL","Laysan")))
+
+# mycolors <- colorRampPalette(brewer.pal(8, "OrRd"))(13)
+
+# Continuous figure for all species
+ggplot(fv_df_cont) +
+  geom_contour_filled(aes(wind_vel,bwa,z=exp(fitted_global)),binwidth = 100) +
+  # geom_contour(aes(wind_vel,bwa,z=exp(fitted_global)),breaks=550) +
+  scale_fill_manual(values=inferno(13),drop=FALSE) +
+  geom_hline(yintercept=45,linetype=2) +
+  geom_hline(yintercept=135,linetype=2) +
+  labs(fill = "Flaps/hour", x="Wind Velocity (m/s)", y="Bird-wind angle (degrees)") +
+  facet_wrap(~Species,nrow=1) + 
+  theme(text = element_text(size = 24))
+
+# Continuous for SO species
+cont_SO <- ggplot(fv_df_cont %>% filter (Species %in% c("Black-browed","Grey-headed","Wandering"))) +
+  geom_contour_filled(aes(wind_vel,bwa,z=exp(fitted_global)),binwidth = 100) +
+  # geom_contour(aes(wind_vel,bwa,z=exp(fitted_global)),breaks=550) +
+  scale_fill_manual(values=inferno(13),drop=FALSE) +
+  geom_hline(yintercept=60,linetype=2,color="white") +
+  geom_hline(yintercept=120,linetype=2,color="white") +
+  labs(fill = "Flaps/hour", x="Wind Velocity (m/s)", y="Bird-wind angle (degrees)") +
+  facet_wrap(~Species,nrow=1) + 
+  theme_bw() +
+  theme(text = element_text(size = 24))
+
+# Link for NP species
+ggplot(fv_df_cont %>% filter (Species %in% c("BFAL","LAAL"))) +
   geom_contour_filled(aes(wind_vel,bwa,z=exp(fitted_global)),binwidth = 100) +
   # geom_contour(aes(wind_vel,bwa,z=exp(fitted_global)),breaks=550) +
   scale_fill_manual(values=mycolors,drop=FALSE) +
   geom_hline(yintercept=45,linetype=2) +
   geom_hline(yintercept=135,linetype=2) +
   labs(fill = "Flaps/hour", x="Wind Velocity (m/s)", y="Bird-wind angle (degrees)") +
-  facet_wrap(~Species,nrow=1)
+  facet_wrap(~Species,nrow=1) + 
+  theme(text = element_text(size = 24))
 
-# Add scatter plots of (wind_vel,bwa) data
-ggplot(fv_df_cont_link) +
-  geom_point(data = m_all %>% filter(HMM_3S_state!=1),aes(x=wind_vel,y=bwa),size=0.001,alpha=1) + 
-  geom_contour_filled(aes(wind_vel,bwa,z=exp(fitted_global)),binwidth = 100,alpha=0.9) +
-  scale_fill_manual(values=mycolors,drop=FALSE) +
-  labs(fill = "Flaps/hour", x="Wind Velocity (m/s)", y="Bird-wind angle (degrees)") +
-  facet_wrap(~Species)
-
-# Plot ti(wind_vel) with confidence intervals
-ggplot(fv_df_cont_link) +
-  geom_ribbon(aes(x=wind_vel,ymin=lower_windvel,ymax=upper_windvel,y=NULL),alpha=0.3,color='yellow') +
-  geom_line(aes(wind_vel,fitted_windvel)) +
-  labs(fill = "Flaps/hour", x="Wind Velocity (m/s)", y="GAM effect") +
-  ylim(-3,1) +
-  facet_wrap(~Species)
-
-# Plot ti(bwa) with confidence intervals
-ggplot(fv_df_cont_link) +
-  geom_ribbon(aes(x=bwa,ymin=lower_bwa,ymax=upper_bwa,y=NULL),alpha=0.3,color='yellow') +
-  geom_line(aes(bwa,fitted_bwa)) +
-  labs(fill = "Flaps/hour", x="Bird-wind angle (degrees)", y="GAM effect") +
-  ylim(-0.5,0.5) +
-  facet_wrap(~Species)
+# # Add scatter plots of (wind_vel,bwa) data
+# ggplot(fv_df_cont) +
+#   geom_point(data = m_all %>% filter(HMM_3S_state!=1),aes(x=wind_vel,y=bwa),size=0.001,alpha=1) + 
+#   geom_contour_filled(aes(wind_vel,bwa,z=exp(fitted_global)),binwidth = 100,alpha=0.9) +
+#   scale_fill_manual(values=mycolors,drop=FALSE) +
+#   labs(fill = "Flaps/hour", x="Wind Velocity (m/s)", y="Bird-wind angle (degrees)") +
+#   facet_wrap(~Species)
 
 
 # Flaps/hour vs wind_vel (categorical) after removing HMM_3S_state == 1 ----------------------
@@ -205,7 +202,7 @@ GAM_categorical_list <- list()
 
 for (spp in c("BBAL", "GHAL", "WAAL", "BFAL", "LAAL")) {
   
-  m_current <- m_all %>% filter((HMM_3S_state != 1) & (Species == spp))
+  m_current <- m_all_nonaflapsbwas %>% filter((HMM_3S_state != 1) & (Species == spp))
   
   current_GAM <- gam(formula = flaps ~ s(wind_vel,BWA_cat,bs='fs',k=3) +
                        s(id,k=length(unique(m_current$id)),bs="re"),
@@ -241,237 +238,72 @@ for (spp in c("BBAL", "GHAL", "WAAL", "BFAL", "LAAL")) {
   
   if (spp == "BBAL") {
     ds_df_cat <- current_ds
-    fv_df_cat_link <- link_df
+    fv_df_cat <- link_df
   } else {
     ds_df_cat <- rbind(ds_df_cat,current_ds)
-    fv_df_cat_link <- rbind(fv_df_cat_link,link_df)
+    fv_df_cat <- rbind(fv_df_cat,link_df)
   }
 }
 
-fv_df_cat_link$Species <- factor(fv_df_cat_link$Species,levels=c("BBAL","GHAL","WAAL","BFAL","LAAL"))
+fv_df_cat$Species <- factor(fv_df_cat$Species,levels=c("BBAL","GHAL","WAAL","BFAL","LAAL"))
 
-# Link: Wind + Intercept
-fv_df_cat_link |>
+fv_df_cat <- fv_df_cat %>%  mutate(Species = factor(replace(as.character(Species),Species=="BBAL","Black-browed")),
+               Species = factor(replace(as.character(Species),Species=="GHAL","Grey-headed")),
+               Species = factor(replace(as.character(Species),Species=="WAAL","Wandering")),
+               Species = factor(replace(as.character(Species),Species=="BFAL","Black-footed")),
+               Species = factor(replace(as.character(Species),Species=="LAAL","Laysan")))
+
+# Link: global for all app
+fv_df_cat |>
+  ggplot(aes(wind_vel,exp(fitted_global),color=BWA_cat)) +
+  geom_line() +
+  # geom_line(aes(wind_vel,exp(fitted_int+fitted_wind+fitted_id),color=id)) +
+  geom_ribbon(mapping=aes(ymin=exp(lower_global),ymax=exp(upper_global),y=NULL,color=BWA_cat),alpha=0.2) +
+  guides(color=guide_legend(title="Relative wind condition")) +
+  scale_color_manual(values=c("head" = "#440154FF",
+                              "cross" = "#1F968BFF",
+                              "tail" = "#FDE725FF")) + 
+  labs(y="Flaps per hour",x="Wind velocity (m/s)") +
+  # xlim(0,25) + 
+  ylim(0,1500) +
+  facet_wrap(~Species,nrow = 1) + 
+  theme(text = element_text(size = 24))
+
+# Link: global for SO spp
+cat_SO <- fv_df_cat %>% filter(Species %in% c("Black-browed","Grey-headed","Wandering"))|>
+  ggplot(aes(wind_vel,exp(fitted_global),color=BWA_cat)) +
+  geom_line(linewidth=1.5) +
+  # geom_line(aes(wind_vel,exp(fitted_int+fitted_wind+fitted_id),color=id)) +
+  geom_ribbon(mapping=aes(ymin=exp(lower_global),ymax=exp(upper_global),y=NULL,color=BWA_cat),alpha=0.2) +
+  guides(color=guide_legend(title="Relative wind")) +
+  scale_color_manual(values=c("head" = "#440154FF",
+                              "cross" = "#1F968BFF",
+                              "tail" = "#FDE725FF")) + 
+  labs(y="Flaps per hour",x="Wind velocity (m/s)") +
+  # xlim(0,25) + 
+  ylim(0,1500) +
+  facet_wrap(~Species,nrow = 1) + 
+  theme_bw() +
+  theme(text = element_text(size = 24))
+
+# Link: global for NP spp
+fv_df_cat %>% filter(Species %in% c("BFAL","LAAL"))|>
   ggplot(aes(wind_vel,exp(fitted_global),color=BWA_cat)) +
   geom_line() +
   # geom_line(aes(wind_vel,exp(fitted_int+fitted_wind+fitted_id),color=id)) +
   geom_ribbon(mapping=aes(ymin=exp(lower_global),ymax=exp(upper_global),y=NULL,color=BWA_cat),alpha=0.3) +
+  guides(color=guide_legend(title="Relative wind condition")) +
+  scale_color_manual(values=c("head" = "#e74c3c",
+                              "cross" = "#2980b9",
+                              "tail" = "#27ae60")) + 
   labs(y="Flaps per hour",x="Wind velocity (m/s)") +
   # xlim(0,25) + 
-  ylim(0,2000) +
-  facet_wrap(~Species,nrow = 1)
+  ylim(0,1500) +
+  facet_wrap(~Species,nrow = 1) + 
+  theme(text = element_text(size = 24))
 
 
-# Flaps/hour vs wind_vel (continuous) after removing HMM_3S_state == 1 ----------------------
-# JUST TE, NO ID VARIABILITY
 
-main_k <- 3
-fac_k <- 3
-GAM_list_cont_noID <- list()
+# Plot figures on top of eaechother --------------------------------------------
 
-for (spp in c("BBAL", "GHAL", "WAAL", "BFAL", "LAAL")) {
-  
-  m_current <- m_all %>% filter((HMM_3S_state != 1) & (Species == spp))
-  
-  current_GAM <- gam(formula = flaps ~
-                       ti(wind_vel,k=fac_k,bs='tp') +
-                       ti(wind_vel,k=fac_k,bs='tp') +
-                       ti(wind_vel,bwa,k=c(fac_k,fac_k),bs=c('tp','tp')),
-                     data = m_current,
-                     family = "poisson",
-                     method = "REML")
-  
-  GAM_list_cont_noID[[spp]] <- current_GAM
-  
-  current_ds  <- data_slice(current_GAM, wind_vel = evenly(wind_vel, n = 100), 
-                            bwa = evenly(bwa,n=100))
-  
-  link_df <- cbind(current_ds,
-                   rep(spp,nrow(current_ds)),
-                   fitted_values(current_GAM, data = current_ds, scale = "link",
-                                 terms = c("(Intercept)","ti(wind_vel)","ti(bwa)","ti(wind_vel,bwa)"))[,3:6],
-                   fitted_values(current_GAM, data = current_ds, scale = "link",
-                                 terms = c("ti(wind_vel)"))[,3:6],
-                   fitted_values(current_GAM, data = current_ds, scale = "link",
-                                 terms = c("ti(bwa)"))[,3:6],
-                   fitted_values(current_GAM, data = current_ds, scale = "link",
-                                 terms = c("ti(wind_vel,bwa)"))[,3:6],
-                   fitted_values(current_GAM, data = current_ds, scale = "link",
-                                 terms = c("(Intercept)"))[,3:6])
-  
-  colnames(link_df) <- c("wind_vel","bwa","Species",
-                         "fitted_all","se_all","lower_all","upper_all",
-                         "fitted_windvel","se_windvel","lower_windvel","upper_windvel",
-                         "fitted_bwa","se_bwa","lower_bwa","upper_bwa",
-                         "fitted_intrxn","se_intrxn","lower_intrxn","upper_intrxn",
-                         "fitted_int","se_int","lower_int","upper_int")
-  
-  if (spp == "BBAL") {
-    ds_df_cont_noID <- current_ds
-    fv_df_cont_link_noID <- link_df
-  } else {
-    ds_df_cont_noID <- rbind(ds_df_cont_noID,current_ds)
-    fv_df_cont_link_noID <- rbind(fv_df_cont_link_noID,link_df)
-  }
-}
-
-fv_df_cont_link_noID$Species <- factor(fv_df_cont_link_noID$Species , levels=c("BBAL", "GHAL", "WAAL", "BFAL", "LAAL"))
-
-# Link
-fv_df_cont_link_noID |>
-  ggplot(aes(wind_vel,bwa,z=exp(fitted_all))) +
-  geom_contour_filled(breaks=seq(0,2000,by=100)) +
-  # scale_fill_viridis_b(begin=0,end=2000) +
-  labs(title="Removing the ID term") +
-  # xlim(0,25) + 
-  # ylim(0,1000) +
-  facet_wrap(~Species)
-
-fv_df_cont_link_noID |>
-  ggplot(aes(wind_vel,exp(fitted_int+fitted_windvel))) +
-  geom_line() +
-  # geom_line(aes(wind_vel,exp(fitted_int+fitted_wind+fitted_id),color=id)) +
-  geom_ribbon(mapping=aes(ymin=exp(lower_int+lower_windvel),ymax=exp(upper_int+upper_windvel),y=NULL),alpha=0.3) +
-  # labs(title="continuous bwa") +
-  xlim(0,25) + 
-  # ylim(0,1050) +
-  theme_minimal() +
-  facet_wrap(~Species) +
-  labs(y="Flaps/hour",x="Wind velocity (m/s)")
-
-# Link: Wind + Intercept
-fv_df_cont_link_noID |>
-  ggplot(aes(wind_vel,fitted_windvel)) +
-  geom_line() +
-  # geom_line(aes(wind_vel,exp(fitted_int+fitted_wind+fitted_id),color=id)) +
-  geom_ribbon(mapping=aes(ymin=lower_windvel,ymax=upper_windvel,y=NULL),alpha=0.3) +
-  # labs(title="continuous bwa") +
-  xlim(0,25) + 
-  # ylim(0,1050) +
-  theme_minimal() +
-  facet_wrap(~Species) +
-  labs(y="GAM wind effect",x="Wind velocity (m/s)")
-
-# Flaps/hour vs wind_vel (continuous) after removing HMM_3S_state == 1 ----------------------
-
-main_k <- 3
-fac_k <- 3
-GAM_continuous_list <- list()
-
-for (spp in c("BBAL", "GHAL", "WAAL", "BFAL", "LAAL")) {
-  
-  m_current <- m_all %>% filter((HMM_3S_state != 1) & (Species == spp))
-  
-  current_GAM <- gam(formula = flaps ~ s(wind_vel,bs='tp',k=main_k,m=2) +
-                       te(wind_vel,bwa,k=c(fac_k,fac_k),bs=c('tp','tp'),m=2) + 
-                       s(id,k=length(unique(m_current$id)),bs="re"),
-                     data = m_current,
-                     family = "poisson",
-                     method = "REML")
-  
-  GAM_continuous_list[[spp]] <- current_GAM
-  
-  current_ds  <- data_slice(current_GAM, wind_vel = evenly(wind_vel, n = 100), 
-                            id = unique(m_current$id)[1:10],
-                            bwa = evenly(bwa,n=100))
-  response_df <- cbind(current_ds,
-                       rep(spp,nrow(current_ds)),
-                       fitted_values(current_GAM, data = current_ds, scale = "response",
-                                     terms = c("(Intercept)","s(wind_vel)","te(wind_vel,bwa)","s(id)"))[,4:7],
-                       fitted_values(current_GAM, data = current_ds, scale = "response",
-                                     terms = c("(Intercept)","s(wind_vel)","te(wind_vel,bwa)"))[,4:7],
-                       fitted_values(current_GAM, data = current_ds, scale = "response",
-                                     terms = c("s(wind_vel)"))[,4:7],
-                       fitted_values(current_GAM, data = current_ds, scale = "response",
-                                     terms = c("te(wind_vel,bwa)"))[,4:7],
-                       fitted_values(current_GAM, data = current_ds, scale = "response",
-                                     terms = c("(Intercept)"))[,4:7],
-                       fitted_values(current_GAM, data = current_ds, scale = "link",
-                                     terms = c("s(id)"))[,4:7]
-  )
-  colnames(response_df) <- c("wind_vel","id","bwa","Species",
-                             "fitted_all","se_all","lower_all","upper_all",
-                             "fitted_global","se_global","lower_global","upper_global",
-                             "fitted_wind","se_wind","lower_wind","upper_wind",
-                             "fitted_te","se_te","lower_te","upper_te",
-                             "fitted_int","se_int","lower_int","upper_int",
-                             "fitted_id","se_id","lower_id","upper_id")
-  link_df <- cbind(current_ds,
-                   rep(spp,nrow(current_ds)),
-                   fitted_values(current_GAM, data = current_ds, scale = "link",
-                                 terms = c("(Intercept)","s(wind_vel)","te(wind_vel,bwa)","s(id)"))[,4:7],
-                   fitted_values(current_GAM, data = current_ds, scale = "link",
-                                 terms = c("(Intercept)","s(wind_vel)","te(wind_vel,bwa)"))[,4:7],
-                   fitted_values(current_GAM, data = current_ds, scale = "link",
-                                 terms = c("s(wind_vel)"))[,4:7],
-                   fitted_values(current_GAM, data = current_ds, scale = "link",
-                                 terms = c("te(wind_vel,bwa)"))[,4:7],
-                   fitted_values(current_GAM, data = current_ds, scale = "link",
-                                 terms = c("(Intercept)"))[,4:7],
-                   fitted_values(current_GAM, data = current_ds, scale = "link",
-                                 terms = c("s(id)"))[,4:7]
-  )
-  colnames(link_df) <- c("wind_vel","id","bwa","Species",
-                         "fitted_all","se_all","lower_all","upper_all",
-                         "fitted_global","se_global","lower_global","upper_global",
-                         "fitted_wind","se_wind","lower_wind","upper_wind",
-                         "fitted_te","se_te","lower_te","upper_te",
-                         "fitted_int","se_int","lower_int","upper_int",
-                         "fitted_id","se_id","lower_id","upper_id")
-  
-  if (spp == "BBAL") {
-    ds_df_cont <- current_ds
-    fv_df_cont_response <- response_df
-    fv_df_cont_link <- link_df
-  } else {
-    ds_df_cont <- rbind(ds_df_cont,current_ds)
-    fv_df_cont_response <- rbind(fv_df_cont_response,response_df)
-    fv_df_cont_link <- rbind(fv_df_cont_link,link_df)
-  }
-}
-
-fv_df_cont_response$Species <- factor(fv_df_cont_response$Species , levels=c("BBAL", "GHAL", "WAAL", "BFAL", "LAAL"))
-fv_df_cont_link$Species <- factor(fv_df_cont_link$Species , levels=c("BBAL", "GHAL", "WAAL", "BFAL", "LAAL"))
-
-# Response (flaps/hour)
-fv_df_cont_response |>
-  ggplot(aes(wind_vel,bwa,z=fitted_global)) +
-  geom_contour_filled() +
-  # labs(title="BBAL") +
-  # xlim(0,25) + 
-  # ylim(0,1000) +
-  facet_wrap(~Species)
-
-# Link
-fv_df_cont_link |>
-  ggplot(aes(wind_vel,bwa,z=exp(fitted_te))) +
-  geom_contour_filled() +
-  # labs(title="BBAL") +
-  # xlim(0,25) + 
-  # ylim(0,1000) +
-  facet_wrap(~Species)
-
-# Response: Wind + Intercept
-fv_df_cont_response |>
-  ggplot(aes(wind_vel,fitted_wind+fitted_int)) +
-  geom_line() +
-  geom_ribbon(mapping=aes(ymin = lower_wind + lower_int, ymax = upper_wind + upper_int, y = NULL),alpha = 0.3) +
-  # labs(title="BBAL") +
-  # xlim(0,25) + 
-  # ylim(0,1050) +
-  facet_wrap(~Species)
-
-# Link: Wind + Intercept
-fv_df_cont_link |>
-  ggplot(aes(wind_vel,exp(fitted_int+fitted_wind))) +
-  geom_line() +
-  # geom_line(aes(wind_vel,exp(fitted_int+fitted_wind+fitted_id),color=id)) +
-  geom_ribbon(mapping=aes(ymin=exp(lower_int+lower_wind),ymax=exp(upper_int+upper_wind),y=NULL),alpha=0.3) +
-  # labs(title="continuous bwa") +
-  xlim(0,25) + 
-  ylim(0,1050) +
-  theme_minimal() +
-  facet_wrap(~Species) +
-  labs(y="Flaps/hour",x="Wind velocity (m/s)")
-
-
+cont_SO / cat_SO
