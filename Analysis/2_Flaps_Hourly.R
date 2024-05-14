@@ -128,7 +128,7 @@ for (i in 1:length(files)) {
   for (trip in unique(m_hourly$tripID)) {
     m_hourly$bird_vel <- c(distHaversine(m_hourly %>% dplyr::select(lon,lat))/1000,NA)
     m_hourly$bird_dir <- geosphere::bearing(m_hourly %>% dplyr::select(lon,lat))
-    m_hourly$bird_dir <- m_hourly(mij$bird_dir) # set bearing to [0,360)
+    m_hourly$bird_dir <- wrap360(m_hourly$bird_dir) # set bearing to [0,360)
     m_hourly$bwa <- bearingAngle(m_hourly$bird_dir,wrap360(m_hourly$wind_dir-180)) # [0,180) degrees
     m_hourly$w_rel <- (m_hourly$bird_dir+(360-wrap360(m_hourly$wind_dir-180))) %% 360
   }

@@ -84,8 +84,8 @@ L0_fileList = dir('*.txt');
 L0_fileList(startsWith({L0_fileList.name},'._')) = [];
 L0_fileNames = string({L0_fileList.name});
 
-t%% Loop thru and process birds
-redos = [13,15,23];
+%% Loop thru and process birds
+redos = [15,23]; %[13,15,23];
 for i = redos(1:end)
 % for i = 28:length(L0_fileNames)
     %% load data to be deteced.
