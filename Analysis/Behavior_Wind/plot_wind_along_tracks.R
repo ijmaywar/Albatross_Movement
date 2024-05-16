@@ -36,6 +36,8 @@ library(gratia)
 library(readr)
 library(viridis)
 library(grid)
+library(egg)
+library(ggbeeswarm)
 
 # Set Environment ---------------------------------------------------------
 
@@ -86,20 +88,29 @@ m_all$BWA_cat <- as.factor(m_all$BWA_cat)
 m_all$HMM_2S_state <- as.factor(m_all$HMM_2S_state)
 m_all$HMM_3S_state <- as.factor(m_all$HMM_3S_state)
 
-# Re-order Species groups
-m_all$Species <- factor(m_all$Species , levels=c("BBAL", "GHAL", "WAAL", "BFAL", "LAAL"))
-m_all$BWA_cat <- factor(m_all$BWA_cat , levels=c("head", "cross", "tail"))
+# Re-order Species groups and give them their full name
+m_all <- m_all %>% mutate(Species = factor(replace(as.character(Species),Species=="BBAL","Black-browed")),
+       Species = factor(replace(as.character(Species),Species=="GHAL","Grey-headed")),
+       Species = factor(replace(as.character(Species),Species=="WAAL","Wandering")),
+       Species = factor(replace(as.character(Species),Species=="BFAL","Black-footed")),
+       Species = factor(replace(as.character(Species),Species=="LAAL","Laysan")))
+m_all$Species <- factor(m_all$Species, levels=c("Black-browed", "Grey-headed", "Wandering", "Black-footed", "Laysan"))
+
+m_all$BWA_cat <- factor(m_all$BWA_cat, levels=c("head", "cross", "tail"))
+
+# Add km/hr of wind_vel
+m_all$wind_vel_kmh <- 3.6*(m_all$wind_vel)
 
 m_all_nonaflaps <- m_all %>% drop_na(flaps)
 m_all_nonaflapsbwas <- m_all_nonaflaps %>% drop_na(bwa)
+m_all_nonaflapsbwas_pos_complete <- m_all_nonaflapsbwas %>% filter(Pos_complete==1)
 
 
-
-# Box plots -------------------------------------------------------------
+# Density plots -------------------------------------------------------------
 
 cat_hist_colors <- c("#440154FF","#1F968BFF","#FDE725FF")
 
-BWA_cat_hist_data <- as.data.frame(m_all_nonaflapsbwas %>% group_by(Species,id,BWA_cat) %>% 
+BWA_cat_hist_data <- as.data.frame(m_all_nonaflapsbwas_pos_complete %>% group_by(Location,Species,id,BWA_cat) %>% 
   summarize(count=n()) %>% 
   mutate(proportion = count/sum(count),
          Species = factor(replace(as.character(Species),Species=="BBAL","Black-browed")),
@@ -107,31 +118,32 @@ BWA_cat_hist_data <- as.data.frame(m_all_nonaflapsbwas %>% group_by(Species,id,B
          Species = factor(replace(as.character(Species),Species=="WAAL","Wandering")),
          Species = factor(replace(as.character(Species),Species=="BFAL","Black-footed")),
          Species = factor(replace(as.character(Species),Species=="LAAL","Laysan"))))
-
-BWA_cat_hist_data_low <- as.data.frame(m_all_nonaflapsbwas %>% filter(wind_vel<=5) %>% group_by(Species,id,BWA_cat) %>% 
-                                     summarize(count=n()) %>% 
-                                     mutate(proportion = count/sum(count),
-                                            Species = factor(replace(as.character(Species),Species=="BBAL","Black-browed")),
-                                            Species = factor(replace(as.character(Species),Species=="GHAL","Grey-headed")),
-                                            Species = factor(replace(as.character(Species),Species=="WAAL","Wandering")),
-                                            Species = factor(replace(as.character(Species),Species=="BFAL","Black-footed")),
-                                            Species = factor(replace(as.character(Species),Species=="LAAL","Laysan"))))
   
-
 ggplot(BWA_cat_hist_data) +
+  facet_wrap(~Species) +
   geom_density(aes(x=proportion,fill=BWA_cat)) +
   scale_fill_manual(values=cat_hist_colors) + 
   labs(y="Density") +
-  theme_bw() + 
-  scale_x_continuous(name ="Proportion of time", breaks=c(0,0.25,0.5,0.75,1),
-                     labels = c("0","0.25","0.5","0.75","1")) + 
-  facet_wrap(~Species) +
+  theme_bw() +
+  scale_x_continuous(name ="Proportion of time", 
+                     breaks=c(0,0.25,0.5,0.75,1),
+                     labels = c("0",".25",".5",".75","1"),
+                     limits = c(0,1)) + 
   theme(legend.position = c(0.85, 0.2), # c(0,0) bottom left, c(1,1) top-right.
         legend.background = element_rect(fill = NA, colour = NA)) +
   guides(fill=guide_legend(title="Relative wind")) +
   theme(text = element_text(size = 24))
 
+# For low windspeeds (<=5m/s) --------------------------------------------------
 
+BWA_cat_hist_data_low <- as.data.frame(m_all_nonaflapsbwas_pos_complete %>% filter(wind_vel<=5) %>% group_by(Species,id,BWA_cat) %>% 
+                                         summarize(count=n()) %>% 
+                                         mutate(proportion = count/sum(count),
+                                                Species = factor(replace(as.character(Species),Species=="BBAL","Black-browed")),
+                                                Species = factor(replace(as.character(Species),Species=="GHAL","Grey-headed")),
+                                                Species = factor(replace(as.character(Species),Species=="WAAL","Wandering")),
+                                                Species = factor(replace(as.character(Species),Species=="BFAL","Black-footed")),
+                                                Species = factor(replace(as.character(Species),Species=="LAAL","Laysan"))))
 
 ggplot(BWA_cat_hist_data_low %>% filter()) +
   geom_density(aes(x=proportion,fill=BWA_cat)) +
@@ -147,15 +159,6 @@ ggplot(BWA_cat_hist_data_low %>% filter()) +
   theme(text = element_text(size = 24))
 
 
-ggplot(BWA_cat_hist_data) +
-  geom_(aes(x=BWA_cat,y=count,fill=BWA_cat)) +
-  scale_fill_manual(values=cat_hist_colors) + 
-  # labs(x="Relative wind",y="Proportion of time") +
-  theme_bw() + 
-  theme(text = element_text(size = 24)) +
-  facet_wrap(~Species)
-
-
 # Pie graphic --------------------------------------------------
 
 pie_colors <- c("#440154FF","#1F968BFF","#FDE725FF","#1F968BFF")
@@ -168,6 +171,25 @@ ggplot(data.frame(cat=factor(c("head","cross","tail","cross_2"),levels=c("head",
   theme_void() +
   guides(fill=FALSE)
 
+
+
+# Windspeeds along tracks -----------------------------------------
+
+m_all_nonaflapsbwas_pos_complete |>
+  ggplot(aes(Species,wind_vel_kmh)) +
+  geom_violin() + 
+  geom_boxplot(width=0.4) +
+  # add scatter points
+  # theme_minimal() +
+  ylim(0,100) +
+  labs(y="Windspeed (km/h)",x="Species") +
+  theme_bw() +
+  theme(text = element_text(size = 24))
+
+
+
+
+# More code ------------------------------------------------------
 
 w_rel_polar_BBAL <- ggplot(m_all_nonaflaps %>% filter(Species=="BBAL"),aes(x=w_rel)) +
   geom_histogram(aes(y=after_stat(count/sum(count))),breaks=seq(0,360,by=10)-5,
@@ -291,15 +313,7 @@ grid.arrange(wind_vel_hist_BBAL,wind_vel_hist_GHAL,wind_vel_hist_WAAL,wind_vel_h
 
 
 
-m_all_nonaflapsbwas |>
-  ggplot(aes(Species,wind_vel)) +
-  geom_boxplot() + 
-  # add scatter points
-  # theme_minimal() +
-  ylim(0,30) +
-  labs(y="Wind velocity (m/s)",x="Species") +
-  ggtitle("Wind velocities experienced") +
-  theme_bw()
+
 
 m_all_nonaflaps |>
   ggplot(aes(wind_vel)) +

@@ -2,11 +2,6 @@
 
 rm(list = ls())
 
-# User Inputted Values -----------------------------------------------------
-
-location = 'Bird_Island' # Options: 'Bird_Island', 'Midway'
-szn = "2019_2020"
-
 # Packages  ---------------------------------------------------------
 
 require(tidyverse)
@@ -17,17 +12,8 @@ library(foehnix)
 library(ggplot2)
 library(maps)
 library(sf)
-
-# Set Environment --------------------------------------------------------------
-
-GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/Thorne Lab Shared Drive/Data/Albatross/"
-if (location == "Bird_Island") {
-  nc_dir <- paste0(GD_dir,"L0/",location,"/Wind_Data/compiled_2019_2022/ERA5_Monthly_Avg_10m/")
-} else {
-  nc_dir <- paste0(GD_dir,"L0/",location,"/Wind_Data/compiled_2018_2023/ERA5_Monthly_Avg_10m/")
-}
-GPS_dir <- paste0(GD_dir,"L4/",location,"/Tag_Data/GPS/")
-# wind_L1_dir <- paste0(GD_dir,"L1/",location,"/Wind_Data/ERA5_SingleLevels_10m/allbirds_GPS_with_wind/",szn,"/")
+library(rnaturalearth)
+library(readxl)
 
 # User Functions ----------------------------------------------------------
 
@@ -44,99 +30,70 @@ bearingAngle <- function(bird_bearing,wind_bearing) {
   return(pmin(LHturn,RHturn))
 }
 
-# Get Polygon data  ----------------------------------------------------------------
+# Set envrionment --------------------------------------------------------------
 
-setwd(GPS_dir)
-KDEs <- list.dirs(recursive = FALSE) # GPS files 
-KDEs <- str_sub(KDEs,3,)
+GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/Thorne Lab Shared Drive/Data/Albatross/"
+worldmap <- ne_countries(scale = 'medium', returnclass = 'sf') %>% st_make_valid()
+fullmeta <- read_excel(paste0(GD_dir,"/metadata/Full_Metadata.xlsx"))
 
-KDE_name <- "BBAL_all_KDE_95" # Read "BBAL_all_KDE_95_polygons.csv" 
-Polygons <- vect(paste0(KDE_name,"/",KDE_name,".shp"))
 
-# Get wind data ----------------------------------------------------------------
+# Plot the two study sites -----------------------------------------------------
 
-setwd(nc_dir)
-wind_files <- list.files(pattern='*.nc') 
+target_crs <- st_crs("+proj=longlat +x_0=0 +y_0=0 +lat_0=0 +lon_0=270")
+offset <- 180 - 270
 
-if (location == "Bird_Island") {
-  
-  # Load netcdf file directly for Bird Island
-  wind_t1 <- rast("Bird_Island_19_22.nc")
-  # Create data vectors
-  wind_t1 # Make sure you got the right stuff!
-  times_t1 <- time(wind_t1)  # stores times from each file 
-  all_times <- unique(times_t1) # find unique values because there should be two of every datetime (for u and v)
-  all_times_num <- as.numeric(all_times)
-  
-} else if (location == "Midway") {
-  
-  # Load netcdf file directly for Midway
-  wind_t1 <- rast("Midway_18_23.nc")
-  wind_t1 # Make sure you got the right stuff!
-  
-  # Wrap -180 to 180
-  wind_crds <- as.data.frame(crds(wind_t1[[1]]))
-  for (lyr_name in names(wind_t1)) {
-    new_crds <- cbind(wind_crds,as.data.frame(values(wind_t1[[lyr_name]])))
-    new_crds_neg180 <- new_crds %>% filter(x==-180)
-    new_crds_neg180$x <- 180
-    new_crds <- rbind(new_crds,new_crds_neg180)
-    new_crds <- arrange(new_crds,desc(y),x)
-    current_lyr <- rast(new_crds,type="xyz")
-    if (lyr_name == names(wind_t1)[1]) {
-      wind_t1_new <- current_lyr
-    } else {
-      wind_t1_new <- c(wind_t1_new,current_lyr)
-    }
-  }
-  time(wind_t1_new) <- time(wind_t1)
-  units(wind_t1_new) <- units(wind_t1)
-  
-  # Create data vectors
-  wind_t1 <- wind_t1_new # Make sure you got the right stuff!
-  wind_t1
-  
-  times_t1 <- time(wind_t1)  # stores times from each file 
-  all_times <- unique(times_t1) # find unique values because there should be two of every datetime (for u and v)
-  all_times_num <- as.numeric(all_times)
-  
-}
+polygon <- st_polygon(x = list(rbind(
+  c(-0.0001 - offset, 90),
+  c(0 - offset, 90),
+  c(0 - offset, -90),
+  c(-0.0001 - offset, -90),
+  c(-0.0001 - offset, 90)
+))) %>%
+  st_sfc() %>%
+  st_set_crs(4326)
 
-# Create data grid -------------------------------------------------------------
+# modify world dataset to remove overlapping portions with world's polygons
+world2 <- worldmap %>% st_difference(polygon)
 
-# Get world map data
-world_map <- map_data("world")
+# Transform
+worldmap_rot <- world2 %>% st_transform(crs = target_crs)
 
-# Set boundaries
-lon_max <- -15
-lon_min <- -65
-lat_max <- -35
-lat_min <- -65
+ggplot() + 
+  geom_sf(worldmap_rot,mapping=aes()) + 
+  geom_point(aes(x=90-177.3813,y=28.19989),size=5,color="#26828EFF") +
+  geom_point(aes(x=90-38.0658417,y=-54.0101833),size=5,color="#26828EFF") +
+  # coord_sf(expand = FALSE) +
+  theme_bw() +
+  theme(text = element_text(size = 24),
+        axis.title.x=element_blank(),
+        axis.title.y=element_blank())
 
-colony_coords <- c(-38.0658417,-54.0101833)
 
-# Create a grid with 0.25-degree spacing
-lon <- seq(lon_min,lon_max,0.25) # Longitude (columns)
-lat <- seq(lat_min,lat_max,0.25) # Latitude (rows)
-grid <- expand.grid(lon = lon, lat = lat)
+# Find wind data for the entirety of this figure -------------------------------
+
+setwd(paste0(GD_dir,"Analysis/Maywar/Global_Wind/"))
+wind_t1 <- rast("Global_18_23_All_Months.nc")
+
+# Create data vectors
+wind_t1
+times_t1 <- time(wind_t1)  # stores times from each file 
+all_times <- unique(times_t1) # find unique values because there should be two of every datetime (for u and v)
+all_times_num <- as.numeric(all_times)
+
+grid_res <- 2.5
+# Create a grid
+grid <- expand.grid(lon = seq(0,360,grid_res), lat = seq(-90,90,grid_res))
 grid_sf <- st_as_sf(grid, coords = c("lon", "lat"), crs = 4326)
 
 # Create a grid of polygons
 grid_polys <- st_make_grid(
   st_as_sfc(st_bbox(grid_sf)),
-  cellsize = c(0.25,0.25),  # Grid cell size based on latitude and longitude intervals
+  cellsize = c(grid_res,grid_res),  # Grid cell size based on latitude and longitude intervals
   what = "polygons"
 )
 
 # Convert the grid to a data frame for easier manipulation
 grid_polys_df <- st_sf(as.data.frame(grid_polys))
-grid_polys_df$WindSpeed <- NA
-
-# Loop through m and add wind information: speed -------------------------------
-
-# # Assume the same month for the entire grid
-# timej <- as.POSIXct(m$datetime[j], format = "%Y-%m-%d %H:%M:%S" , tz = "UTC")
-# timej_num <- as.numeric(timej)
 
 for (j in 1:nrow(grid_polys_df)) {
   
@@ -147,7 +104,6 @@ for (j in 1:nrow(grid_polys_df)) {
   
   xy_j <- as.data.frame(cbind(centroid[1],centroid[2]))
   colnames(xy_j) <- c("lon","lat")
-  xy_j$lon <- Lon360to180(xy_j$lon) 
   
   # Extract speed for time j at location x and y
   speed_j <- extract(wind_t1, xy_j, ID=FALSE)
@@ -157,49 +113,51 @@ for (j in 1:nrow(grid_polys_df)) {
   
   # Sometimes there are NA values for some reason...
   if (sum(is.na(monthly_avgs))>0) {
-    disp("There is an NA value")
+    print("There is an NA value")
     break
   }
   
   # Remove unwanted mth/yrs...
-  if (location == "Bird_Island") {
-    monthly_avgs <- monthly_avgs %>% filter(
-      datetime > as.Date("2019-06-01") & datetime < as.Date("2022-06-01"))
-  } else if (location == "Midway") {
-    monthly_avgs <- monthly_avgs %>% filter(
-      (datetime > as.Date("2018-06-01") & datetime < as.Date("2019-06-01")) |
-        (datetime > as.Date("2021-06-01") & datetime < as.Date("2023-06-01")))
-  }
+  monthly_avgs <- monthly_avgs %>% filter(
+    datetime > as.Date("2018-06-01") & datetime < as.Date("2023-06-01"))
   
   # # Trim data so that only the months you are interested are kept
-  monthly_avgs <- monthly_avgs %>% filter(month(datetime) %in% c(1)) # just Jan
+  for (mth_idx in 1:12) {
+    current_mth_avg <- monthly_avgs %>% filter(month(datetime) == (mth_idx))
+    grid_polys_df[j,mth_idx+3] <- mean(current_mth_avg$speed)
+  }
   
-  # Add Speed data to m and m_all_mths
-  grid_polys_df$WindSpeed[j] <- mean(monthly_avgs$speed)
-
 }
 
+colnames(grid_polys_df) <- c("geometry","centroid_lon","centroid_lat",
+                             "Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec")
 
-# Add wind and bird speed and directions ---------------------------------------
+# Add column for the average of Jan, Feb, Mar, Dec - the months we are mainly studying
+# across both sites
+grid_polys_df <- grid_polys_df %>% mutate(breeding_szn = rowMeans(select(as.data.frame(grid_polys_df),c("Jan","Feb","Mar","Dec"))))
 
+# modify world dataset to remove overlapping portions with world's polygons
+grid_polys_df_mod <- grid_polys_df %>% st_difference(polygon)
 
-# Trim world_map
-trim_world_map <- world_map %>% filter(long >= lon_min & long <= lon_max &
-                                         lat >= lat_min & lat <= lat_max)
+# Transform
+grid_polys_df_rot <- grid_polys_df_mod %>% st_transform(crs = target_crs)
 
-# Plot the map
+# Multiply windspeeds by 3.6 to get km/h
+# Wind in Breeding szn
 ggplot() +
-  geom_sf(grid_polys_df,mapping=aes(geometry=geometry,fill=WindSpeed),color=NA,alpha=1) +
+  geom_sf(grid_polys_df_rot,mapping=aes(geometry=geometry,fill=3.6*breeding_szn),color=NA,alpha=1) +
   scale_fill_gradient(low = "white", high = "red", na.value = NA,
-                      limits = c(0,15),
-                      breaks = c(0,5,10,15),
-                      labels = c("0","5","10","15"),
-                      name = "Wind velocity (m/s)") +
-  geom_polygon(data = trim_world_map, aes(x = long, y = lat, group = group), fill = "gray", color = "black") +
-  # geom_point(data = m, aes(x=lon, y=lat, color=state),size=1) + 
-  # geom_sf(data = st_as_sf(Polygons)) + 
-  theme_minimal() +
-  labs(x="longitude",y="latitude")
+                      limits = c(0,3.6*max(grid_polys_df_rot$breeding_szn)),
+                      breaks = c(0,10,20,30,40),
+                      labels = c("0","10","20","30","40"),
+                      name = "Windspeed (km/h)") +
+  geom_sf(worldmap_rot,mapping=aes()) + 
+  geom_point(aes(x=90-177.3813,y=28.19989),size=5,color="#26828EFF") +
+  geom_point(aes(x=90-38.0658417,y=-54.0101833),size=5,color="#26828EFF") +
+  theme_bw() +
+  theme(text = element_text(size = 24),
+        axis.title.x=element_blank(),
+        axis.title.y=element_blank())#, legend.position = "none")
 
 
 
@@ -207,39 +165,6 @@ ggplot() +
 
 
 
-
-
-
-
-
-
-require(tidyverse)
-library(lubridate)
-library(terra)
-library(geosphere)
-library(foehnix)
-library(ggplot2)
-library(maps)
-library(sf)
-library(rnaturalearth)
-library(readxl)
-
-GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/Thorne Lab Shared Drive/Data/Albatross/"
-worldmap <- ne_countries(scale = 'medium', type = 'map_units',
-                         returnclass = 'sf')
-fullmeta <- read_excel(paste0(GD_dir,"/metadata/Full_Metadata.xlsx"))
-
-
-# Plot the two study sites -----------------------------------------------------
-
-# ggplot() +
-#   geom_sf(data = st_shift_longitude(st_crop(worldmap,xmin=-120,xmax=120,ymin=-70,ymax=50))) + 
-#   # geom_sf(data = st_crop(worldmap,xmin=-90,xmax=120,ymin=-70,ymax=50)) + 
-#   geom_point(aes(x=-177.3813+360,y=28.19989),size=1) + 
-#   geom_point(aes(x=-38.0658417,y=-54.0101833),size=1) + 
-#   # coord_sf(xlim = c(120,480), ylim = c(-70,50), expand = FALSE) +
-#   theme_bw() +
-#   labs(x="Longitude",y="Latitude")
 
 
 # Plot the SO KDEs -------------------------------------------------------------
@@ -422,3 +347,68 @@ ggplot() +
   geom_path(data=Midway_GPS_compiled_complete %>% filter(substr(id,1,4)=="BFAL" & TripType=="BG"),aes(x=lon,y=lat,group=tripID),linewidth=0.1) +
   theme_bw() +
   labs(x="Longitude",y="Latitude")
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Extra code that takes care of the weird 180 longitdue issue for ERA5 data ----
+
+setwd(nc_dir)
+wind_files <- list.files(pattern='*.nc') 
+
+if (location == "Bird_Island") {
+  
+  # Load netcdf file directly for Bird Island
+  wind_t1 <- rast("Bird_Island_19_22.nc")
+  # Create data vectors
+  wind_t1 # Make sure you got the right stuff!
+  times_t1 <- time(wind_t1)  # stores times from each file 
+  all_times <- unique(times_t1) # find unique values because there should be two of every datetime (for u and v)
+  all_times_num <- as.numeric(all_times)
+  
+} else if (location == "Midway") {
+  
+  # Load netcdf file directly for Midway
+  wind_t1 <- rast("Midway_18_23.nc")
+  wind_t1 # Make sure you got the right stuff!
+  
+  # Wrap -180 to 180
+  wind_crds <- as.data.frame(crds(wind_t1[[1]]))
+  for (lyr_name in names(wind_t1)) {
+    new_crds <- cbind(wind_crds,as.data.frame(values(wind_t1[[lyr_name]])))
+    new_crds_neg180 <- new_crds %>% filter(x==-180)
+    new_crds_neg180$x <- 180
+    new_crds <- rbind(new_crds,new_crds_neg180)
+    new_crds <- arrange(new_crds,desc(y),x)
+    current_lyr <- rast(new_crds,type="xyz")
+    if (lyr_name == names(wind_t1)[1]) {
+      wind_t1_new <- current_lyr
+    } else {
+      wind_t1_new <- c(wind_t1_new,current_lyr)
+    }
+  }
+  time(wind_t1_new) <- time(wind_t1)
+  units(wind_t1_new) <- units(wind_t1)
+  
+  # Create data vectors
+  wind_t1 <- wind_t1_new # Make sure you got the right stuff!
+  wind_t1
+  
+  times_t1 <- time(wind_t1)  # stores times from each file 
+  all_times <- unique(times_t1) # find unique values because there should be two of every datetime (for u and v)
+  all_times_num <- as.numeric(all_times)
+  
+}
+
+
+
+
