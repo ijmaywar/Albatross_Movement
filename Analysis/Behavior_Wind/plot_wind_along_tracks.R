@@ -38,6 +38,7 @@ library(viridis)
 library(grid)
 library(egg)
 library(ggbeeswarm)
+library(see)
 
 # Set Environment ---------------------------------------------------------
 
@@ -177,7 +178,7 @@ ggplot(data.frame(cat=factor(c("head","cross","tail","cross_2"),levels=c("head",
 
 m_all_nonaflapsbwas_pos_complete |>
   ggplot(aes(Species,wind_vel_kmh)) +
-  geom_violin() + 
+  geom_violinhalf(width=1.2,flip=TRUE) + 
   geom_boxplot(width=0.4) +
   # add scatter points
   # theme_minimal() +
