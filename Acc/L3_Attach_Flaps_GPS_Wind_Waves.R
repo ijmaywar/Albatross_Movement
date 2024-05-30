@@ -11,8 +11,8 @@ rm(list = ls())
 
 # User Inputted Values -----------------------------------------------------
 
-location = 'Midway' # Options: 'Bird_Island', 'Midway'
-szn = "2018_2019"
+# location = 'Midway' # Options: 'Bird_Island', 'Midway'
+# szn = "2018_2019"
 
 locations = c("Bird_Island", "Midway")
 
@@ -42,10 +42,14 @@ for (location in locations) {
 GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/Thorne Lab Shared Drive/Data/Albatross/"
 Acc_dir <- paste0(GD_dir, "L2/",location,"/Tag_Data/Acc/",szn,"/")
 wind_L2_dir <- paste0(GD_dir,"L2/",location,"/Wind_Data/ERA5_SingleLevels_10m/",szn,"/")
-Acc_L3_dir <- paste0(GD_dir,"L3/",location,"/Tag_Data/Acc/",szn,"/")
+wave_L2_dir <- paste0(GD_dir,"L2/",location,"/Wave_Data/ERA5_SingleLevels_10m/",szn,"/")
+write_dir <- paste0(GD_dir,"Analysis/Maywar/Wave_Search/Acc_L3/",location,"/",szn,"/")
 
 # Load fullmeta
 fullmeta <- read_xlsx(paste0(GD_dir,"metadata/Full_Metadata.xlsx"))
+
+setwd(wave_L2_dir)
+wave_files <- list.files(pattern='*.csv')
 
 setwd(Acc_dir)
 acc_files <- list.files(pattern='*.csv')
@@ -73,6 +77,17 @@ for (i in 1:length(files)) {
   birdmeta <- fullmeta %>% filter(Deployment_ID == birdname)
   L1_acc_filepath <- paste0(GD_dir,"L1/",location,"/Tag_Data/Acc/",birdmeta$Aux_TagCat,"/",szn,"/",birdname,"_Acc_L1.csv")
   
+  # Attach wave data
+  wave_filename <- paste0(birdname_trip,"_b_wave_a.csv")
+  if (sum(wave_files==wave_filename)==1) {
+    wave_data <- read_csv(paste0(wave_L2_dir,wave_filename))
+    wave_data$datetime <- as.POSIXct(wave_data$datetime,format="%Y-%m-%d %H:%M:%S", tz="GMT")
+    if (!all.equal(wave_data$datetime,m$datetime)) {
+      disp("Datetime columns of wave and wind data are not a match!")
+      break
+    }
+    m <- bind_cols(m,wave_data %>% select(swh,mwp,mwd,b_wave_a,wave_rel))
+  
   # Attach number of flaps
   acc_filename <- paste0(birdname,"_Acc_L2.csv")
   if (sum(acc_files==acc_filename)==1) {
@@ -98,9 +113,10 @@ for (i in 1:length(files)) {
     m$flaps <- data$Freq
   
     m$datetime <- as.character(format(m$datetime)) # safer for writing csv in character format  
-    write.csv(m, file=paste0(Acc_L3_dir,birdname_trip,"_Acc_L3_wind_10min.csv"), row.names=FALSE)
+    write.csv(m, file=paste0(write_dir,birdname_trip,"_Acc_L3_wind_waves_10min.csv"), row.names=FALSE)
   
   }
+}
 }
 }
 }
