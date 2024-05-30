@@ -101,20 +101,19 @@ wave_Nov_raster <- rast(wave_files[1])
 wave_Dec_raster <- rast(wave_files[2])
 wave_Jan_raster <- rast(wave_files[3])
 wave_raster <- c(wave_Nov_raster,wave_Dec_raster,wave_Jan_raster)
-
-# Create data vectors
 wave_raster # Make sure you got the right stuff!
-swh <- subset(wave_raster, which(grepl("swh_",names(wave_raster))))
-mwp <- subset(wave_raster, which(grepl("mwp_",names(wave_raster))))
-mwd <- subset(wave_raster, which(grepl("mwd_",names(wave_raster))))
 
-# Make sure times are the same across all subrasters.
-all.equal(time(swh),time(mwp),time(mwd))
+all_times <- unique(time(wave_raster))
 all_times_num <- as.numeric(unique(time(wave_raster)))
 
-# Loop through m and add wave information: u, v ---------------------------
+# Loop through m and add wave information --------------------------------------
 
-# create u and v wave vectors
+# Create columns for wave data
+new_columns <- unique(varnames(wave_raster))
+for (new_col in new_columns) {
+  m[new_col] <- NA
+}
+
 for (j in 1:nrow(m)) {
   
   timej <- as.POSIXct(m$datetime[j], format = "%Y-%m-%d %H:%M:%S" , tz = "GMT")
@@ -122,42 +121,44 @@ for (j in 1:nrow(m)) {
   
   # Find index of current_time in all times. Use that index to pull out relevant raster layer.
   timej_diff <- abs(all_times_num-timej_num) # taking difference between all gps points
-  raster_dt_index <- which.min(timej_diff)  # Find the min: tells which layer to pull out and isolate. 
   # DateTimes in the exact middle will be assigned to the first index
   # 1800 seconds is 30 minutes
   min_time_diff <- 1800
-  
   if (min(timej_diff) > min_time_diff) {
     print("Current datetime is outside of the data provided by NETCDF files.")
     break
   }
   
-  # Isolate rasters at time j
-  swh_timej <- subset(swh, raster_dt_index) 
-  mwp_timej <- subset(mwp, raster_dt_index)
-  mwd_timej <- subset(mwd, raster_dt_index)
+  closest_dt <- all_times[which.min(timej_diff)]  # Find the min: tells which layer to pull out and isolate. 
   
+  # Isolate raster at time j
+  wave_raster_timej <- wave_raster[[which(time(wave_raster)==closest_dt)]]
+
   # isolate coordinates
   xy_j <- as.data.frame(cbind(m$lon[j], m$lat[j]))
   colnames(xy_j) <- c("lon","lat")
   xy_j$lon <- Lon360to180(xy_j$lon) 
   
-  # Extract u and v components for time j at location x and y
-  swh_j <- extract(swh_timej, xy_j, ID=FALSE)
-  mwp_j <- extract(mwp_timej, xy_j, ID=FALSE)
-  mwd_j <- extract(mwd_timej, xy_j, ID=FALSE)
+  # Extract wave data for time j at location x and y
+  wave_data_j <- extract(wave_raster_timej, xy_j, ID=FALSE)
   
-  if (length(swh_j) != 1) {
+  if (nrow(wave_data_j) != 1) {
     print("Number of wave measurements chosen != 1.")
     break
-  } else if (is.na(swh_j[[1]]) || is.na(mwp_j[[1]]) || is.na(mwd_j[[1]])) {
+  } else if (all(is.na(wave_data_j))) {
     print("wave data for this coordinate cannot be found.")
     break
   }
   
-  m$swh[j]<- swh_j[[1]]
-  m$mwp[j]<- mwp_j[[1]]
-  m$mwd[j]<- mwd_j[[1]]
+  # Ensure that the data are still in the correct order
+  if (!all.equal(colnames(m)[6:ncol(m)],
+                 unlist(str_split(colnames(wave_data_j), "_"))
+                 [seq(1,2*length(colnames(wave_data_j)),2)])) {
+    disp("The raster data are out of order of the columns in m")
+    break
+  }
+  
+  m[j,6:ncol(m)] <- wave_data_j
   
 }
 

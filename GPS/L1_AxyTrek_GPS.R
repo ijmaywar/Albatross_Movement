@@ -8,14 +8,13 @@
 ################################################################################
 
 
-# Clear envrionment -------------------------------------------------------
+# Clear environment -------------------------------------------------------
 
 rm(list = ls())
-# rm(list = ls(all=TRUE))
 
-# User Inputed Values -----------------------------------------------------
+# User Inputted Values -----------------------------------------------------
 
-szn = '2019_2020'
+szn = '2021_2022'
 location = 'Bird_Island' # Options: 'Bird_Island', 'Midway'
 
 # Set Environment ---------------------------------------------------------
@@ -32,18 +31,16 @@ library(readxl)
 library(tools)
 
 GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/Thorne Lab Shared Drive/Data/Albatross/"
-L0_dir <- paste0(GD_dir,"L0/",location,"/Tag_Data/",szn,"/Pos/Catlog/")
-L1_dir <- paste0(GD_dir, "THORNE_LAB/Data/Albatross/NEW_STRUCTURE/L1/",location,"/Tag_Data/GPS/GPS_Catlog/",szn,"/")
+L0_dir <- paste0(GD_dir,"L0/",location,"/Tag_Data/",szn,"/AxyTrek/")
+L1_dir <- paste0(GD_dir,"L1/",location,"/Tag_Data/GPS/GPS_AxyTrek/",szn,"/")
 meta_dir <- paste0(L1_dir,"GPS_Summaries/")
 
-# Import metdata
-fullmeta <- read_excel(paste0(GD_dir,"THORNE_LAB/Data/Albatross/NEW_STRUCTURE/metadata/Full_Metadata.xlsx"))
-fullmeta <- fullmeta %>% filter(Field_season  == szn, Location == location)
+# Import metadata
+fullmeta <- read_excel(paste0(GD_dir,"metadata/Full_Metadata.xlsx"))
 
 # Find GPS files
 setwd(L0_dir)
 gpsfiles<-list.files(pattern='*.csv')
-
 
 # User Functions ----------------------------------------------------------
 
@@ -92,9 +89,7 @@ colnames(df)<-c('bird','tagid','interval_minutes','int_sd','int_max','duration_t
 ################################################################################
 # Loop Through Birds
 
-# for (i in 1:length(gpsfiles)) { 
-for (i in 57:length(gpsfiles)) { 
-#for (i in 15:15) {   
+for (i in 1:length(gpsfiles)) { 
   
   namesplit <- strsplit(gpsfiles[i],"_")[[1]]
   dep_ID <- paste0(namesplit[1],"_",namesplit[2],"_",namesplit[3])
@@ -106,24 +101,21 @@ for (i in 57:length(gpsfiles)) {
     break
   }
   
-
-# Import data and clean column names --------------------------------------
-
-  if (location=="Bird_Island" && szn=="2020_2021") { 
-    m<-read.csv(gpsfiles[i]) # 2020_2021 data starts on first row for bird island gps files. skip=6 for all other szns
-  } else {
-    m<-read.csv(gpsfiles[i], skip=6)
+  # Import data and clean column names --------------------------------------
+  
+  m <- read_csv(gpsfiles[i],
+                col_types = cols("location-lat" = col_double(),
+                                 "location-lon" = col_double()))
+  
+  # Remove rows where lat and lon are NA (including accelerometer data)
+  m <- m[!is.na(m[,"location-lat"]),]
+  
+  if (nrow(m)==0) {
+    disp(paste0(dep_ID," did not record any GPS positions."))
+    continue
   }
   
-  # Remove rows where lat and lon are NA
-  m<-m[!is.na(m$Latitude),]
-  
-  # Create GPS datetime columns (GMT column and local TZ column)
-  if (substr(m$Date[1],3,3) == "/" || substr(m$Date[1],2,2) == "/") {
-    m$ptime <- as.POSIXct(paste(m$Date,m$Time), format='%m/%d/%Y %H:%M:%S', tz="GMT")
-  } else {
-    m$ptime <- as.POSIXct(paste(m$Date,m$Time), format='%Y-%m-%d %H:%M:%S', tz="GMT")
-  }
+  m$ptime <- as.POSIXct(paste(m$Date,m$Time), format='%Y-%m-%d %H:%M:%S', tz="GMT")
   
   # sometimes ptime writes the year like this 0021 (instead of 2021). Fix this.
   if (year(m$ptime[1])==21) {
@@ -131,7 +123,7 @@ for (i in 57:length(gpsfiles)) {
   }
   
   m$ptime_loc <- with_tz(m$ptime, loc_tz)
-
+  
   # Clean up GPS column names
   if (length(which(grepl( "Temp" , colnames(m) )))!=1) {
     m$Temperature_C <- NA
@@ -159,8 +151,12 @@ for (i in 57:length(gpsfiles)) {
     colnames(m)[which(grepl( "ltitude" , colnames(m) ))]<-"altitude"
   }
   
-
-# Check Random Weirdness --------------------------------------------------
+  m <- rename(m, Longitude = "location-lon")
+  m <- rename(m, Latitude = "location-lat")
+  
+  
+  
+  # Check Random Weirdness --------------------------------------------------
   # I've found a few tracks with some completely nonsensical times.
   # This script is to catch those, and remove those instances
   
@@ -181,8 +177,8 @@ for (i in 57:length(gpsfiles)) {
   }
   
   
-
-# L0 -> L1_1 --------------------------------------------------------------
+  
+  # L0 -> L1_1 --------------------------------------------------------------
   # Trim GPS file to when tag is on bird.
   # The point of it is to truncate times that the GPS was on and being carried 
   # around in the field, or, traveling in car to field site, etc. 
@@ -191,7 +187,7 @@ for (i in 57:length(gpsfiles)) {
   # Set Start of When Tag Was On Bird:
   CaptureDateTime = as.POSIXct(paste(birdmeta$Capture_Date_yyyymmdd,birdmeta$Capture_Time_hhmm), format = "%Y%m%d %H%M", tz = loc_tz)
   RecaptureDateTime = as.POSIXct(paste(birdmeta$Recapture_Date_yyyymmdd,birdmeta$Recapture_Time_hhmm), format = "%Y%m%d %H%M", tz = loc_tz)
-
+  
   if (is.na(RecaptureDateTime)) {
     m_bird <- m %>% filter(CaptureDateTime <= ptime_loc)
   } else {
@@ -234,8 +230,8 @@ for (i in 57:length(gpsfiles)) {
     }
   }
   
-  m_bird<-m_bird %>% select(id,ptime,lon,lat,altitude,Speed_kmhr,Temperature_C,satellites,HDOP,PDOP,TTFF)
-  colnames(m_bird) <- c("id","datetime","lon","lat","altitude","Speed_kmhr","Temp_C","satellites","HDOP","PDOP","TTFF")
+  m_bird<-m_bird %>% select(id,ptime,lon,lat)
+  colnames(m_bird) <- c("id","datetime","lon","lat")
   
   # Fill out Metadata Table 
   df$num_locs_filteredOut[i] <- n_TS_rmv + n_latlon_rmv + n_speed_rmv
@@ -250,8 +246,8 @@ for (i in 57:length(gpsfiles)) {
   df$duration_tag[i]        <- round(as.numeric(difftime(max(m_bird$datetime),min(m_bird$datetime), units = "days")), 2)
   df$duration_bird[i]       <- round(as.numeric(abs(difftime(CaptureDateTime,RecaptureDateTime, units = "days"))), 2)
   
-
-# L1_1 -> L1_2 ------------------------------------------------------------
+  
+  # L1_1 -> L1_2 ------------------------------------------------------------
   # Trim GPS data to only include samples taken when bird is off-colony
   
   # First calculate distance from colony, for every location
@@ -363,12 +359,12 @@ for (i in 57:length(gpsfiles)) {
     
   }
   
-
-# Save L1_1 and L1_2 ------------------------------------------------------
+  
+  # Save L1_1 and L1_2 ------------------------------------------------------
   
   write.csv(m_bird,file=paste0(L1_dir,'1_onbird/',dep_ID,"_GPS_L1_1.csv"),row.names=FALSE)
   write.csv(m_buff,file=paste0(L1_dir,'2_buffer2km/',dep_ID,"_GPS_L1_2.csv"),row.names=FALSE)
-
+  
   rm(list=ls()[! ls() %in% c("Mode", "calculate_speed", "wrap360",
                              "df", "fullmeta", "buffer_dist", "colony_coords", "GD_dir", "gpsfiles",
                              "L0_dir", "L1_dir", "loc_tz", "location", "meta_dir", "szn", "i")])  
