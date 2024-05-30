@@ -124,13 +124,12 @@ for (i in 1:length(files)) {
     }
   }
   
-  # Re-calculate bird_dir, bird_vel, bwa, and w_rel
+  # Re-calculate bird_dir, bird_vel, bwa, w_rel, b_wave_a, wave_rel
   for (trip in unique(m_hourly$tripID)) {
     m_hourly$bird_vel <- c(distHaversine(m_hourly %>% dplyr::select(lon,lat))/1000,NA)
-    m_hourly$bird_dir <- geosphere::bearing(m_hourly %>% dplyr::select(lon,lat))
-    m_hourly$bird_dir <- wrap360(m_hourly$bird_dir) # set bearing to [0,360)
+    m_hourly$bird_dir <- wrap360(geosphere::bearing(m_hourly %>% dplyr::select(lon,lat))) # set bearing to [0,360)
     m_hourly$bwa <- bearingAngle(m_hourly$bird_dir,wrap360(m_hourly$wind_dir-180)) # [0,180) degrees
-    m_hourly$w_rel <- (m_hourly$bird_dir+(360-wrap360(m_hourly$wind_dir-180))) %% 360
+    m_hourly$w_rel <- (wrap360(m_hourly$wind_dir-180)-m_hourly$bird_dir) %% 360
   }
   
   m_hr_trim <- m_hourly %>% filter(trim == 0)

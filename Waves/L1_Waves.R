@@ -75,57 +75,49 @@ wave_files <- list.files(pattern='*.nc')
 # DON'T RUN THIS FOR BIRD_ISLAND
 
 # COMBINE E AND W COMPONENTS OF NETCDF FILES for Midway
-wave_E_component <- rast(wave_files[5])
-wave_W_component <- rast(wave_files[6])
-wave_raster <- merge(wave_W_component,wave_E_component)
-
+wave_E_Jan_component <- rast(wave_files[1])
+wave_W_Jan_component <- rast(wave_files[2])
+wave_E_Feb_component <- rast(wave_files[3])
+wave_W_Feb_component <- rast(wave_files[4])
+wave_Jan_raster <- merge(wave_W_Jan_component,wave_E_Jan_component)
+wave_Feb_raster <- merge(wave_W_Feb_component,wave_E_Feb_component)
+wave_raster <- c(wave_Jan_raster,wave_Feb_raster)
+  
 # Create data vectors
-wave_t1 # Make sure you got the right stuff!
-times_t1 <- time(wave_t1)  # stores times from each file 
-times_t1 <- unique(times_t1) # find unique values because there should be two of every datetime (for u and v)
-wave_t1_u <- subset(wave_t1, 1:(nlyr(wave_t1)/2)) 
-wave_t1_v <- subset(wave_t1, (nlyr(wave_t1)/2)+1:nlyr(wave_t1))
+wave_raster # Make sure you got the right stuff!
+time(wave_raster)  # times from each file 
+swh <- subset(wave_raster, which(grepl("swh_",names(wave_raster))))
+mwp <- subset(wave_raster, which(grepl("mwp_",names(wave_raster))))
+mwd <- subset(wave_raster, which(grepl("mwd_",names(wave_raster))))
 
-u_stack <- c(wave_t1_u)
-v_stack <- c(wave_t1_v)
-all_times <- c(times_t1)
-all_times_num <- as.numeric(all_times)
+all_times_num <- as.numeric(unique(time(wave_raster)))
 
 
 # For Bird Island wave data -----------------------------------------------
 # DON'T RUN THIS FOR MIDWAY
 
 # Load netcdf file directly for Bird Island
-wave_t1 <- rast(wave_files[1])
-# Create data vectors
-wave_t1 # Make sure you got the right stuff!
-times_t1 <- time(wave_t1)  # stores times from each file 
-times_t1 <- unique(times_t1) # find unique values because there should be two of every datetime (for u and v)
-wave_t1_u <- subset(wave_t1, 1:(nlyr(wave_t1)/2)) 
-wave_t1_v <- subset(wave_t1, (nlyr(wave_t1)/2)+1:nlyr(wave_t1))
+wave_Nov_raster <- rast(wave_files[1])
+wave_Dec_raster <- rast(wave_files[2])
+wave_Jan_raster <- rast(wave_files[3])
+wave_raster <- c(wave_Nov_raster,wave_Dec_raster,wave_Jan_raster)
 
-# Load netcdf file directly for Bird Island
-wave_t2 <- rast(wave_files[2])
 # Create data vectors
-wave_t2 # Make sure you got the right stuff!
-times_t2 <- time(wave_t2)  # stores times from each file 
-times_t2 <- unique(times_t2) # find unique values because there should be two of every datetime (for u and v)
-wave_t2_u <- subset(wave_t2, 1:(nlyr(wave_t2)/2)) 
-wave_t2_v <- subset(wave_t2, (nlyr(wave_t2)/2)+1:nlyr(wave_t2))
+wave_raster # Make sure you got the right stuff!
+swh <- subset(wave_raster, which(grepl("swh_",names(wave_raster))))
+mwp <- subset(wave_raster, which(grepl("mwp_",names(wave_raster))))
+mwd <- subset(wave_raster, which(grepl("mwd_",names(wave_raster))))
 
-# Stack rasters
-# Single levels
-u_stack <- c(wave_t1_u, wave_t2_u)
-v_stack <- c(wave_t1_v, wave_t2_v)
-all_times <- c(times_t1, times_t2)
-all_times_num <- as.numeric(all_times)
+# Make sure times are the same across all subrasters.
+all.equal(time(swh),time(mwp),time(mwd))
+all_times_num <- as.numeric(unique(time(wave_raster)))
 
 # Loop through m and add wave information: u, v ---------------------------
 
 # create u and v wave vectors
 for (j in 1:nrow(m)) {
   
-  timej <- as.POSIXct(m$datetime[j], format = "%Y-%m-%d %H:%M:%S" , tz = "UTC")
+  timej <- as.POSIXct(m$datetime[j], format = "%Y-%m-%d %H:%M:%S" , tz = "GMT")
   timej_num <- as.numeric(timej)
   
   # Find index of current_time in all times. Use that index to pull out relevant raster layer.
@@ -140,9 +132,10 @@ for (j in 1:nrow(m)) {
     break
   }
   
-  # Isolate u and v rasters at time j
-  ustack_timej <- subset(u_stack, raster_dt_index) 
-  vstack_timej <- subset(v_stack, raster_dt_index)
+  # Isolate rasters at time j
+  swh_timej <- subset(swh, raster_dt_index) 
+  mwp_timej <- subset(mwp, raster_dt_index)
+  mwd_timej <- subset(mwd, raster_dt_index)
   
   # isolate coordinates
   xy_j <- as.data.frame(cbind(m$lon[j], m$lat[j]))
@@ -150,19 +143,21 @@ for (j in 1:nrow(m)) {
   xy_j$lon <- Lon360to180(xy_j$lon) 
   
   # Extract u and v components for time j at location x and y
-  u_j <- extract(ustack_timej, xy_j, ID=FALSE)
-  v_j <- extract(vstack_timej, xy_j, ID=FALSE)
+  swh_j <- extract(swh_timej, xy_j, ID=FALSE)
+  mwp_j <- extract(mwp_timej, xy_j, ID=FALSE)
+  mwd_j <- extract(mwd_timej, xy_j, ID=FALSE)
   
-  if (length(u_j) != 1) {
+  if (length(swh_j) != 1) {
     print("Number of wave measurements chosen != 1.")
     break
-  } else if (is.na(u_j[[1]]) || is.na(v_j[[1]])) {
+  } else if (is.na(swh_j[[1]]) || is.na(mwp_j[[1]]) || is.na(mwd_j[[1]])) {
     print("wave data for this coordinate cannot be found.")
     break
   }
   
-  m$u[j]<- u_j[[1]]
-  m$v[j]<- v_j[[1]]
+  m$swh[j]<- swh_j[[1]]
+  m$mwp[j]<- mwp_j[[1]]
+  m$mwd[j]<- mwd_j[[1]]
   
 }
 
@@ -170,5 +165,5 @@ for (j in 1:nrow(m)) {
 # Save compiled GPS data with wave U and V --------------------------------
 
 m$datetime <- as.character(format(m$datetime)) # safer for writing csv in character format
-# write_csv(m,file=paste0(wave_L1_dir,szn,"_allbirds_GPS_with_wave.csv"))
+write_csv(m,file=paste0(wave_L1_dir,szn,"_allbirds_GPS_with_wave.csv"))
 # write_csv(m,file=paste0(wave_L1_dir,szn,"_WAAL_GPS_with_wave.csv"))

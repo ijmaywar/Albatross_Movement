@@ -98,8 +98,7 @@ for (i in 1:length(bird_list)) {
       # Bird velocity and heading
       mij$lon <- Lon360to180(mij$lon)
       mij$bird_vel <- c(distHaversine(mij %>% dplyr::select(lon,lat))/(1000*hour_int),NA)
-      mij$bird_dir <- geosphere::bearing(mij %>% dplyr::select(lon,lat))
-      mij$bird_dir <- wrap360(mij$bird_dir) # set bearing to [0,360)
+      mij$bird_dir <- wrap360(geosphere::bearing(mij %>% dplyr::select(lon,lat))) # set bearing to [0,360)
       
       # Wind velocity and heading
       ddff <- uv2ddff(mij)
@@ -111,7 +110,7 @@ for (i in 1:length(bird_list)) {
       
       # In a 360 degree plot which direction is the bird traveling relative to 
       # the wind? 
-      mij$w_rel <- (mij$bird_dir+(360-wrap360(mij$wind_dir-180))) %% 360
+      mij$w_rel <- (wrap360(mij$wind_dir-180)-mij$bird_dir) %% 360
       
       # Save file
       mij$datetime <- as.character(format(mij$datetime)) # safer for writing csv in character format
