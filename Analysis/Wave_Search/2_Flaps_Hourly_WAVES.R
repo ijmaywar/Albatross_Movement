@@ -44,9 +44,9 @@ library(geosphere)
 
 for (location in locations) {
   if (location == "Bird_Island") {
-    szns = c("2019_2020", "2020_2021", "2021_2022")
+    szns = c("2019_2020")
   } else if (location == "Midway") {
-    szns = c("2018_2019", "2021_2022", "2022_2023")
+    szns = c("2018_2019")
   }
   for (szn in szns) {
     cat("Processing location:",location,"Season:",szn,"\n")
@@ -55,11 +55,8 @@ for (location in locations) {
     
     GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/Thorne Lab Shared Drive/Data/Albatross/"
     if (min_peak_prob == 0) {
-      read_dir <- paste0(GD_dir, "Analysis/Maywar/Flaps_600s/Flaps_HMM_GLS_ECG/p_0/",location,"/",szn,"/")
-      write_dir <- paste0(GD_dir, "Analysis/Maywar/Flaps_Hourly/Flaps_HMM_GLS_ECG/p_0/",location,"/",szn,"/")
-    } else if (min_peak_prob == 0.85) {
-      read_dir <- paste0(GD_dir, "Analysis/Maywar/Flaps_600s/Flaps_HMM_GLS_ECG/p_085/",location,"/",szn,"/")
-      write_dir <- paste0(GD_dir, "Analysis/Maywar/Flaps_Hourly/Flaps_HMM_GLS_ECG/p_085/",location,"/",szn,"/")
+      read_dir <- paste0(GD_dir, "Analysis/Maywar/Wave_Search/Flaps_600s/Flaps_HMM_GLS_ECG/p_0/",location,"/",szn,"/")
+      write_dir <- paste0(GD_dir, "Analysis/Maywar/Wave_Search/Flaps_Hourly/Flaps_HMM_GLS_ECG/p_0/",location,"/",szn,"/")
     }
     
     setwd(read_dir)
@@ -68,7 +65,7 @@ for (location in locations) {
     # Loop thru and process  ---------------------------------------------------------------
     
     for (i in 1:length(files)) {
-      m <- read.csv(files[i])
+      m <- read_csv(files[i])
       m$datetime <- as.POSIXct(m$datetime,format="%Y-%m-%d %H:%M:%S", tz="GMT")
       birdname_trip <- str_sub(files[i],1,-28)
       birdname <- str_sub(files[i],1,-30)
@@ -99,13 +96,13 @@ for (location in locations) {
             m_hourly$flaps[j] <- sum(current_m$flaps)
           }
           
-          # IF any of the OWBs are NA, the hour summary needs to also be NA
-          if (any(is.na(current_m$OWB_state))) {
-            m_hourly$OWB_state[j] <- NA
-          } else if (any(current_m$OWB_state == "on")) {
-            # If the bird is on-water at all during the hour, the OWB_state is on-water
-            m_hourly$OWB_state[j] <- "on"
-          }
+          # # IF any of the OWBs are NA, the hour summary needs to also be NA
+          # if (any(is.na(current_m$OWB_state))) {
+          #   m_hourly$OWB_state[j] <- NA
+          # } else if (any(current_m$OWB_state == "on")) {
+          #   # If the bird is on-water at all during the hour, the OWB_state is on-water
+          #   m_hourly$OWB_state[j] <- "on"
+          # }
           
           # If any of the heartbeats are NA, the hour summary needs to also be NA
           if (any(is.na(current_m$Heartbeats))) {

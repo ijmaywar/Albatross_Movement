@@ -10,8 +10,8 @@ rm(list = ls())
 
 # User Inputted Values -----------------------------------------------------
 
-# location = 'Midway'
-# szn = "2018_2019"
+location = 'Midway'
+szn = "2018_2019"
 
 locations = c("Bird_Island", "Midway")
 min_peak_prob = 0 # All heartbeats (ECG) with a probability less than this value will be removed
@@ -42,33 +42,33 @@ generate_sequence <- function(start, end, rows) {
   }
 }
 
-extract_OWB_state <- function(m,OWB_filename) {
-  m_OWB <- read_csv(paste0(Acc_L4_dir,OWB_filename))
-  m_OWB$Start_water_dt <- as.POSIXct(m_OWB$Start_water_dt,format="%d-%b-%Y %H:%M:%S",tz="GMT")
-  m_OWB$Stop_water_dt <- as.POSIXct(m_OWB$Stop_water_dt,format="%d-%b-%Y %H:%M:%S",tz="GMT")
-  m_OWB_data_start <- m_OWB$Start_water_dt[1]
-  m_OWB_data_end <- m_OWB$Stop_water_dt[nrow(m_OWB)]
-  
-  OWB_state <- rep("off",times=nrow(m))
-  
-  # find the seconds passed after the first GPS measurement for all GLS==wet start and stop times
-  m_OWB$GPSsec_start <- as.numeric(difftime(m_OWB$Start_water_dt ,m$datetime[1],units='secs'))
-  m_OWB$GPSsec_end <- as.numeric(difftime(m_OWB$Stop_water_dt,m$datetime[1],units='secs'))
-  
-  breaks <- seq(0,600*nrow(m),by=600)
-  m_OWB$start <- cut(m_OWB$GPSsec_start,breaks,include.lowest=TRUE,right=FALSE,labels=FALSE)
-  m_OWB$end <- cut(m_OWB$GPSsec_end,breaks,include.lowest=TRUE,right=FALSE,labels=FALSE)
-  m_OWB$indexes_covered <- pmap(list(m_OWB$start,m_OWB$end,nrow(m)),generate_sequence)
-  for (z in 1:nrow(m_OWB)) {
-    OWB_state[m_OWB$indexes_covered[[z]]] <- "on"
-  }
-  
-  # Add NAs to 10 min intervals where the Acc is not recording data
-  OWB_state[which(is.na(m$flaps))] <- NA
-  
-  # return m
-  return(list(OWB_state=OWB_state,m_OWB=m_OWB))
-}
+# extract_OWB_state <- function(m,OWB_filename) {
+#   m_OWB <- read_csv(paste0(Acc_L4_dir,OWB_filename))
+#   m_OWB$Start_water_dt <- as.POSIXct(m_OWB$Start_water_dt,format="%d-%b-%Y %H:%M:%S",tz="GMT")
+#   m_OWB$Stop_water_dt <- as.POSIXct(m_OWB$Stop_water_dt,format="%d-%b-%Y %H:%M:%S",tz="GMT")
+#   m_OWB_data_start <- m_OWB$Start_water_dt[1]
+#   m_OWB_data_end <- m_OWB$Stop_water_dt[nrow(m_OWB)]
+#   
+#   OWB_state <- rep("off",times=nrow(m))
+#   
+#   # find the seconds passed after the first GPS measurement for all GLS==wet start and stop times
+#   m_OWB$GPSsec_start <- as.numeric(difftime(m_OWB$Start_water_dt ,m$datetime[1],units='secs'))
+#   m_OWB$GPSsec_end <- as.numeric(difftime(m_OWB$Stop_water_dt,m$datetime[1],units='secs'))
+#   
+#   breaks <- seq(0,600*nrow(m),by=600)
+#   m_OWB$start <- cut(m_OWB$GPSsec_start,breaks,include.lowest=TRUE,right=FALSE,labels=FALSE)
+#   m_OWB$end <- cut(m_OWB$GPSsec_end,breaks,include.lowest=TRUE,right=FALSE,labels=FALSE)
+#   m_OWB$indexes_covered <- pmap(list(m_OWB$start,m_OWB$end,nrow(m)),generate_sequence)
+#   for (z in 1:nrow(m_OWB)) {
+#     OWB_state[m_OWB$indexes_covered[[z]]] <- "on"
+#   }
+#   
+#   # Add NAs to 10 min intervals where the Acc is not recording data
+#   OWB_state[which(is.na(m$flaps))] <- NA
+#   
+#   # return m
+#   return(list(OWB_state=OWB_state,m_OWB=m_OWB))
+# }
 
 # Load Packages -----------------------------------------------------------
 
@@ -81,9 +81,9 @@ library(stringr)
 # Loop thru all samples -----------------------------------------------------------
 for (location in locations) {
   if (location == "Bird_Island") {
-    szns = c("2019_2020", "2020_2021", "2021_2022")
+    szns = c("2019_2020")
   } else if (location == "Midway") {
-    szns = c("2018_2019", "2021_2022", "2022_2023")
+    szns = c("2018_2019")
   }
   for (szn in szns) {
     cat("Processing location:",location,"Season:",szn,"\n")
@@ -91,12 +91,10 @@ for (location in locations) {
 # Set Environment ---------------------------------------------------------
 
 GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/Thorne Lab Shared Drive/Data/Albatross/"
-Acc_L3_dir <- paste0(GD_dir,"L3/",location,"/Tag_Data/Acc/",szn,"/")
-Acc_L4_dir <- paste0(GD_dir,"L4/",location,"/Tag_Data/Acc/",szn,"/")
+Acc_L3_dir <- paste0(GD_dir,"Analysis/Maywar/Wave_Search/Acc_L3/",location,"/",szn,"/")
+# Acc_L4_dir <- paste0(GD_dir,"L4/",location,"/Tag_Data/Acc/",szn,"/")
 if (min_peak_prob == 0) {
-  write_dir <- paste0(GD_dir, "Analysis/Maywar/Flaps_600s/Flaps_HMM_GLS_ECG/p_0/",location,"/",szn,"/")
-} else if (min_peak_prob == 0.85) {
-  write_dir <- paste0(GD_dir, "Analysis/Maywar/Flaps_600s/Flaps_HMM_GLS_ECG/p_085/",location,"/",szn,"/")
+  write_dir <- paste0(GD_dir,"Analysis/Maywar/Wave_Search/Flaps_600s/Flaps_HMM_GLS_ECG/p_0/",location,"/",szn,"/")
 }
 
 # Load fullmeta
@@ -116,8 +114,8 @@ if (location == 'Midway') {
         break
       }
       
-      birdname_trip <- str_sub(Acc_files[i],1,-23)
-      birdname <- str_sub(Acc_files[i],1,-25)
+      birdname_trip <- str_sub(Acc_files[i],1,-29)
+      birdname <- str_sub(Acc_files[i],1,-31)
       birdspp <- str_sub(birdname,1,4)
       
       m$HMM_2S_state <- HMMstate(birdname_trip,states=2)
@@ -126,11 +124,11 @@ if (location == 'Midway') {
       m$GLS_state <- NA
       m$Heartbeats <- NA
       
-      OWB_filename <- paste0(birdname,"_Acc_L4_OWB.csv")
-      # Find OWB
-      OWB_list <- extract_OWB_state(m,OWB_filename)
-      m$OWB_state <- OWB_list$OWB_state
-      m_OWB <- OWB_list$m_OWB
+      # OWB_filename <- paste0(birdname,"_Acc_L4_OWB.csv")
+      # # Find OWB
+      # OWB_list <- extract_OWB_state(m,OWB_filename)
+      # m$OWB_state <- OWB_list$OWB_state
+      # m_OWB <- OWB_list$m_OWB
       
       m$datetime <- as.character(format(m$datetime)) # safer for writing csv in character format  
       write.csv(m, file=paste0(write_dir,birdname_trip,"_Flaps_HMM_GLS_ECG_600s.csv"), row.names=FALSE)
@@ -161,20 +159,20 @@ if (location == 'Midway') {
         break
       }
       
-      birdname_trip <- str_sub(Acc_files[i],1,-23)
-      birdname <- str_sub(Acc_files[i],1,-25)
+      birdname_trip <- str_sub(Acc_files[i],1,-29)
+      birdname <- str_sub(Acc_files[i],1,-31)
       
       m$HMM_2S_state <- HMMstate(birdname_trip,states=2)
       m$HMM_3S_state <- HMMstate(birdname_trip,states=3)
       
-      OWB_filename <- paste0(birdname,"_Acc_L4_OWB.csv")
+      # OWB_filename <- paste0(birdname,"_Acc_L4_OWB.csv")
       GLS_filename <- paste0(birdname,"_GLS_L1.csv")
       ECG_filename <- paste0(birdname,"_ECG_L1.csv")
       
-      # Find OWB
-      OWB_list <- extract_OWB_state(m,OWB_filename)
-      m$OWB_state <- OWB_list$OWB_state
-      m_OWB <- OWB_list$m_OWB
+      # # Find OWB
+      # OWB_list <- extract_OWB_state(m,OWB_filename)
+      # m$OWB_state <- OWB_list$OWB_state
+      # m_OWB <- OWB_list$m_OWB
       
       if (sum(GLS_files==GLS_filename)==0) {
         m$GLS_state <- NA
