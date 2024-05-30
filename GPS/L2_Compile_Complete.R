@@ -86,5 +86,5 @@ all_data <- all_data %>% mutate(TripType = if_else(TripType %in% c("E_pip","2BEP
 all_data <- na.omit(all_data)
 
 # write file
-write_csv(all_data,paste0(write_dir,loc,"_compiled_complete.csv"))
+write_csv(all_data,paste0(write_dir,loc,"_600s_compiled_complete.csv"))
 
