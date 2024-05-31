@@ -82,16 +82,15 @@ wave_W_Feb_component <- rast(wave_files[4])
 wave_Jan_raster <- merge(wave_W_Jan_component,wave_E_Jan_component)
 wave_Feb_raster <- merge(wave_W_Feb_component,wave_E_Feb_component)
 wave_raster <- c(wave_Jan_raster,wave_Feb_raster)
-  
-# Create data vectors
 wave_raster # Make sure you got the right stuff!
-time(wave_raster)  # times from each file 
-swh <- subset(wave_raster, which(grepl("swh_",names(wave_raster))))
-mwp <- subset(wave_raster, which(grepl("mwp_",names(wave_raster))))
-mwd <- subset(wave_raster, which(grepl("mwd_",names(wave_raster))))
 
+all_times <- unique(time(wave_raster))
 all_times_num <- as.numeric(unique(time(wave_raster)))
 
+new_columns <- unique(unlist(str_split(names(wave_raster), "_"))[seq(1,2*length(names(wave_raster)),2)])
+for (new_col in new_columns) {
+  m[new_col] <- NA
+}
 
 # For Bird Island wave data -----------------------------------------------
 # DON'T RUN THIS FOR MIDWAY
@@ -106,13 +105,13 @@ wave_raster # Make sure you got the right stuff!
 all_times <- unique(time(wave_raster))
 all_times_num <- as.numeric(unique(time(wave_raster)))
 
-# Loop through m and add wave information --------------------------------------
-
 # Create columns for wave data
 new_columns <- unique(varnames(wave_raster))
 for (new_col in new_columns) {
   m[new_col] <- NA
 }
+
+# Loop through m and add wave information --------------------------------------
 
 for (j in 1:nrow(m)) {
   
