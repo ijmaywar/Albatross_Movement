@@ -33,14 +33,18 @@ warning('off','MATLAB:table:ModifiedAndSavedVarNames')
 
 % set directories
 GD_dir = "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/Thorne Lab Shared Drive/Data/Albatross/";
+
 if strcmp(tagtype,"AxyTrek")
     L0_dir = strcat(GD_dir,'L0/',location,'/Tag_Data/',szn,'/AxyTrek/');
+    GPS_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/GPS/GPS_AxyTrek/',szn,'/2_buffer2km/');
+    L1_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/Acc/Acc_Technosmart/',szn,'/AxyTrek/');
 else
     L0_dir = strcat(GD_dir,'L0/',location,'/Tag_Data/',szn,'/Aux/',tagtype,'/');
+    GPS_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/GPS/GPS_Catlog/',szn,'/2_buffer2km/');
+    L1_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/Acc/Acc_Technosmart/',szn,'/');
 end
 
-L1_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/Acc/Acc_Technosmart/',szn,'/');
-GPS_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/GPS/GPS_Catlog/',szn,'/2_buffer2km/');
+
 
 % Sometimes a select few individuals have been written in a different
 % timezone than the rest of the files in a given field szn. This is the
@@ -87,8 +91,8 @@ CheckMetaGPSUnique(L0_fileList,GPS_fileList,fullmeta)
 
 %% Loop through each unique bird
 loop_Start = tic;
-parfor(i = 1:height(L0_fileList))
-% for i = 1:height(L0_fileList)
+% parfor(i = 1:height(L0_fileList))
+for i = 1:height(L0_fileList)
     %% Load data
     
     meta = struct;
@@ -124,6 +128,8 @@ parfor(i = 1:height(L0_fileList))
     %% s1
     
     [m,s1_meta] = s1_Acc(m,dep_ID,birdmeta,written_local);
+
+    % Write a seperate s1 for AxyTrek...
 
     meta.s1 = s1_meta;
 

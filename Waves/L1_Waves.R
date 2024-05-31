@@ -10,8 +10,8 @@ rm(list = ls())
 
 # User Inputted Values -----------------------------------------------------
 
-location = 'Bird_Island' # Options: 'Bird_Island', 'Midway'
-szn = "2019_2020"
+location = 'Midway' # Options: 'Bird_Island', 'Midway'
+szn = "2022_2023"
 
 # Packages  ---------------------------------------------------------
 
@@ -52,6 +52,9 @@ for (i in 1:length(files)) {
 }
 
 # Make sure all birds are found within the grid extent
+# Set the grid to download each necesary component of ERA5 data.
+
+# Roughly:
 # Bird Island grid extent: -30N -70S -120W -10E (big range due to Wandering!)
 # Midway grid extent: 50N 20S 140W -140E
 # NOTE: Midway data must be downloaded in two parts because you cannot cross the 
@@ -74,6 +77,7 @@ wave_files <- list.files(pattern='*.nc')
 # For Midway wave data --------------------------------------------------------------
 # DON'T RUN THIS FOR BIRD_ISLAND
 
+wave_files
 # COMBINE E AND W COMPONENTS OF NETCDF FILES for Midway
 wave_E_Jan_component <- rast(wave_files[1])
 wave_W_Jan_component <- rast(wave_files[2])
@@ -166,4 +170,3 @@ for (j in 1:nrow(m)) {
 
 m$datetime <- as.character(format(m$datetime)) # safer for writing csv in character format
 write_csv(m,file=paste0(wave_L1_dir,szn,"_allbirds_GPS_with_wave.csv"))
-# write_csv(m,file=paste0(wave_L1_dir,szn,"_WAAL_GPS_with_wave.csv"))

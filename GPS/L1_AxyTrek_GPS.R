@@ -14,8 +14,8 @@ rm(list = ls())
 
 # User Inputted Values -----------------------------------------------------
 
-szn = '2021_2022'
-location = 'Bird_Island' # Options: 'Bird_Island', 'Midway'
+szn = '2018_2019'
+location = 'Midway' # Options: 'Bird_Island', 'Midway'
 
 # Set Environment ---------------------------------------------------------
 
@@ -105,9 +105,14 @@ for (i in 1:length(gpsfiles)) {
   
   m <- read_csv(gpsfiles[i],
                 col_types = cols("location-lat" = col_double(),
-                                 "location-lon" = col_double()))
+                                 "location-lon" = col_double(),
+                                 "height-msl" = col_double(),
+                                 "ground-speed" = col_double(),
+                                 "satellites" = col_double(),
+                                 "hdop" = col_double(),
+                                 "signal-strength" = col_double()))
   
-  # Remove rows where lat and lon are NA (including accelerometer data)
+  # Remove rows where lat and lon are NA 
   m <- m[!is.na(m[,"location-lat"]),]
   
   if (nrow(m)==0) {
@@ -115,7 +120,11 @@ for (i in 1:length(gpsfiles)) {
     continue
   }
   
-  m$ptime <- as.POSIXct(paste(m$Date,m$Time), format='%Y-%m-%d %H:%M:%S', tz="GMT")
+  if ("Date" %in% colnames(m)) {
+    m$ptime <- as.POSIXct(paste(m$Date,m$Time), format='%Y-%m-%d %H:%M:%S', tz="GMT")
+  } else if ("Timestamp" %in% colnames(m)) {
+    m$ptime <- as.POSIXct(m$Timestamp, format='%d/%m/%Y %H:%M:%S', tz="GMT")
+  }
   
   # sometimes ptime writes the year like this 0021 (instead of 2021). Fix this.
   if (year(m$ptime[1])==21) {
@@ -130,31 +139,14 @@ for (i in 1:length(gpsfiles)) {
   }else{
     colnames(m)[which(grepl( "Temp" , colnames(m) ))]<-"Temperature_C"
   }
-  if (length(which(grepl( "Speed" , colnames(m) )))!=1) {
-    m$Speed_kmhr <- NA
+  if (length(which(grepl( "height" , colnames(m) )))!=1) {
+    m$Temperature_C <- NA
   }else{
-    colnames(m)[which(grepl( "Speed" , colnames(m) ))]<-"Speed_kmhr"
+    colnames(m)[which(grepl( "height" , colnames(m) ))]<-"altitude"
   }
-  if (length(which(grepl( "TTFF" , colnames(m) )))!=1) {
-    m$TTFF <- NA
-  }else{
-    colnames(m)[which(grepl( "TTFF" , colnames(m) ))]<-"TTFF"
-  }
-  if (length(which(grepl( "atellites" , colnames(m) )))!=1) {
-    m$satellites <- NA
-  }else{
-    colnames(m)[which(grepl( "atellites" , colnames(m) ))]<-"satellites"
-  }
-  if (length(which(grepl( "ltitude" , colnames(m) )))!=1) {
-    m$altitude <- NA
-  }else{
-    colnames(m)[which(grepl( "ltitude" , colnames(m) ))]<-"altitude"
-  }
-  
   m <- rename(m, Longitude = "location-lon")
   m <- rename(m, Latitude = "location-lat")
-  
-  
+  m <- rename(m, Speed_kmhr = "ground-speed")
   
   # Check Random Weirdness --------------------------------------------------
   # I've found a few tracks with some completely nonsensical times.
@@ -371,11 +363,9 @@ for (i in 1:length(gpsfiles)) {
 } 
 # End of Bird Loop
 
-
-
 # Write metadata table ----------------------------------------------------
 
-write.csv(df,file=paste0(meta_dir,szn,"_gpsCATLOG_trip-summary.csv"),row.names=FALSE)
+write.csv(df,file=paste0(meta_dir,szn,"_gpsAxyTrek_trip-summary.csv"),row.names=FALSE)
 
 
 
