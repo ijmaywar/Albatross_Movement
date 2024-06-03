@@ -48,9 +48,9 @@ for (loc_idx in 1:length(locations)) {
   # Set Environment ---------------------------------------------------------
   
   if (location == 'Bird_Island') {
-    nc_dir <- paste0(GD_dir,"L0/",location,"/Wind_Data/compiled_2019_2022/ERA5_Monthly_Avg_10m/")
+    nc_dir <- paste0(GD_dir,"L0/",location,"/Env_Data/compiled_2019_2022/ERA5_Wind_Monthly_Avg_10m/")
   } else if (location == 'Midway') {
-    nc_dir <- paste0(GD_dir,"L0/",location,"/Wind_Data/compiled_2018_2023/ERA5_Monthly_Avg_10m/")
+    nc_dir <- paste0(GD_dir,"L0/",location,"/Env_Data/compiled_2018_2023/ERA5_Wind_Monthly_Avg_10m/")
   }
   GPS_dir <- paste0(GD_dir,"L4/",location,"/Tag_Data/GPS/")
   

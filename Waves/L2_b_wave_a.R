@@ -93,7 +93,7 @@ for (i in 1:length(bird_list)) {
 
       # Save file
       mij$datetime <- as.character(format(mij$datetime)) # safer for writing csv in character format
-      filename_chunk_id <- as.character(mij$tripID[1])
+      filename_chunk_id <- as.character(mij$tripID[j])
       write_csv(mij, paste0(wave_L2_dir, filename_chunk_id, "_b_wave_a.csv"))
       
       rm("mij")

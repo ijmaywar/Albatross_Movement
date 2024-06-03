@@ -26,9 +26,9 @@ library(foehnix)
 # Set Environment ---------------------------------------------------------
 
 GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/Thorne Lab Shared Drive/Data/Albatross/"
-nc_dir <- paste0(GD_dir,"L0/",location,"/Wind_Data/",szn,"/ERA5_SingleLevels_10m/")
+nc_dir <- paste0(GD_dir,"L0/",location,"/Env_Data/",szn,"/ERA5_Wind_SingleLevels_10m/")
 GPS_dir <- paste0(GD_dir,"L2/",location,"/Tag_Data/GPS/",szn,"/")
-wind_L1_dir <- paste0(GD_dir,"L1/",location,"/Wind_Data/ERA5_SingleLevels_10m/allbirds_GPS_with_wind/",szn,"/")
+wind_L1_dir <- paste0(GD_dir,"L1/",location,"/Env_Data/ERA5_SingleLevels_10m/allbirds_GPS_with_wind/",szn,"/")
 
 # User Functions ----------------------------------------------------------
 
