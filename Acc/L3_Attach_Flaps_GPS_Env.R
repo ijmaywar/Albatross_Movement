@@ -72,8 +72,7 @@ for (i in 1:length(env_files)) {
   birdspp <- str_sub(birdname,1,4)
   
   birdmeta <- fullmeta %>% filter(Deployment_ID == birdname)
-  # L1_acc_filepath <- paste0(GD_dir,"L1/",location,"/Tag_Data/Acc/",birdmeta$Aux_TagCat,"/",szn,"/",birdname,"_Acc_L1.csv")
-  
+
   # Attach number of flaps
   acc_filename <- paste0(birdname,"_Acc_L2.csv")
   if (sum(acc_files==acc_filename)==1) {
@@ -102,7 +101,6 @@ for (i in 1:length(env_files)) {
     write.csv(m, file=paste0(write_dir,birdname_trip,"_Acc_L3_env_10min.csv"), row.names=FALSE)
   
   }
-}
 }
 }
 }
