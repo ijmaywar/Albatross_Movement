@@ -16,7 +16,8 @@ rm(list = ls())
 # location = 'Bird_Island' # Options: 'Bird_Island', 'Midway'
 # szn = "2019_2020"
 
-locations = c("Bird_Island", "Midway")
+# locations = c("Bird_Island", "Midway")
+locations = c("Midway")
 
 # Packages  ---------------------------------------------------------
 

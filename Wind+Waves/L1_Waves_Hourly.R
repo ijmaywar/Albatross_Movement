@@ -11,7 +11,7 @@ rm(list = ls())
 # User Inputted Values -----------------------------------------------------
 
 location = 'Midway' # Options: 'Bird_Island', 'Midway'
-szn = "2022_2023"
+szn = "2018_2019"
 
 # Packages  ---------------------------------------------------------
 

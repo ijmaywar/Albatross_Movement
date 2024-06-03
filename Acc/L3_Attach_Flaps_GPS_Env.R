@@ -1,6 +1,6 @@
 ################################################################################
 #
-# Combine L2 Wind data AND L2 Wave data with L2 Acc data to count the number of 
+# Combine L2 Env data with L2 Acc data and count the number of 
 # flaps within 10-minute GPS intervals.
 #
 ################################################################################
@@ -41,28 +41,25 @@ for (location in locations) {
 
 GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/Thorne Lab Shared Drive/Data/Albatross/"
 Acc_dir <- paste0(GD_dir, "L2/",location,"/Tag_Data/Acc/",szn,"/")
-wind_L2_dir <- paste0(GD_dir,"L2/",location,"/Wind_Data/ERA5_SingleLevels_10m/",szn,"/")
+env_L2_dir <- paste0(GD_dir,"L2/",location,"/Env_Data/ERA5_SingleLevels_10m/",szn,"/")
 wave_L2_dir <- paste0(GD_dir,"L2/",location,"/Wave_Data/ERA5_SingleLevels_10m/",szn,"/")
-write_dir <- paste0(GD_dir,"Analysis/Maywar/Wave_Search/Acc_L3/",location,"/",szn,"/")
+write_dir <- paste0(GD_dir,"L3/",location,"/Tag_Data/Acc/",szn,"/")
 
 # Load fullmeta
 fullmeta <- read_xlsx(paste0(GD_dir,"metadata/Full_Metadata.xlsx"))
 
-setwd(wave_L2_dir)
-wave_files <- list.files(pattern='*.csv')
-
 setwd(Acc_dir)
 acc_files <- list.files(pattern='*.csv')
 
-setwd(wind_L2_dir)
-files <- list.files(pattern='*.csv')
-all_trips <- sub("_bwa.csv$","",files)
+setwd(env_L2_dir)
+env_files <- list.files(pattern='*.csv')
+all_trips <- sub("_BWAs.csv$","",env_files)
 
 # Add flaps ---------------------------------------------------------------
 
-for (i in 1:length(files)) {
+for (i in 1:length(env_files)) {
   
-  m <- read.csv(files[i])
+  m <- read.csv(env_files[i])
   m$datetime <- as.POSIXct(m$datetime,format="%Y-%m-%d %H:%M:%S", tz="GMT")
  
   if (difftime(m$datetime[nrow(m)],m$datetime[1],units="secs") != 600*(nrow(m)-1)) {
@@ -70,23 +67,12 @@ for (i in 1:length(files)) {
     break
   }
   
-  birdname_trip <- str_sub(files[i],1,-9)
-  birdname <- str_sub(files[i],1,-11)
+  birdname_trip <- str_sub(env_files[i],1,-10)
+  birdname <- str_sub(env_files[i],1,-12)
   birdspp <- str_sub(birdname,1,4)
   
   birdmeta <- fullmeta %>% filter(Deployment_ID == birdname)
-  L1_acc_filepath <- paste0(GD_dir,"L1/",location,"/Tag_Data/Acc/",birdmeta$Aux_TagCat,"/",szn,"/",birdname,"_Acc_L1.csv")
-  
-  # Attach wave data
-  wave_filename <- paste0(birdname_trip,"_b_wave_a.csv")
-  if (sum(wave_files==wave_filename)==1) {
-    wave_data <- read_csv(paste0(wave_L2_dir,wave_filename))
-    wave_data$datetime <- as.POSIXct(wave_data$datetime,format="%Y-%m-%d %H:%M:%S", tz="GMT")
-    if (!all.equal(wave_data$datetime,m$datetime)) {
-      disp("Datetime columns of wave and wind data are not a match!")
-      break
-    }
-    m <- bind_cols(m,wave_data %>% select(swh,mwp,mwd,b_wave_a,wave_rel))
+  # L1_acc_filepath <- paste0(GD_dir,"L1/",location,"/Tag_Data/Acc/",birdmeta$Aux_TagCat,"/",szn,"/",birdname,"_Acc_L1.csv")
   
   # Attach number of flaps
   acc_filename <- paste0(birdname,"_Acc_L2.csv")
@@ -113,7 +99,7 @@ for (i in 1:length(files)) {
     m$flaps <- data$Freq
   
     m$datetime <- as.character(format(m$datetime)) # safer for writing csv in character format  
-    write.csv(m, file=paste0(write_dir,birdname_trip,"_Acc_L3_wind_waves_10min.csv"), row.names=FALSE)
+    write.csv(m, file=paste0(write_dir,birdname_trip,"_Acc_L3_env_10min.csv"), row.names=FALSE)
   
   }
 }
