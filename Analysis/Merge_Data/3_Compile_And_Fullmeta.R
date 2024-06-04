@@ -8,10 +8,6 @@
 
 rm(list = ls())
 
-# User Inputted Values -----------------------------------------------------
-
-min_peak_prob = 0 # What was the min_peak_prob used to create summary data?
-
 # Load Packages -----------------------------------------------------------
 
 library(tidyverse)
@@ -23,14 +19,8 @@ library(stringr)
 # Set Environment ---------------------------------------------------------
 
 GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/Thorne Lab Shared Drive/Data/Albatross/"
-
-if (min_peak_prob == 0) {
-  read_dir <- paste0(GD_dir, "Analysis/Maywar/Flaps_Hourly/Flaps_HMM_GLS_ECG/p_0/")
-  write_dir <- paste0(GD_dir, "Analysis/Maywar/Flaps_Hourly/Flaps_HMM_GLS_ECG_Compiled/p_0/")
-} else if (min_peak_prob == 0.85) {
-  read_dir <- paste0(GD_dir, "Analysis/Maywar/Flaps_Hourly/Flaps_HMM_GLS_ECG/p_085/")
-  write_dir <- paste0(GD_dir, "Analysis/Maywar/Flaps_Hourly/Flaps_HMM_GLS_ECG_Compiled/p_085/")
-}
+read_dir <- paste0(GD_dir, "Analysis/Maywar/Merged_Data/Merged_Hourly/")
+write_dir <- paste0(GD_dir, "Analysis/Maywar/Merged_Data/Merged_Hourly_Compiled/")
 
 # Load fullmeta
 fullmeta <- read_xlsx(paste0(GD_dir,"metadata/Full_Metadata.xlsx"))
@@ -42,7 +32,8 @@ compiled_m <- do.call(rbind, lapply(file_list, read_csv))
 
 compiled_m$datetime <- as.POSIXct(compiled_m$datetime,format="%Y-%m-%d %H:%M:%S", tz="GMT")
 
-birds <- unique(str_sub(basename(file_list),1,-32))
+birds <- unique(str_sub(basename(file_list),1,-23))
+
 # Add fullmeta Data ---------------------------------------------------------------
 
 compiled_m$Location <- NA
@@ -79,7 +70,7 @@ for (i in 1:length(birds)) {
 
 # Save m
 compiled_m$datetime <- as.character(format(compiled_m$datetime)) # safer for writing csv in character format  
-write.csv(compiled_m, file=paste0(write_dir,"Compiled_Flaps_HMM_GLS_ECG_Hourly.csv"), row.names=FALSE)
+write.csv(compiled_m, file=paste0(write_dir,"Analysis_Hourly_Compiled.csv"), row.names=FALSE)
 
 # Filter for only ECG birds ----------------------------------------------------
 
@@ -89,6 +80,6 @@ ECG_files <- list.files(pattern='*.csv',recursive = TRUE,full.names = FALSE)
 ECG_birds <- str_sub(ECG_files,11,-12)
 
 compiled_ECG_m <- compiled_m %>% filter(id %in% ECG_birds)
-write.csv(compiled_ECG_m, file=paste0(write_dir,"ECGonly_Compiled_Flaps_HMM_GLS_ECG_Hourly.csv"), row.names=FALSE)
+write.csv(compiled_ECG_m, file=paste0(write_dir,"Analysis_Hourly_Compiled_OnlyECG.csv"), row.names=FALSE)
 
 

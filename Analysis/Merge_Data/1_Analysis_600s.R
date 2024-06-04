@@ -14,7 +14,6 @@ rm(list = ls())
 # szn = "2018_2019"
 
 locations = c("Bird_Island", "Midway")
-min_peak_prob = 0 # All heartbeats (ECG) with a probability less than this value will be removed
 
 # User defined functions ---------------------------------------------------
 
@@ -55,7 +54,7 @@ library(stringr)
 for (location in locations) {
   if (location == "Bird_Island") {
     # szns = c("2019_2020","2020_2021","2021_2022")
-    szns = c("2020_2021","2021_2022")
+    szns = c("2020_2021")
   } else if (location == "Midway") {
     # szns = c("2018_2019","2021_2022","2022_2023")
     szns = c("2021_2022","2022_2023")
@@ -67,10 +66,7 @@ for (location in locations) {
 
 GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/Thorne Lab Shared Drive/Data/Albatross/"
 Acc_L3_dir <- paste0(GD_dir,"L3/",location,"/Tag_Data/Acc/",szn,"/")
-
-if (min_peak_prob == 0) {
-  write_dir <- paste0(GD_dir,"Analysis/Maywar/Flaps_600s/Flaps_HMM_GLS_ECG/p_0/",location,"/",szn,"/")
-}
+write_dir <- paste0(GD_dir,"Analysis/Maywar/Merged_Data/Merged_600s/",location,"/",szn,"/")
 
 # Load fullmeta
 fullmeta <- read_xlsx(paste0(GD_dir,"metadata/Full_Metadata.xlsx"))

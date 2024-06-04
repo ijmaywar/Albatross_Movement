@@ -11,7 +11,6 @@ rm(list = ls())
 # User Inputted Values -----------------------------------------------------
 
 locations = c('Bird_Island','Midway')
-min_peak_prob = 0 # What was the min_peak_prob used to create summary data?
 
 # Load Packages -----------------------------------------------------------
 
@@ -36,16 +35,13 @@ library(see)
 # Set Environment ---------------------------------------------------------
 
 GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/Thorne Lab Shared Drive/Data/Albatross/"
-
-if (min_peak_prob == 0) {
-  read_dir <- paste0(GD_dir, "Analysis/Maywar/Wave_Search/Flaps_Hourly/Flaps_HMM_GLS_ECG_Compiled/p_0/")
-}
+read_dir <- paste0(GD_dir, "Analysis/Maywar/Merged_Data/Merged_Hourly_Compiled/")
 
 fullmeta <- read_excel(paste0(GD_dir,"metadata/Full_Metadata.xlsx"))
 
 setwd(read_dir)
 files <- list.files(pattern = '*.csv')
-m_all <- read_csv(files[1])
+m_all <- read_csv(files[2])
 
 # Classify 2BEP, E_pip, Ep as BG
 m_all <- m_all %>% mutate(Trip_Type = factor(replace(as.character(Trip_Type),Trip_Type=="2BEP","BG")))
@@ -56,14 +52,21 @@ m_all <- m_all %>% mutate(Trip_Type = factor(replace(as.character(Trip_Type),Tri
 m_all$datetime <- as.POSIXct(m_all$datetime,format="%Y-%m-%d %H:%M:%S",tz="GMT")
 
 # Categorize BWAs
-m_all <- m_all %>% mutate(BWA_cat = case_when(bwa<60 ~ "tail",
-                                              bwa>=60 & bwa<120 ~ "cross",
-                                              bwa>=120 ~ "head"))
+m_all <- m_all %>% mutate(bird_wind_angle_cat = case_when(bird_wind_angle<60 ~ "tail",
+                                                          bird_wind_angle>=60 & bird_wind_angle<120 ~ "cross",
+                                                          bird_wind_angle>=120 ~ "head"))
 
-# Categorize b_wave_a's
-m_all <- m_all %>% mutate(B_WAVE_A_cat = case_when(b_wave_a<60 ~ "tail",
-                                              b_wave_a>=60 & b_wave_a<120 ~ "cross",
-                                              b_wave_a>=120 ~ "head"))
+m_all <- m_all %>% mutate(bird_wave_angle_cat = case_when(bird_wave_angle<60 ~ "tail",
+                                                          bird_wave_angle>=60 & bird_wave_angle<120 ~ "cross",
+                                                          bird_wave_angle>=120 ~ "head"))
+
+m_all <- m_all %>% mutate(bird_swell_angle_cat = case_when(bird_swell_angle<60 ~ "tail",
+                                                           bird_swell_angle>=60 & bird_swell_angle<120 ~ "cross",
+                                                           bird_swell_angle>=120 ~ "head"))
+
+m_all <- m_all %>% mutate(bird_ww_angle_cat = case_when(bird_ww_angle<60 ~ "tail",
+                                                        bird_ww_angle>=60 & bird_ww_angle<120 ~ "cross",
+                                                        bird_ww_angle>=120 ~ "head"))
 
 # Turn variables into factors
 m_all$id <- as.factor(m_all$id)
@@ -72,8 +75,10 @@ m_all$Field_Season <- as.factor(m_all$Field_Season)
 m_all$Location <- as.factor(m_all$Location)
 m_all$Trip_Type <- as.factor(m_all$Trip_Type)
 m_all$Species <- as.factor(m_all$Species)
-m_all$BWA_cat <- as.factor(m_all$BWA_cat)
-m_all$B_WAVE_A_cat <- as.factor(m_all$B_WAVE_A_cat)
+m_all$bird_wind_angle_cat <- as.factor(m_all$bird_wind_angle_cat)
+m_all$bird_wave_angle_cat <- as.factor(m_all$bird_wave_angle_cat)
+m_all$bird_swell_angle_cat <- as.factor(m_all$bird_swell_angle_cat)
+m_all$bird_ww_angle_cat <- as.factor(m_all$bird_ww_angle_cat)
 m_all$HMM_2S_state <- as.factor(m_all$HMM_2S_state)
 m_all$HMM_3S_state <- as.factor(m_all$HMM_3S_state)
 
@@ -85,15 +90,28 @@ m_all <- m_all %>% mutate(Species = factor(replace(as.character(Species),Species
        Species = factor(replace(as.character(Species),Species=="LAAL","Laysan")))
 m_all$Species <- factor(m_all$Species, levels=c("Black-browed", "Grey-headed", "Wandering", "Black-footed", "Laysan"))
 
-m_all$BWA_cat <- factor(m_all$BWA_cat, levels=c("head", "cross", "tail"))
-m_all$B_WAVE_A_cat <- factor(m_all$B_WAVE_A_cat, levels=c("head", "cross", "tail"))
+m_all$bird_wind_angle_cat <- factor(m_all$bird_wind_angle_cat, levels=c("head", "cross", "tail"))
+m_all$bird_wave_angle_cat <- factor(m_all$bird_wave_angle_cat, levels=c("head", "cross", "tail"))
+m_all$bird_swell_angle_cat <- factor(m_all$bird_swell_angle_cat, levels=c("head", "cross", "tail"))
+m_all$bird_ww_angle_cat <- factor(m_all$bird_ww_angle_cat, levels=c("head", "cross", "tail"))
 
 # Add km/hr of wind_vel
 m_all$wind_vel_kmh <- 3.6*(m_all$wind_vel)
 
 m_all_nonaflaps <- m_all %>% drop_na(flaps)
-m_all_nonaflapsbwas <- m_all_nonaflaps %>% drop_na(bwa)
+m_all_nonaflapsbwas <- m_all_nonaflaps %>% drop_na(bird_wind_angle)
 m_all_nonaflapsbwas_pos_complete <- m_all_nonaflapsbwas %>% filter(Pos_complete==1)
+
+
+
+# Some stats -------------------------------------------------------------------
+
+m_all_nonaflaps %>% group_by(Species) %>% summarize(unique_IDs=n_distinct(id))
+
+m_all_nonaflaps %>% group_by(id) %>% summarize(count=n())
+
+# m_all %>% group_by(GLS_state) %>% summarize(count=n())
+
 
 
 # Density plots for wind--------------------------------------------------------
@@ -164,6 +182,7 @@ m_all_nonaflapsbwas_pos_complete |>
 
 # Wave heights along tracks ----------------------------------------------------
 
+# Swell and wind waves 
 m_all_nonaflapsbwas_pos_complete |>
   ggplot(aes(Species,swh)) +
   geom_violinhalf(width=1.2,flip=TRUE) + 
@@ -171,12 +190,37 @@ m_all_nonaflapsbwas_pos_complete |>
   # add scatter points
   # theme_minimal() +
   # ylim(0,100) +
-  labs(y="SWH (m)",x="Species") +
+  labs(x="Species") +
+  theme_bw() +
+  theme(text = element_text(size = 24))
+
+# Swells
+m_all_nonaflapsbwas_pos_complete |>
+  ggplot(aes(Species,shts)) +
+  geom_violinhalf(width=1.2,flip=TRUE) + 
+  geom_boxplot(width=0.4) +
+  # add scatter points
+  # theme_minimal() +
+  # ylim(0,100) +
+  labs(x="Species") +
+  theme_bw() +
+  theme(text = element_text(size = 24))
+
+# Wind waves
+m_all_nonaflapsbwas_pos_complete |>
+  ggplot(aes(Species,shww)) +
+  geom_violinhalf(width=1.2,flip=TRUE) + 
+  geom_boxplot(width=0.4) +
+  # add scatter points
+  # theme_minimal() +
+  # ylim(0,100) +
+  labs(x="Species") +
   theme_bw() +
   theme(text = element_text(size = 24))
 
 # Wave period along tracks -----------------------------------------------------
 
+# Swell and wind waves 
 m_all_nonaflapsbwas_pos_complete |>
   ggplot(aes(Species,mwp)) +
   geom_violinhalf(width=1.2,flip=TRUE) + 
@@ -184,7 +228,44 @@ m_all_nonaflapsbwas_pos_complete |>
   # add scatter points
   # theme_minimal() +
   # ylim(0,100) +
-  labs(y="MWP (s)",x="Species") +
+  labs(x="Species") +
+  theme_bw() +
+  theme(text = element_text(size = 24))
+
+# Swells
+m_all_nonaflapsbwas_pos_complete |>
+  ggplot(aes(Species,mpts)) +
+  geom_violinhalf(width=1.2,flip=TRUE) + 
+  geom_boxplot(width=0.4) +
+  # add scatter points
+  # theme_minimal() +
+  # ylim(0,100) +
+  labs(x="Species") +
+  theme_bw() +
+  theme(text = element_text(size = 24))
+
+# Wind waves
+m_all_nonaflapsbwas_pos_complete |>
+  ggplot(aes(Species,mpww)) +
+  geom_violinhalf(width=1.2,flip=TRUE) + 
+  geom_boxplot(width=0.4) +
+  # add scatter points
+  # theme_minimal() +
+  # ylim(0,100) +
+  labs(x="Species") +
+  theme_bw() +
+  theme(text = element_text(size = 24))
+
+# free_convective_velocity_over_the_oceans -------------------------------------
+
+m_all_nonaflapsbwas_pos_complete |>
+  ggplot(aes(Species,p140208)) +
+  geom_boxplot(width=0.4) +
+  # geom_violinhalf(width=1,flip=TRUE) + 
+  # add scatter points
+  # theme_minimal() +
+  # ylim(0,100) +
+  labs(x="Species") +
   theme_bw() +
   theme(text = element_text(size = 24))
 

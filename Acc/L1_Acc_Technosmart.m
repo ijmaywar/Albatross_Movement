@@ -14,16 +14,18 @@ location = "Bird_Island"; % Options: 'Bird_Island', 'Midway'
 tagtype = "AxyTrek"; % Options: 'AGM', 'Axy5', 'AxyAir', 'AxyTrek'
 
 %% Timezone
-if strcmp(location,"Midway") && (strcmp(szn,"2018_2019") || (strcmp(szn,"2022_2023") && strcmp(tagtype,"Axy5")))
+if ((strcmp(location,"Midway") && strcmp(tagtype,"AxyTrek")) || ...
+   (strcmp(location,"Midway") && strcmp(szn,"2018_2019"))   || ...
+   (strcmp(location,"Midway") && strcmp(szn,"2022_2023") && strcmp(tagtype,"Axy5")))
     written_local = false;
 else
     written_local = true;
 end
 
 % Some Midway files are written in GMT rather than local time.
-% This is the case for .csv files sent to us from 2018_2019 Midway. 
-% The files I converted from that szn were written in local time:
-% (BFAL_20190130_1, LAAL_20190203_345, LAAL_20190203_R142)
+% This is the case for .csv files sent to us from 2018_2019 Midway
+% (Non-AxyTrek Acc files). Some files I converted myself and are in local
+% time: (BFAL_20190130_1, LAAL_20190203_345, LAAL_20190203_R142).
 % 2022_2023 Midway Axy5 tags are also in GMT.
 
 %% Set envrionment
@@ -40,6 +42,7 @@ if strcmp(tagtype,"AxyTrek")
     L1_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/Acc/Acc_Technosmart/',szn,'/AxyTrek/');
 else
     L0_dir = strcat(GD_dir,'L0/',location,'/Tag_Data/',szn,'/Aux/',tagtype,'/');
+    % L0_dir = strcat(GD_dir,'L0/',location,'/Tag_Data/',szn,'/Aux/',tagtype,'/dt_local/');
     GPS_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/GPS/GPS_Catlog/',szn,'/2_buffer2km/');
     L1_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/Acc/Acc_Technosmart/',szn,'/');
 end
@@ -53,8 +56,6 @@ end
 L0_split = strsplit(L0_dir,"_");
 if strcmp(L0_split(end),"local/")
     written_local = true;
-elseif strcmp(L0_split(end),"GMT/")
-    written_local = false;
 end
 
 % Matlab functions toolbox
@@ -127,7 +128,7 @@ for i = 1:height(L0_fileList)
 
     %% s1
     
-    [m,s1_meta] = s1_Acc(m,dep_ID,birdmeta,written_local);
+    [m,s1_meta] = s1_Acc_Technosmart(m,dep_ID,birdmeta,written_local,tagtype);
 
     % Write a seperate s1 for AxyTrek...
 

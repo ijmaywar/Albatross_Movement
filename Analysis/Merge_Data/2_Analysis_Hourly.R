@@ -12,11 +12,10 @@ rm(list = ls())
 
 # User Inputted Values -----------------------------------------------------
 
-location = 'Bird_Island'
-szn = "2019_2020"
+# location = 'Bird_Island'
+# szn = "2019_2020"
 
 locations = c("Bird_Island", "Midway")
-min_peak_prob = 0 # What was the min_peak_prob used to create 600s data?
 
 # User Functions ----------------------------------------------------------
 wrap360 <- function(lon) {lon360<-ifelse(lon<0,lon+360,lon);return(lon360)}
@@ -44,7 +43,8 @@ library(geosphere)
 
 for (location in locations) {
   if (location == "Bird_Island") {
-    szns = c("2019_2020", "2020_2021", "2021_2022")
+    # szns = c("2019_2020", "2020_2021", "2021_2022")
+    szns = c("2019_2020", "2020_2021")
   } else if (location == "Midway") {
     szns = c("2018_2019", "2021_2022", "2022_2023")
   }
@@ -54,13 +54,8 @@ for (location in locations) {
 # Set Environment ---------------------------------------------------------
 
 GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/Thorne Lab Shared Drive/Data/Albatross/"
-if (min_peak_prob == 0) {
-  read_dir <- paste0(GD_dir, "Analysis/Maywar/Flaps_600s/Flaps_HMM_GLS_ECG/p_0/",location,"/",szn,"/")
-  write_dir <- paste0(GD_dir, "Analysis/Maywar/Flaps_Hourly/Flaps_HMM_GLS_ECG/p_0/",location,"/",szn,"/")
-} else if (min_peak_prob == 0.85) {
-  read_dir <- paste0(GD_dir, "Analysis/Maywar/Flaps_600s/Flaps_HMM_GLS_ECG/p_085/",location,"/",szn,"/")
-  write_dir <- paste0(GD_dir, "Analysis/Maywar/Flaps_Hourly/Flaps_HMM_GLS_ECG/p_085/",location,"/",szn,"/")
-}
+read_dir <- paste0(GD_dir, "Analysis/Maywar/Merged_Data/Merged_600s/",location,"/",szn,"/")
+write_dir <- paste0(GD_dir, "Analysis/Maywar/Merged_Data/Merged_Hourly/",location,"/",szn,"/")
 
 setwd(read_dir)
 files <- list.files(pattern='*.csv')
@@ -70,8 +65,8 @@ files <- list.files(pattern='*.csv')
 for (i in 1:length(files)) {
   m <- read.csv(files[i])
   m$datetime <- as.POSIXct(m$datetime,format="%Y-%m-%d %H:%M:%S", tz="GMT")
-  birdname_trip <- str_sub(files[i],1,-28)
-  birdname <- str_sub(files[i],1,-30)
+  birdname_trip <- str_sub(files[i],1,-19)
+  birdname <- str_sub(files[i],1,-21)
   birdspp <- str_sub(birdname,1,4)
   
   m$rounded_hour <- round_date(m$datetime, unit = "hour")
@@ -99,13 +94,13 @@ for (i in 1:length(files)) {
         m_hourly$flaps[j] <- sum(current_m$flaps)
       }
       
-      # IF any of the OWBs are NA, the hour summary needs to also be NA
-      if (any(is.na(current_m$OWB_state))) {
-        m_hourly$OWB_state[j] <- NA
-      } else if (any(current_m$OWB_state == "on")) {
-        # If the bird is on-water at all during the hour, the OWB_state is on-water
-        m_hourly$OWB_state[j] <- "on"
-      }
+      # # IF any of the OWBs are NA, the hour summary needs to also be NA
+      # if (any(is.na(current_m$OWB_state))) {
+      #   m_hourly$OWB_state[j] <- NA
+      # } else if (any(current_m$OWB_state == "on")) {
+      #   # If the bird is on-water at all during the hour, the OWB_state is on-water
+      #   m_hourly$OWB_state[j] <- "on"
+      # }
       
       # If any of the heartbeats are NA, the hour summary needs to also be NA
       if (any(is.na(current_m$Heartbeats))) {
@@ -124,12 +119,23 @@ for (i in 1:length(files)) {
     }
   }
   
-  # Re-calculate bird_dir, bird_vel, bwa, w_rel, b_wave_a, wave_rel
+  # Re-calculate bird_dir, bird_vel, BWAs
   for (trip in unique(m_hourly$tripID)) {
+    # Bird stats
     m_hourly$bird_vel <- c(distHaversine(m_hourly %>% dplyr::select(lon,lat))/1000,NA)
     m_hourly$bird_dir <- wrap360(geosphere::bearing(m_hourly %>% dplyr::select(lon,lat))) # set bearing to [0,360)
-    m_hourly$bwa <- bearingAngle(m_hourly$bird_dir,wrap360(m_hourly$wind_dir-180)) # [0,180) degrees
-    m_hourly$w_rel <- (wrap360(m_hourly$wind_dir-180)-m_hourly$bird_dir) %% 360
+    
+    # Wind stats
+    m_hourly$bird_wind_angle <- bearingAngle(m_hourly$bird_dir,wrap360(m_hourly$wind_dir-180)) # [0,180) degrees
+    m_hourly$wind_rel <- (wrap360(m_hourly$wind_dir-180)-m_hourly$bird_dir) %% 360
+    
+    # Wave stats
+    m_hourly$bird_wave_angle <- bearingAngle(m_hourly$bird_dir,wrap360(m_hourly$mwd-180)) # [0,180) degrees
+    m_hourly$wave_rel <- (wrap360(m_hourly$mwd-180)-m_hourly$bird_dir) %% 360
+    m_hourly$bird_swell_angle <- bearingAngle(m_hourly$bird_dir,wrap360(m_hourly$mdts-180)) # [0,180) degrees
+    m_hourly$swell_rel <- (wrap360(m_hourly$mdts-180)-m_hourly$bird_dir) %% 360
+    m_hourly$bird_ww_angle <- bearingAngle(m_hourly$bird_dir,wrap360(m_hourly$mdww-180)) # [0,180) degrees
+    m_hourly$ww_rel <- (wrap360(m_hourly$mdww-180)-m_hourly$bird_dir) %% 360
   }
   
   m_hr_trim <- m_hourly %>% filter(trim == 0)
@@ -138,7 +144,7 @@ for (i in 1:length(files)) {
   if (nrow(m_hr_trim>0)) {
     # If the trimmed file isn't empty, save it.
     m_hr_trim$datetime <- as.character(format(m_hr_trim$datetime)) # safer for writing csv in character format  
-    write.csv(m_hr_trim, file=paste0(write_dir,birdname_trip,"_Flaps_HMM_GLS_ECG_Hourly.csv"), row.names=FALSE)
+    write.csv(m_hr_trim, file=paste0(write_dir,birdname_trip,"_Analysis_Hourly.csv"), row.names=FALSE)
   }
 }
 }
