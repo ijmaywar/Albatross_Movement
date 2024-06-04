@@ -13,11 +13,10 @@ rm(list = ls())
 
 # User Inputted Values -----------------------------------------------------
 
-# location = 'Bird_Island' # Options: 'Bird_Island', 'Midway'
-# szn = "2019_2020"
+location = 'Bird_Island' # Options: 'Bird_Island', 'Midway'
+szn = "2021_2022"
 
-# locations = c("Bird_Island", "Midway")
-locations = c("Midway")
+locations = c("Bird_Island", "Midway")
 
 # Packages  ---------------------------------------------------------
 
@@ -65,13 +64,15 @@ env_L2_dir <- paste0(GD_dir,"L2/",location,"/Env_Data/ERA5_SingleLevels_10m/",sz
 
 # Save compiled GPS data with wind U and V --------------------------------
 
-# Download wind data
+# Find wind data
 setwd(wind_L1_dir)
 wind_L1_data <- read_csv(paste0(szn,"_allbirds_GPS_with_wind.csv"))
+wind_L1_data$datetime <- as.POSIXct(wind_L1_data$datetime,format="%Y-%m-%d %H:%M:%S", tz="GMT")
 
-# Download wave data
+# Find wave data
 setwd(wave_L1_dir)
 wave_L1_data <- read_csv(paste0(szn,"_allbirds_GPS_with_wave.csv"))
+wave_L1_data$datetime <- as.POSIXct(wave_L1_data$datetime,format="%Y-%m-%d %H:%M:%S", tz="GMT")
 
 # Get gps filenames
 setwd(GPS_dir)

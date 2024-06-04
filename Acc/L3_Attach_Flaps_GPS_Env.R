@@ -29,10 +29,10 @@ library(readr)
 for (location in locations) {
   if (location == "Bird_Island") {
     # szns = c("2019_2020", "2020_2021", "2021_2022")
-    szns = c("2019_2020")
+    szns = c("2020_2021", "2021_2022")
   } else if (location == "Midway") {
     # szns = c("2018_2019", "2021_2022", "2022_2023")
-    szns = c("2018_2019")
+    szns = c("2021_2022", "2022_2023")
   }
   for (szn in szns) {
     cat("Processing location:",location,"Season:",szn,"\n")

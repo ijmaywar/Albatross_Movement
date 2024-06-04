@@ -134,7 +134,7 @@ all_times_num <- as.numeric(all_times)
 # create u and v wind vectors
 for (j in 1:nrow(m)) {
   
-  timej <- as.POSIXct(m$datetime[j], format = "%Y-%m-%d %H:%M:%S" , tz = "UTC")
+  timej <- as.POSIXct(m$datetime[j], format = "%Y-%m-%d %H:%M:%S" , tz = "GMT")
   timej_num <- as.numeric(timej)
   
   # Find index of current_time in all times. Use that index to pull out relevant raster layer.
@@ -179,5 +179,4 @@ for (j in 1:nrow(m)) {
 # Save compiled GPS data with wind U and V --------------------------------
 
 m$datetime <- as.character(format(m$datetime)) # safer for writing csv in character format
-# write_csv(m,file=paste0(wind_L1_dir,szn,"_allbirds_GPS_with_wind.csv"))
-# write_csv(m,file=paste0(wind_L1_dir,szn,"_WAAL_GPS_with_wind.csv"))
+write_csv(m,file=paste0(wind_L1_dir,szn,"_allbirds_GPS_with_wind.csv"))
