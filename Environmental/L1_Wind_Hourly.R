@@ -52,13 +52,15 @@ files <- list.files(pattern='*.csv') # GPS files
 
 # Create compiled file
 for (i in 1:length(files)) {
-  mi <- read.csv(files[i])
+  mi <- read_csv(files[i])
   if (i==1) {
     m <- mi
   } else {
     m<- rbind(m,mi)
   }
 }
+
+m$datetime <- as.POSIXct(m$datetime,format="%Y-%m-%d %H:%M:%S", tz="GMT")
 
 # Make sure all birds are found within the grid extent
 # Bird Island grid extent: -30N -70S -120W -10E (big range due to Wandering!)
@@ -134,7 +136,7 @@ all_times_num <- as.numeric(all_times)
 # create u and v wind vectors
 for (j in 1:nrow(m)) {
   
-  timej <- as.POSIXct(m$datetime[j], format = "%Y-%m-%d %H:%M:%S" , tz = "GMT")
+  timej <- m$datetime[j]
   timej_num <- as.numeric(timej)
   
   # Find index of current_time in all times. Use that index to pull out relevant raster layer.
@@ -166,8 +168,10 @@ for (j in 1:nrow(m)) {
     print("Number of wind measurements chosen != 1.")
     break
   } else if (is.na(u_j[[1]]) || is.na(v_j[[1]])) {
-    print("Wind data for this coordinate cannot be found.")
-    break
+    print(paste0("wind data not found for lon: ",as.character(xy_j)[1],
+                 ", lat: ",as.character(xy_j)[2], 
+                 ", time: ",as.character(closest_dt),
+                 " for ",m$id[j],"."))
   }
   
   m$u[j]<- u_j[[1]]

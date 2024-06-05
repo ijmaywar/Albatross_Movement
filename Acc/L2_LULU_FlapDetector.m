@@ -15,15 +15,16 @@ clearvars
 
 %% USER INPUTED VALUES
 
-szn = '2019_2020';
-location = 'Bird_Island'; % Options: 'Bird_Island', 'Midway'
+szn = '2021_2022';
+location = 'Midway'; % Options: 'Bird_Island', 'Midway'
 AccType = 'Technosmart'; % Options: 'Technosmart', 'NRL'
 
 %% Set envrionment
 
 % set directories
 GD_dir = "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/Thorne Lab Shared Drive/Data/Albatross/";
-L1_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/Acc/Acc_',AccType,'/',szn,'/');
+L1_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/Acc/Acc_',AccType,'/',szn,'/AxyTrek/');
+% L1_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/Acc/Acc_',AccType,'/',szn,'/');
 L2_dir = strcat(GD_dir,'L2/',location,'/Tag_Data/Acc/',szn,'/');
 
 % Matlab functions toolbox
@@ -50,7 +51,7 @@ p = get(0, "MonitorPositions");
 mkdir(strcat(L2_dir,"Parameters/"))
 
 %% Loop thru birds
-for j = 15:15%1:height(L1_fileList)
+for j = 1:height(L1_fileList)
 % for j = 4:7
 
     %% Read bird 
@@ -202,7 +203,13 @@ end
 
 %% Plot data
 
-plot(filtered(1:10000))
+fig_range = 27000:28000;
+filt_fig = figure;
+plot(raw(fig_range))
+hold on
+plot(filtered(fig_range))
+yline(th)
+ylim([-2,2])
 
 %% Plot data
     

@@ -10,8 +10,8 @@ rm(list = ls())
 
 # User Inputted Values -----------------------------------------------------
 
-location = 'Midway' # Options: 'Bird_Island', 'Midway'
-szn = "2018_2019"
+location = 'Bird_Island' # Options: 'Bird_Island', 'Midway'
+szn = "2021_2022"
 
 # Packages  ---------------------------------------------------------
 
@@ -43,13 +43,15 @@ files <- list.files(pattern='*.csv') # GPS files
 
 # Create compiled file
 for (i in 1:length(files)) {
-  mi <- read.csv(files[i])
+  mi <- read_csv(files[i])
   if (i==1) {
     m <- mi
   } else {
     m<- rbind(m,mi)
   }
 }
+
+m$datetime <- as.POSIXct(m$datetime,format="%Y-%m-%d %H:%M:%S", tz="GMT")
 
 # Make sure all birds are found within the grid extent
 # Set the grid to download each necesary component of ERA5 data.
@@ -117,9 +119,9 @@ for (new_col in new_columns) {
 
 # Loop through m and add wave information --------------------------------------
 
-for (j in 1:nrow(m)) {
+for (j in 153503:nrow(m)) {
   
-  timej <- as.POSIXct(m$datetime[j], format = "%Y-%m-%d %H:%M:%S" , tz = "GMT")
+  timej <- m$datetime[j]
   timej_num <- as.numeric(timej)
   
   # Find index of current_time in all times. Use that index to pull out relevant raster layer.
@@ -149,8 +151,10 @@ for (j in 1:nrow(m)) {
     print("Number of wave measurements chosen != 1.")
     break
   } else if (all(is.na(wave_data_j))) {
-    print("wave data for this coordinate cannot be found.")
-    break
+    print(paste0("wave data not found for lon: ",as.character(xy_j)[1],
+                                       ", lat: ",as.character(xy_j)[2], 
+                                       ", time: ",as.character(closest_dt),
+                                       " for ",m$id[j],"."))
   }
   
   # Ensure that the data are still in the correct order
@@ -169,4 +173,5 @@ for (j in 1:nrow(m)) {
 # Save compiled GPS data with wave U and V --------------------------------
 
 m$datetime <- as.character(format(m$datetime)) # safer for writing csv in character format
-write_csv(m,file=paste0(wave_L1_dir,szn,"_allbirds_GPS_with_wave.csv"))
+# write_csv(m,file=paste0(wave_L1_dir,szn,"_allbirds_GPS_with_wave.csv"))
+write_csv(m,file=paste0(wave_L1_dir,szn,"_allbirds_GPS_with_wave_pt2.csv"))

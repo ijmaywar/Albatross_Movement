@@ -11,11 +11,10 @@ rm(list = ls())
 
 # User Inputted Values -----------------------------------------------------
 
-# location = 'Midway' # Options: 'Bird_Island', 'Midway'
-# szn = "2018_2019"
+location = 'Bird_Island' # Options: 'Bird_Island', 'Midway'
+szn = "2021_2022"
 
-# locations = c("Bird_Island", "Midway")
-locations = c("Midway")
+locations = c("Bird_Island", "Midway")
 
 # Load Packages -----------------------------------------------------------
 
@@ -29,11 +28,9 @@ library(readr)
 # Loop thru all samples -----------------------------------------------------------
 for (location in locations) {
   if (location == "Bird_Island") {
-    # szns = c("2019_2020", "2020_2021", "2021_2022")
-    szns = c("2020_2021", "2021_2022")
+    szns = c("2019_2020", "2020_2021", "2021_2022")
   } else if (location == "Midway") {
-    # szns = c("2018_2019", "2021_2022", "2022_2023")
-    szns = c("2021_2022", "2022_2023")
+    szns = c("2018_2019", "2021_2022", "2022_2023")
   }
   for (szn in szns) {
     cat("Processing location:",location,"Season:",szn,"\n")
@@ -60,6 +57,11 @@ all_trips <- sub("_BWAs.csv$","",env_files)
 
 for (i in 1:length(env_files)) {
   
+  birdname_trip <- str_sub(env_files[i],1,-10)
+  birdname <- str_sub(env_files[i],1,-12)
+  birdspp <- str_sub(birdname,1,4)
+  birdmeta <- fullmeta %>% filter(Deployment_ID == birdname)
+  
   m <- read.csv(env_files[i])
   m$datetime <- as.POSIXct(m$datetime,format="%Y-%m-%d %H:%M:%S", tz="GMT")
  
@@ -68,12 +70,6 @@ for (i in 1:length(env_files)) {
     break
   }
   
-  birdname_trip <- str_sub(env_files[i],1,-10)
-  birdname <- str_sub(env_files[i],1,-12)
-  birdspp <- str_sub(birdname,1,4)
-  
-  birdmeta <- fullmeta %>% filter(Deployment_ID == birdname)
-
   # Attach number of flaps
   acc_filename <- paste0(birdname,"_Acc_L2.csv")
   if (sum(acc_files==acc_filename)==1) {
