@@ -4,16 +4,16 @@
 #
 ################################################################################
 
-# Clear environment -------------------------------------------------------
+# Clear environment ------------------------------------------------------------
 
 rm(list = ls())
 
-# User Inputted Values -----------------------------------------------------
+# User Inputted Values ---------------------------------------------------------
 
 location = 'Bird_Island' # Options: 'Bird_Island', 'Midway'
 szn = "2021_2022"
 
-# Packages  ---------------------------------------------------------
+# Packages  --------------------------------------------------------------------
 
 require(tidyverse)
 library(lubridate)
@@ -21,14 +21,14 @@ library(terra)
 library(geosphere)
 library(foehnix)
 
-# Set Environment ---------------------------------------------------------
+# Set Environment --------------------------------------------------------------
 
 GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/Thorne Lab Shared Drive/Data/Albatross/"
 nc_dir <- paste0(GD_dir,"L0/",location,"/Env_Data/",szn,"/ERA5_Wave_SingleLevels_10m/")
 GPS_dir <- paste0(GD_dir,"L2/",location,"/Tag_Data/GPS/",szn,"/")
 wave_L1_dir <- paste0(GD_dir,"L1/",location,"/Env_Data/ERA5_SingleLevels_10m/allbirds_GPS_with_wave/",szn,"/")
 
-# User Functions ----------------------------------------------------------
+# User Functions ---------------------------------------------------------------
 
 wrap360 <- function(lon) {lon360<-ifelse(lon<0,lon+360,lon);return(lon360)}
 
@@ -36,7 +36,7 @@ Lon360to180 <- function(lon){
   ((lon + 180) %% 360) - 180
 }
 
-# Get compiled GPS data of all birds in szn -----------------------------------
+# Get compiled GPS data of all birds in szn ------------------------------------
 
 setwd(GPS_dir)
 files <- list.files(pattern='*.csv') # GPS files 
@@ -75,11 +75,12 @@ max(m$datetime)
 
 setwd(nc_dir)
 wave_files <- list.files(pattern='*.nc') 
-
-# For Midway wave data --------------------------------------------------------------
-# DON'T RUN THIS FOR BIRD_ISLAND
-
 wave_files
+
+###########################################################################################################
+# For Midway wind data ---------------------------------------------------------
+# ONLY FOR MIDWAY
+
 # COMBINE E AND W COMPONENTS OF NETCDF FILES for Midway
 wave_E_Jan_component <- rast(wave_files[1])
 wave_W_Jan_component <- rast(wave_files[2])
@@ -94,12 +95,9 @@ all_times <- unique(time(wave_raster))
 all_times_num <- as.numeric(unique(time(wave_raster)))
 
 new_columns <- unique(unlist(str_split(names(wave_raster), "_"))[seq(1,2*length(names(wave_raster)),2)])
-for (new_col in new_columns) {
-  m[new_col] <- NA
-}
 
-# For Bird Island wave data -----------------------------------------------
-# DON'T RUN THIS FOR MIDWAY
+# For Bird Island wave data ----------------------------------------------------
+# ONLY FOR BIRD_ISLAND
 
 # Load netcdf file directly for Bird Island
 wave_Nov_raster <- rast(wave_files[1])
@@ -111,15 +109,16 @@ wave_raster # Make sure you got the right stuff!
 all_times <- unique(time(wave_raster))
 all_times_num <- as.numeric(unique(time(wave_raster)))
 
-# Create columns for wave data
 new_columns <- unique(varnames(wave_raster))
+###########################################################################################################
+
+# Loop through m and add wave information --------------------------------------
+
 for (new_col in new_columns) {
   m[new_col] <- NA
 }
 
-# Loop through m and add wave information --------------------------------------
-
-for (j in 153503:nrow(m)) {
+for (j in 1:nrow(m)) {
   
   timej <- m$datetime[j]
   timej_num <- as.numeric(timej)
@@ -170,8 +169,7 @@ for (j in 153503:nrow(m)) {
 }
 
 
-# Save compiled GPS data with wave U and V --------------------------------
+# Save compiled GPS data with wave data ----------------------------------------
 
 m$datetime <- as.character(format(m$datetime)) # safer for writing csv in character format
-# write_csv(m,file=paste0(wave_L1_dir,szn,"_allbirds_GPS_with_wave.csv"))
-write_csv(m,file=paste0(wave_L1_dir,szn,"_allbirds_GPS_with_wave_pt2.csv"))
+write_csv(m,file=paste0(wave_L1_dir,szn,"_allbirds_GPS_with_wave.csv"))

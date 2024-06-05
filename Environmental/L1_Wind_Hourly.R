@@ -12,8 +12,8 @@ rm(list = ls())
 
 # User Inputted Values -----------------------------------------------------
 
-location = 'Bird_Island' # Options: 'Bird_Island', 'Midway'
-szn = "2021_2022"
+location = 'Midway' # Options: 'Bird_Island', 'Midway'
+szn = "2018_2019"
 
 # Packages  ---------------------------------------------------------
 
@@ -81,59 +81,44 @@ max(m$datetime)
 
 setwd(nc_dir)
 wind_files <- list.files(pattern='*.nc') 
+wind_files
 
-# For Midway wind data --------------------------------------------------------------
-# DON'T RUN THIS FOR BIRD_ISLAND
+###########################################################################################################
+# For Midway wind data ---------------------------------------------------------
+# ONLY FOR MIDWAY
 
 # COMBINE E AND W COMPONENTS OF NETCDF FILES for Midway
-wind_E_t1 <- rast(wind_files[5])
-wind_W_t1 <- rast(wind_files[6])
-wind_t1 <- merge(wind_W_t1,wind_E_t1)
+wind_E_Jan_Feb_component <- rast(wind_files[1])
+wind_W_Jan_Feb_component <- rast(wind_files[2])
+wind_raster <- merge(wind_E_Jan_Feb_component,wind_W_Jan_Feb_component)
+wind_raster # Make sure you got the right stuff!
 
-# Create data vectors
-wind_t1 # Make sure you got the right stuff!
-times_t1 <- time(wind_t1)  # stores times from each file 
-times_t1 <- unique(times_t1) # find unique values because there should be two of every datetime (for u and v)
-wind_t1_u <- subset(wind_t1, 1:(nlyr(wind_t1)/2)) 
-wind_t1_v <- subset(wind_t1, (nlyr(wind_t1)/2)+1:nlyr(wind_t1))
+all_times <- unique(time(wind_raster))
+all_times_num <- as.numeric(unique(time(wind_raster)))
 
-u_stack <- c(wind_t1_u)
-v_stack <- c(wind_t1_v)
-all_times <- c(times_t1)
-all_times_num <- as.numeric(all_times)
+new_columns <- unique(unlist(str_split(names(wind_raster), "_"))[seq(1,2*length(names(wind_raster)),2)])
 
-
-# For Bird Island wind data -----------------------------------------------
-# DON'T RUN THIS FOR MIDWAY
+# For Bird Island wind data ----------------------------------------------------
+# ONLY FOR BIRD_ISLAND
 
 # Load netcdf file directly for Bird Island
-wind_t1 <- rast(wind_files[1])
-# Create data vectors
-wind_t1 # Make sure you got the right stuff!
-times_t1 <- time(wind_t1)  # stores times from each file 
-times_t1 <- unique(times_t1) # find unique values because there should be two of every datetime (for u and v)
-wind_t1_u <- subset(wind_t1, 1:(nlyr(wind_t1)/2)) 
-wind_t1_v <- subset(wind_t1, (nlyr(wind_t1)/2)+1:nlyr(wind_t1))
+wind_Nov_Dec_raster <- rast(wind_files[1])
+wind_Jan_Feb_raster <- rast(wind_files[2])
+wind_raster <- c(wind_Nov_Dec_raster,wind_Jan_Feb_raster)
+wind_raster # Make sure you got the right stuff!
 
-# Load netcdf file directly for Bird Island
-wind_t2 <- rast(wind_files[2])
-# Create data vectors
-wind_t2 # Make sure you got the right stuff!
-times_t2 <- time(wind_t2)  # stores times from each file 
-times_t2 <- unique(times_t2) # find unique values because there should be two of every datetime (for u and v)
-wind_t2_u <- subset(wind_t2, 1:(nlyr(wind_t2)/2)) 
-wind_t2_v <- subset(wind_t2, (nlyr(wind_t2)/2)+1:nlyr(wind_t2))
+all_times <- unique(time(wind_raster))
+all_times_num <- as.numeric(unique(time(wind_raster)))
 
-# Stack rasters
-# Single levels
-u_stack <- c(wind_t1_u, wind_t2_u)
-v_stack <- c(wind_t1_v, wind_t2_v)
-all_times <- c(times_t1, times_t2)
-all_times_num <- as.numeric(all_times)
+new_columns <- unique(varnames(wind_raster))
+###########################################################################################################
 
 # Loop through m and add wind information: u, v ---------------------------
 
-# create u and v wind vectors
+for (new_col in new_columns) {
+  m[new_col] <- NA
+}
+
 for (j in 1:nrow(m)) {
   
   timej <- m$datetime[j]
@@ -141,41 +126,46 @@ for (j in 1:nrow(m)) {
   
   # Find index of current_time in all times. Use that index to pull out relevant raster layer.
   timej_diff <- abs(all_times_num-timej_num) # taking difference between all gps points
-  raster_dt_index <- which.min(timej_diff)  # Find the min: tells which layer to pull out and isolate. 
-                                            # DateTimes in the exact middle will be assigned to the first index
+  # DateTimes in the exact middle will be assigned to the first index
   # 1800 seconds is 30 minutes
   min_time_diff <- 1800
-  
   if (min(timej_diff) > min_time_diff) {
     print("Current datetime is outside of the data provided by NETCDF files.")
     break
   }
   
-  # Isolate u and v rasters at time j
-  ustack_timej <- subset(u_stack, raster_dt_index) 
-  vstack_timej <- subset(v_stack, raster_dt_index)
+  closest_dt <- all_times[which.min(timej_diff)]  # Find the min: tells which layer to pull out and isolate. 
+  
+  # Isolate raster at time j
+  wind_raster_timej <- wind_raster[[which(time(wind_raster)==closest_dt)]]
   
   # isolate coordinates
   xy_j <- as.data.frame(cbind(m$lon[j], m$lat[j]))
   colnames(xy_j) <- c("lon","lat")
   xy_j$lon <- Lon360to180(xy_j$lon) 
   
-  # Extract u and v components for time j at location x and y
-  u_j <- extract(ustack_timej, xy_j, ID=FALSE)
-  v_j <- extract(vstack_timej, xy_j, ID=FALSE)
+  # Extract wind data for time j at location x and y
+  wind_data_j <- extract(wind_raster_timej, xy_j, ID=FALSE)
   
-  if (length(u_j) != 1) {
+  if (nrow(wind_data_j) != 1) {
     print("Number of wind measurements chosen != 1.")
     break
-  } else if (is.na(u_j[[1]]) || is.na(v_j[[1]])) {
+  } else if (all(is.na(wind_data_j))) {
     print(paste0("wind data not found for lon: ",as.character(xy_j)[1],
                  ", lat: ",as.character(xy_j)[2], 
                  ", time: ",as.character(closest_dt),
                  " for ",m$id[j],"."))
   }
   
-  m$u[j]<- u_j[[1]]
-  m$v[j]<- v_j[[1]]
+  # Ensure that the data are still in the correct order
+  if (!all.equal(colnames(m)[6:ncol(m)],
+                 unlist(str_split(colnames(wind_data_j), "_"))
+                 [seq(1,2*length(colnames(wind_data_j)),2)])) {
+    disp("The raster data are out of order of the columns in m")
+    break
+  }
+  
+  m[j,6:ncol(m)] <- wind_data_j
   
 }
 
@@ -183,4 +173,9 @@ for (j in 1:nrow(m)) {
 # Save compiled GPS data with wind U and V --------------------------------
 
 m$datetime <- as.character(format(m$datetime)) # safer for writing csv in character format
-write_csv(m,file=paste0(wind_L1_dir,szn,"_allbirds_GPS_with_wind.csv"))
+# write_csv(m,file=paste0(wind_L1_dir,szn,"_allbirds_GPS_with_wind.csv"))
+
+temp <- read_csv("/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/.shortcut-targets-by-id/1ZwIQqcVnA34cxm_324gF2ie4UtWb8-Qb/Thorne Lab Shared Drive/Data/Albatross/L1/Midway/Env_Data/ERA5_SingleLevels_10m/allbirds_GPS_with_wind/2018_2019/2018_2019_allbirds_GPS_with_wind.csv")
+temp$datetime <- as.POSIXct(temp$datetime,format="%Y-%m-%d %H:%M:%S", tz="GMT")
+# compare to prev version
+all.equal(m,temp)
