@@ -114,6 +114,8 @@ if (location == "Midway") {
 } else if (location == "Bird_Island") {
   
   # Wind data
+  setwd(nc_wind_dir)
+  wind_files <- list.files(pattern='*.nc') 
   wind_yr1_raster <- rast(wind_files[1])
   wind_yr2_raster <- rast(wind_files[2])
   wind_raster <- c(wind_yr1_raster,wind_yr2_raster)
@@ -125,6 +127,8 @@ if (location == "Midway") {
   new_wind_columns <- unique(varnames(wind_raster))
   
   # Wave data
+  setwd(nc_wave_dir)
+  wave_files <- list.files(pattern='*.nc') 
   if (month(min(m$datetime))==12) {
     wave_Dec_raster <- rast(wave_files[1])
     wave_Jan_raster <- rast(wave_files[2])

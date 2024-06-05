@@ -41,8 +41,6 @@ bearingAngle <- function(bird_bearing,wind_bearing) {
   return(pmin(LHturn,RHturn))
 }
 
-
-
 # Loop to run thru all samples -------------------------------------------------
 
 for (location in locations) {
@@ -58,95 +56,73 @@ for (szn in szns) {
 
 GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/Thorne Lab Shared Drive/Data/Albatross/"
 GPS_dir <- paste0(GD_dir,"L2/",location,"/Tag_Data/GPS/",szn,"/")
-wind_L1_dir <- paste0(GD_dir,"L1/",location,"/Env_Data/ERA5_SingleLevels_10m/allbirds_GPS_with_wind/",szn,"/")
-wave_L1_dir <- paste0(GD_dir,"L1/",location,"/Env_Data/ERA5_SingleLevels_10m/allbirds_GPS_with_wave/",szn,"/")
+env_L1_dir <- paste0(GD_dir,"L1/",location,"/Env_Data/ERA5_SingleLevels_10m/",szn,"/")
 env_L2_dir <- paste0(GD_dir,"L2/",location,"/Env_Data/ERA5_SingleLevels_10m/",szn,"/")
 
 # Save compiled GPS data with wind U and V --------------------------------
 
 # Find wind data
-setwd(wind_L1_dir)
-wind_L1_data <- read_csv(paste0(szn,"_allbirds_GPS_with_wind.csv"))
-wind_L1_data$datetime <- as.POSIXct(wind_L1_data$datetime,format="%Y-%m-%d %H:%M:%S", tz="GMT")
-
-# Find wave data
-setwd(wave_L1_dir)
-wave_L1_data <- read_csv(paste0(szn,"_allbirds_GPS_with_wave.csv"))
-wave_L1_data$datetime <- as.POSIXct(wave_L1_data$datetime,format="%Y-%m-%d %H:%M:%S", tz="GMT")
-
-# Get gps filenames
-setwd(GPS_dir)
-gpsfiles<-list.files(pattern='*.csv')
+setwd(env_L1_dir)
+env_L1_files <- list.files(pattern='*.csv') 
 
 # ADD BIRD BEHAVIOR -------------------------------------------------------
 
 int_now <- 600 
 hour_int<- int_now/3600 # int_now is in seconds (3600 seconds in one hour)
 
-for (i in 1:length(gpsfiles)) {
+for (i in 1:length(env_L1_files)) {
   
-  birdname <- str_sub(gpsfiles[i],1,-17)
-
-  # Isolate environmental data for bird
-  wind_data_i <- wind_L1_data %>% filter(id==birdname)
-  wave_data_i <- wave_L1_data %>% filter(id==birdname)
+  # UPDATE THIS - JUST FIGURE OUT THE "_" SEPARATION METHOD
+  # birdname <- str_sub(gpsfiles[i],1,-17)
+  # tripname <- sub_str(birdname,1,-3)
   
   # Merge envrionmental data into one df
-  env_data_i <- merge(wind_data_i,wave_data_i,by=c("id","datetime","lon","lat","tripID"),all=TRUE)
+  env_data_i <- read_csv(env_L1_files[i])
+  env_data_i$datetime <- as.POSIXct(env_data_i$datetime,format="%Y-%m-%d %H:%M:%S", tz="GMT")
+      
+  # Set up columns
+  env_data_ij$bird_dir <-NA # THE DIRECTION THE BIRD IS HEADING IN
+  env_data_ij$bird_vel <-NA  # km/hr 
   
-  # Loop through individual trips (most birds just have one.)
-  trips<-unique(env_data_i$tripID)
+  # Wind stats
+  env_data_ij$wind_vel <- NA # m/s
+  env_data_ij$wind_dir <- NA # THE DIRECTION THE WIND IS COMING FROM
+  env_data_ij$bird_wind_angle <- NA # Bird-wind angle [0,180) degrees
+  env_data_ij$wind_rel <- NA # wind bearing relative to bird heading. The direction the wind is travelling toward
   
-  for (j in 1:length(trips)) {
-    
-    env_data_ij <- env_data_i %>% filter(tripID==trips[j])
-    
-    if (nrow(env_data_ij) >= 6*2) { # If file is so short that it's less than 2 hours , don't do anything.
+  # Wave stats
+  env_data_ij$bird_wave_angle <- NA # Bird-wave angle [0,180) degrees
+  env_data_ij$wave_rel <- NA # wave bearing relative to bird heading. The direction the wave is travelling toward
+  env_data_ij$bird_swell_angle <- NA # Bird-swell angle [0,180) degrees
+  env_data_ij$swell_rel <- NA # swell bearing relative to bird heading. The direction the wave is travelling toward
+  env_data_ij$bird_ww_angle <- NA # Bird-windwave angle [0,180) degrees
+  env_data_ij$ww_rel <- NA # windwave bearing relative to bird heading. The direction the wave is travelling toward
+  
+  # Bird velocity and heading
+  env_data_ij$lon <- Lon360to180(env_data_ij$lon)
+  env_data_ij$bird_vel <- c(distHaversine(env_data_ij %>% dplyr::select(lon,lat))/(1000*hour_int),NA)
+  env_data_ij$bird_dir <- wrap360(geosphere::bearing(env_data_ij %>% dplyr::select(lon,lat))) # set bearing to [0,360)
+  
+  # Wind stats
+  ddff <- uv2ddff(env_data_ij)
+  env_data_ij$wind_vel <- ddff$ff # m/s
+  env_data_ij$wind_dir <- ddff$dd # [0,360) degrees
+  env_data_ij$bird_wind_angle <- bearingAngle(env_data_ij$bird_dir,wrap360(env_data_ij$wind_dir-180)) # [0,180) degrees
+  env_data_ij$wind_rel <- (wrap360(env_data_ij$wind_dir-180)-env_data_ij$bird_dir) %% 360
+  
+  # Wave stats
+  env_data_ij$bird_wave_angle <- bearingAngle(env_data_ij$bird_dir,wrap360(env_data_ij$mwd-180)) # [0,180) degrees
+  env_data_ij$wave_rel <- (wrap360(env_data_ij$mwd-180)-env_data_ij$bird_dir) %% 360
+  env_data_ij$bird_swell_angle <- bearingAngle(env_data_ij$bird_dir,wrap360(env_data_ij$mdts-180)) # [0,180) degrees
+  env_data_ij$swell_rel <- (wrap360(env_data_ij$mdts-180)-env_data_ij$bird_dir) %% 360
+  env_data_ij$bird_ww_angle <- bearingAngle(env_data_ij$bird_dir,wrap360(env_data_ij$mdww-180)) # [0,180) degrees
+  env_data_ij$ww_rel <- (wrap360(env_data_ij$mdww-180)-env_data_ij$bird_dir) %% 360
+  
+  # Save file
+  env_data_ij$datetime <- as.character(format(env_data_ij$datetime)) # safer for writing csv in character format
+  write_csv(env_data_ij, paste0(env_L2_dir, tripname, "_Env_L2_BWAs.csv"))
       
-      env_data_ij$bird_dir <-NA # THE DIRECTION THE BIRD IS HEADING IN
-      env_data_ij$bird_vel <-NA  # km/hr 
-      
-      # Wind stats
-      env_data_ij$wind_vel <- NA # m/s
-      env_data_ij$wind_dir <- NA # THE DIRECTION THE WIND IS COMING FROM
-      env_data_ij$bird_wind_angle <- NA # Bird-wind angle [0,180) degrees
-      env_data_ij$wind_rel <- NA # wind bearing relative to bird heading. The direction the wind is travelling toward
-      
-      # Wave stats
-      env_data_ij$bird_wave_angle <- NA # Bird-wave angle [0,180) degrees
-      env_data_ij$wave_rel <- NA # wave bearing relative to bird heading. The direction the wave is travelling toward
-      env_data_ij$bird_swell_angle <- NA # Bird-swell angle [0,180) degrees
-      env_data_ij$swell_rel <- NA # swell bearing relative to bird heading. The direction the wave is travelling toward
-      env_data_ij$bird_ww_angle <- NA # Bird-windwave angle [0,180) degrees
-      env_data_ij$ww_rel <- NA # windwave bearing relative to bird heading. The direction the wave is travelling toward
-      
-      # Bird velocity and heading
-      env_data_ij$lon <- Lon360to180(env_data_ij$lon)
-      env_data_ij$bird_vel <- c(distHaversine(env_data_ij %>% dplyr::select(lon,lat))/(1000*hour_int),NA)
-      env_data_ij$bird_dir <- wrap360(geosphere::bearing(env_data_ij %>% dplyr::select(lon,lat))) # set bearing to [0,360)
-      
-      # Wind stats
-      ddff <- uv2ddff(env_data_ij)
-      env_data_ij$wind_vel <- ddff$ff # m/s
-      env_data_ij$wind_dir <- ddff$dd # [0,360) degrees
-      env_data_ij$bird_wind_angle <- bearingAngle(env_data_ij$bird_dir,wrap360(env_data_ij$wind_dir-180)) # [0,180) degrees
-      env_data_ij$wind_rel <- (wrap360(env_data_ij$wind_dir-180)-env_data_ij$bird_dir) %% 360
-      
-      # Wave stats
-      env_data_ij$bird_wave_angle <- bearingAngle(env_data_ij$bird_dir,wrap360(env_data_ij$mwd-180)) # [0,180) degrees
-      env_data_ij$wave_rel <- (wrap360(env_data_ij$mwd-180)-env_data_ij$bird_dir) %% 360
-      env_data_ij$bird_swell_angle <- bearingAngle(env_data_ij$bird_dir,wrap360(env_data_ij$mdts-180)) # [0,180) degrees
-      env_data_ij$swell_rel <- (wrap360(env_data_ij$mdts-180)-env_data_ij$bird_dir) %% 360
-      env_data_ij$bird_ww_angle <- bearingAngle(env_data_ij$bird_dir,wrap360(env_data_ij$mdww-180)) # [0,180) degrees
-      env_data_ij$ww_rel <- (wrap360(env_data_ij$mdww-180)-env_data_ij$bird_dir) %% 360
-      
-      # Save file
-      env_data_ij$datetime <- as.character(format(env_data_ij$datetime)) # safer for writing csv in character format
-      filename_chunk_id <- as.character(env_data_ij$tripID[j])
-      write_csv(env_data_ij, paste0(env_L2_dir, filename_chunk_id, "_BWAs.csv"))
-      
-    }
-  }
 }
 }
 }
+
