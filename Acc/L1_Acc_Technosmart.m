@@ -9,8 +9,8 @@ clearvars
 
 %% USER INPUTED VALUES
 
-szn = '2019_2020';
-location = "Bird_Island"; % Options: 'Bird_Island', 'Midway'
+szn = '2021_2022';
+location = "Midway"; % Options: 'Bird_Island', 'Midway'
 tagtype = "AxyTrek"; % Options: 'AGM', 'Axy5', 'AxyAir', 'AxyTrek'
 
 %% Timezone

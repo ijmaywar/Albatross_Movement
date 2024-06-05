@@ -101,15 +101,17 @@ function [T,meta_tbl] = s1_Acc_Technosmart(m,ID,birdmeta,written_local,tagtype)
         else
             % Declare that DateTime is in GMT
             DateTime.TimeZone = "GMT";
-            % Convert the metadata acc_on time to GMT
-            meta_startdate.TimeZone = "GMT";
         end
+
+        data_startdate = DateTime(1);
+        % Use startdate converted to local_tz to compare to metadata
+        data_startdate.TimeZone = local_tz; 
         
         % Test to see if the start datetime in the AxyTrek data is on the
         % same day as the meta capture date
-        if year(meta_startdate) == year(DateTime(1)) && ...
-           month(meta_startdate) == month(DateTime(1)) && ...
-           day(meta_startdate) == day(DateTime(1))
+        if year(meta_startdate) == year(data_startdate) && ...
+           month(meta_startdate) == month(data_startdate) && ...
+           day(meta_startdate) == day(data_startdate)
             % Set mismatch_mins to 0
             mismatch_mins = 0;
             meta_tbl.DT_mismatch_mins(1,:) = mismatch_mins;

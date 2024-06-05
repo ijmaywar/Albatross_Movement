@@ -14,8 +14,8 @@ clearvars
  
 %% USER INPUTED VALUES
 
-szn = '2019_2020';
-location = 'Bird_Island'; % Options: 'Bird_Island', 'Midway'
+szn = '2018_2019';
+location = 'Midway'; % Options: 'Bird_Island', 'Midway'
 datalvl = "L1";
 tagtype = "Technosmart";
 
