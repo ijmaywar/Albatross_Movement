@@ -11,7 +11,8 @@ rm(list = ls())
 
 # User Inputted Values -----------------------------------------------------
 
-location = 'Midway' # Options: 'Bird_Island', 'Midway'
+# location = 'Bird_Island' # Options: 'Bird_Island', 'Midway'
+locations = c("Bird_Island","Midway")
 
 # Set Environment ---------------------------------------------------------
 
@@ -19,8 +20,11 @@ library(dplyr)
 library(ggplot2)
 
 GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/Thorne Lab Shared Drive/Data/Albatross/"
-szn_dir <- paste0(GD_dir, "L2/",location,"/Tag_Data/GPS/")
 
+# Loop thru locations ----------------------------------------------------------
+
+for (location in locations) {
+szn_dir <- paste0(GD_dir, "L2/",location,"/Tag_Data/GPS/")
 if (location == "Bird_Island") {
   compile_dir <- paste0(GD_dir, "L2/",location,"/Tag_Data/GPS/compiled_2019_2022/compiled_by_spp/")
 } else if (location == "Midway") {
@@ -66,9 +70,9 @@ for (i in 1:length(species)) {
   
   compiled600s$datetime <- as.character(format(compiled600s$datetime)) # safer for writing csv in character format
   
-  write.csv(compiled600s, file=paste0(compile_dir,spp,"_GPS_L2_600s.csv"), row.names=FALSE)
+  write.csv(compiled600s, file=paste0(compile_dir,spp,"_Compiled_GPS_L2_600s.csv"), row.names=FALSE)
   
   rm(compiled600s)
   
 }
-
+}

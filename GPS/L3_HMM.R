@@ -1,7 +1,7 @@
 ################################################################################
 #
 # L2 GPS -> L3 GPS data
-# Use Theo Michelot's moveHMM to seperate flight behaviors:
+# Use Theo Michelot's moveHMM to separate flight behaviors:
 #   1. Area-restricted foraging
 #   2. Commuting
 #
@@ -13,9 +13,9 @@ rm(list = ls())
 
 # User Inputted Values -----------------------------------------------------
 
-location = 'Bird_Island' # Options: 'Bird_Island', 'Midway'
-spp = "BBAL"
-numstates = "3_states"
+# location = 'Bird_Island' # Options: 'Bird_Island', 'Midway'
+# spp = "BBAL"
+# numstates = "3_states"
 
 NS_list = c("3_states","2_states")
 locations = c("Bird_Island","Midway")
@@ -71,7 +71,7 @@ if (location == "Midway") {
 setwd(compile_dir)
 gpsfiles<-list.files(pattern='*.csv')
 
-df = read.csv(gpsfiles[which(substr(gpsfiles,1,4)==spp)])
+df = read_csv(gpsfiles[which(substr(gpsfiles,1,4)==spp)])
 
 df$datetime <- as.POSIXct(df$datetime, format = "%Y-%m-%d %H:%M:%S", tz = "GMT")
 df$lon <- wrapCor(df$lon)

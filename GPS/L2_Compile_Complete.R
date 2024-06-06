@@ -7,7 +7,8 @@ rm(list = ls())
 
 # User Inputted Values -----------------------------------------------------
 
-loc = 'Midway'
+# location = 'Bird_Island' # Options: 'Bird_Island', 'Midway'
+locations = c("Bird_Island","Midway")
 
 # Load Packages -----------------------------------------------------------
 
@@ -18,12 +19,16 @@ library(readxl)
 
 GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/Thorne Lab Shared Drive/Data/Albatross/";
 fullmeta <- read_excel(paste0(GD_dir,"/metadata/Full_Metadata.xlsx"))
-if (loc == "Bird_Island") {
-  GPS_dir <- paste0(GD_dir,"L2/",loc,"/Tag_Data/GPS/compiled_2019_2022/compiled_by_spp/")
-  write_dir <- paste0(GD_dir,"L2/",loc,"/Tag_Data/GPS/compiled_2019_2022/compiled_complete/")
-} else if (loc == "Midway") {
-  GPS_dir <- paste0(GD_dir,"L2/",loc,"/Tag_Data/GPS/compiled_2018_2023/compiled_by_spp/")
-  write_dir <- paste0(GD_dir,"L2/",loc,"/Tag_Data/GPS/compiled_2018_2023/compiled_complete/")
+
+# Loop thru locations ----------------------------------------------------------
+
+for (location in locations) {
+if (location == "Bird_Island") {
+  GPS_dir <- paste0(GD_dir,"L2/",location,"/Tag_Data/GPS/compiled_2019_2022/compiled_by_spp/")
+  write_dir <- paste0(GD_dir,"L2/",location,"/Tag_Data/GPS/compiled_2019_2022/compiled_complete/")
+} else if (location == "Midway") {
+  GPS_dir <- paste0(GD_dir,"L2/",location,"/Tag_Data/GPS/compiled_2018_2023/compiled_by_spp/")
+  write_dir <- paste0(GD_dir,"L2/",location,"/Tag_Data/GPS/compiled_2018_2023/compiled_complete/")
 }
 
 setwd(GPS_dir)
@@ -86,5 +91,5 @@ all_data <- all_data %>% mutate(TripType = if_else(TripType %in% c("E_pip","2BEP
 all_data <- na.omit(all_data)
 
 # write file
-write_csv(all_data,paste0(write_dir,loc,"_600s_compiled_complete.csv"))
-
+write_csv(all_data,paste0(write_dir,location,"_Compiled_600s_compiled_complete.csv"))
+}
