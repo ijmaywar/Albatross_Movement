@@ -1,7 +1,9 @@
 ################################################################################
 #
-# Calculate metrics measuring the angles between the bird's heading and the
-# direction of environmental data.
+# Wind data: Extract data from netcdfs, allign with bird positions, and
+#             calculate bird/wind data
+# Based on 1-mgc_wind_extract-to-latlon_part2_Aug2021.R by Melinda. Rewritten
+# for use in the Terra package becasue rgdal is no longer supported.
 #
 ################################################################################
 
@@ -12,9 +14,7 @@ rm(list = ls())
 # User Inputted Values -----------------------------------------------------
 
 location = 'Bird_Island' # Options: 'Bird_Island', 'Midway'
-szn = "2019_2020"
-
-locations = c("Bird_Island", "Midway")
+szn = "2021_2022"
 
 # Packages  ---------------------------------------------------------
 
@@ -39,18 +39,6 @@ bearingAngle <- function(bird_bearing,wind_bearing) {
   return(pmin(LHturn,RHturn))
 }
 
-# Loop to run thru all samples -------------------------------------------------
-
-for (location in locations) {
-if (location == "Bird_Island") {
-  # szns = c("2019_2020", "2020_2021", "2021_2022")
-  szns = c("2019_2020", "2020_2021")
-} else if (location == "Midway") {
-  szns = c("2018_2019", "2021_2022", "2022_2023")
-}
-for (szn in szns) {
-  cat("Processing location:",location,"Season:",szn,"\n")
-  
 # Set Environment ---------------------------------------------------------
 
 GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/Thorne Lab Shared Drive/Data/Albatross/"
@@ -69,14 +57,27 @@ env_L1_files <- list.files(pattern='*.csv')
 int_now <- 600 
 hour_int<- int_now/3600 # int_now is in seconds (3600 seconds in one hour)
 
-for (i in 1:length(env_L1_files)) {
+# Merge files
+
+Waves_21_22_2 <- read_csv(env_L1_files[1])
+Waves_21_22_1 <- read_csv(env_L1_files[2])
+Wind_21_22 <- read_csv(env_L1_files[3])
+
+Waves_21_22 <- rbind(Waves_21_22_1[1:154029,],Waves_21_22_2[154030:nrow(Waves_21_22_2),])
   
-  tripname <- paste(unlist(str_split(env_L1_files[i],"_"))[1:4],collapse="_")
+env_data <- merge(Wind_21_22,Waves_21_22,by=colnames(Waves_21_22)[1:5])
+env_data$datetime <- as.POSIXct(env_data$datetime,format="%Y-%m-%d %H:%M:%S", tz="GMT")
+
+tripnames <- unique(env_data$tripID)
+
+for (i in 1:length(tripnames)) {
+  
+  # UPDATE THIS - JUST FIGURE OUT THE "_" SEPARATION METHOD
+  tripname <- tripnames[i]
   birdname <- str_sub(tripname,1,-3)
   
-  env_data_i <- read_csv(env_L1_files[i])
-  env_data_i$datetime <- as.POSIXct(env_data_i$datetime,format="%Y-%m-%d %H:%M:%S", tz="GMT")
-      
+  env_data_i <- env_data %>% filter(tripID==tripname)
+
   # Set up columns
   env_data_i$bird_dir <-NA # THE DIRECTION THE BIRD IS HEADING IN
   env_data_i$bird_vel <-NA  # km/hr 
@@ -101,7 +102,7 @@ for (i in 1:length(env_L1_files)) {
   env_data_i$bird_dir <- wrap360(geosphere::bearing(env_data_i %>% dplyr::select(lon,lat))) # set bearing to [0,360)
   
   # Wind stats
-  ddff <- uv2ddff(env_data_i$u10,env_data_i$v10)
+  ddff <- uv2ddff(env_data_i)
   env_data_i$wind_vel <- ddff$ff # m/s
   env_data_i$wind_dir <- ddff$dd # [0,360) degrees
   env_data_i$bird_wind_angle <- bearingAngle(env_data_i$bird_dir,wrap360(env_data_i$wind_dir-180)) # [0,180) degrees
@@ -118,7 +119,7 @@ for (i in 1:length(env_L1_files)) {
   # Save file
   env_data_i$datetime <- as.character(format(env_data_i$datetime)) # safer for writing csv in character format
   write_csv(env_data_i, paste0(env_L2_dir, tripname, "_Env_L2_BWAs.csv"))
-      
+  
 }
 }
 }

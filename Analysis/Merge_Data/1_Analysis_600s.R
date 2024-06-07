@@ -10,8 +10,8 @@ rm(list = ls())
 
 # User Inputted Values -----------------------------------------------------
 
-location = 'Bird_Island'
-szn = "2021_2022"
+# location = 'Bird_Island'
+# szn = "2021_2022"
 
 locations = c("Bird_Island", "Midway")
 
@@ -76,6 +76,12 @@ Acc_files <- list.files(pattern='*.csv')
 if (location == 'Midway') {
   for (i in 1:length(Acc_files)) {
       m <- read_csv(Acc_files[i])
+      
+      # Skip this trip if it's less than 2 hours long.
+      if (nrow(m)<6) {
+        next
+      }
+      
       m$datetime <- as.POSIXct(m$datetime,format="%Y-%m-%d %H:%M:%S", tz="GMT")
       
       if (difftime(m$datetime[nrow(m)],m$datetime[1],units="secs") != 600*(nrow(m)-1)) {
@@ -83,8 +89,8 @@ if (location == 'Midway') {
         break
       }
       
-      birdname_trip <- str_sub(Acc_files[i],1,-22)
-      birdname <- str_sub(Acc_files[i],1,-24)
+      birdname_trip <- paste(unlist(str_split(Acc_files[i],"_"))[1:4],collapse="_")
+      birdname <- str_sub(birdname_trip,1,-3)
 
       m$HMM_2S_state <- HMMstate(birdname_trip,states=2)
       m$HMM_3S_state <- HMMstate(birdname_trip,states=3)
@@ -115,14 +121,20 @@ if (location == 'Midway') {
     
     for (i in 1:length(Acc_files)) {
       m <- read_csv(Acc_files[i])
+      
+      # Skip this trip if it's less than 2 hours long.
+      if (nrow(m)<6) {
+        next
+      }
+      
       m$datetime <- as.POSIXct(m$datetime,format="%Y-%m-%d %H:%M:%S", tz="GMT")
       if (difftime(m$datetime[nrow(m)],m$datetime[1],units="secs") != 600*(nrow(m)-1)) {
         print("Data continuity check failed.")
         break
       }
       
-      birdname_trip <- str_sub(Acc_files[i],1,-22)
-      birdname <- str_sub(Acc_files[i],1,-24)
+      birdname_trip <- paste(unlist(str_split(Acc_files[i],"_"))[1:4],collapse="_")
+      birdname <- str_sub(birdname_trip,1,-3)
       
       m$HMM_2S_state <- HMMstate(birdname_trip,states=2)
       m$HMM_3S_state <- HMMstate(birdname_trip,states=3)
@@ -192,8 +204,8 @@ if (location == 'Midway') {
           first_ECG_dt <- AuxON_dt + seconds(bird_ESS$start/600)
           last_ECG_dt <- AuxON_dt + seconds(bird_ESS$stop/600)
           
-          # Filter for HBs with a probability geq(min_peak_prob)
-          ECG_data <- ECG_data %>% filter(probability>=min_peak_prob)
+          # Filter for HBs with a probability geq(0)
+          ECG_data <- ECG_data %>% filter(probability>=0)
           
           breaks <- seq(0,600*nrow(m),by=600)
           categories <- cut(ECG_data$GPSsec,breaks,include.lowest=TRUE,right=FALSE)

@@ -10,9 +10,10 @@ rm(list = ls())
 
 # User Inputted Values -----------------------------------------------------
 
-location = 'Bird_Island' # Options: 'Bird_Island', 'Midway'
+location = 'Midway' # Options: 'Bird_Island', 'Midway'
 szn = "2021_2022"
-Acc_Type = "NRL"
+Acc_Type = "AxyTrek" # Options: Technosmart, AxyTrek, NRL
+Method = "Sequential" # Options: Parallel, Sequential
 
 # Load Packages -----------------------------------------------------------
 
@@ -25,10 +26,25 @@ library(doParallel)
 # Set Environment ---------------------------------------------------------
 
 GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/Thorne Lab Shared Drive/Data/Albatross/"
-L1_Acc_dir <- paste0(GD_dir,"L1/",location,"/Tag_Data/Acc/","Acc_",Acc_Type,"/",szn,"/")
-L1_wind_dir <- paste0(GD_dir,"L1/",location,"/Wind_Data/ERA5_SingleLevels_10m/allbirds_GPS_with_wind/",szn,"/")
-L1_GPS_summary_dir <- paste0(GD_dir,"L1/",location,"/Tag_Data/GPS/GPS_Catlog/",szn,"/GPS_Summaries/")
 
+if (Acc_Type == "AxyTrek") {
+  L1_Acc_dir <- paste0(GD_dir,"L1/",location,"/Tag_Data/Acc/","Acc_Technosmart/",szn,"/AxyTrek/")
+  L1_GPS_summary_dir <- paste0(GD_dir,"L1/",location,"/Tag_Data/GPS/GPS_AxyTrek/",szn,"/GPS_Summaries/")
+} else if (Acc_Type == "Technosmart"){
+  L1_Acc_dir <- paste0(GD_dir,"L1/",location,"/Tag_Data/Acc/","Acc_Technosmart/",szn,"/")
+  L1_GPS_summary_dir <- paste0(GD_dir,"L1/",location,"/Tag_Data/GPS/GPS_Catlog/",szn,"/GPS_Summaries/")
+} else if (Acc_Type == "NRL") {
+  L1_Acc_dir <- paste0(GD_dir,"L1/",location,"/Tag_Data/Acc/","Acc_NRL/",szn,"/")
+  L1_GPS_summary_dir <- paste0(GD_dir,"L1/",location,"/Tag_Data/GPS/GPS_Catlog/",szn,"/GPS_Summaries/")
+}
+
+if (location == "Bird_Island") {
+  L2_GPS_compiled_dir <- paste0(GD_dir, "L2/",location,"/Tag_Data/GPS/compiled_2019_2022/compiled_by_spp/")
+} else if (location == "Midway") {
+  L2_GPS_compiled_dir <- paste0(GD_dir, "L2/",location,"/Tag_Data/GPS/compiled_2018_2023/compiled_by_spp/")
+}
+
+# env_L1_dir <- paste0(GD_dir,"L1/",location,"/Env_Data/ERA5_SingleLevels_10m/",szn,"/")
 fullmeta <- read_excel(paste0(GD_dir,"metadata/Full_Metadata.xlsx"))
 
 setwd(L1_GPS_summary_dir)
@@ -38,62 +54,71 @@ L1_GPS_summary <- read.csv(L1_GPS_summary)
 setwd(L1_Acc_dir)
 acc_files <- list.files(pattern='*.csv')
 
-# Parallelize to load Acc info --------------------------------------------
+# Load Acc data ----------------------------------------------------------------
 
-# Setup parallel backend
-my.cluster <- parallel::makeCluster(
-  6,
-  type = "FORK"
-)
-# Memory overload with 9 cores. Use 6
+if (Method == "Parallel") {
+  # Setup parallel backend
+  my.cluster <- parallel::makeCluster(
+    6,
+    type = "FORK"
+  )
+  # Memory overload with 9 cores. Use 6
 
-doParallel::registerDoParallel(cl = my.cluster)
+  doParallel::registerDoParallel(cl = my.cluster)
 
-# Load Acc files and extract start and stop times
-Acc_times <- foreach(
-  i = 1:length(acc_files),
-  .combine = 'rbind'
-) %dopar% {
+  # Load Acc files and extract start and stop times
+  Acc_times <- foreach(
+    i = 1:length(acc_files),
+    .combine = 'rbind'
+  ) %dopar% {
+    setwd(L1_Acc_dir)
+    m <- read_csv(acc_files[i])
+    birdname <- sub("_Acc_L1.csv$","",acc_files[i])
+    start <- m$DateTime[1]
+    stop <- m$DateTime[nrow(m)]
+    out <- data.frame(birdname,start,stop)
+    return(out)
+  }
+
+  parallel::stopCluster(cl = my.cluster)
+  
+} else if (Method == "Sequential") {
+  
   setwd(L1_Acc_dir)
-  m <- read.csv(acc_files[i])
-  birdname <- sub("_Acc_L1.csv$","",acc_files[i])
-  start <- m$DateTime[1]
-  stop <- m$DateTime[nrow(m)]
-  out <- data.frame(birdname,start,stop)
-  return(out)
+  Acc_times <- data.frame(matrix(ncol=3,nrow=length(acc_files)))
+  colnames(Acc_times) <- c("birdname","start","stop")
+  for (i in 1:length(acc_files)) {
+    m <- read_csv(acc_files[i])
+    birdname <- sub("_Acc_L1.csv$","",acc_files[i])
+    start <- m$DateTime[1]
+    stop <- m$DateTime[nrow(m)]
+    Acc_times$birdname[i] <- birdname
+    Acc_times$start[i] <- start
+    Acc_times$stop[i] <- stop
+  }
 }
-
-parallel::stopCluster(cl = my.cluster)
-
-
-
-# Alternatively, extract acc data sequentially if parallelization isn't working for some reason
-
-# setwd(L1_Acc_dir)
-# Acc_times <- data.frame(matrix(ncol=3,nrow=length(acc_files)))
-# colnames(Acc_times) <- c("birdname","start","stop")
-# for (i in 1:length(acc_files)) {
-#   m <- read.csv(acc_files[i])
-#   birdname <- sub("_Acc_L1.csv$","",acc_files[i])
-#   start <- m$DateTime[1]
-#   stop <- m$DateTime[nrow(m)]
-#   Acc_times$birdname[i] <- birdname
-#   Acc_times$start[i] <- start
-#   Acc_times$stop[i] <- stop
-# }
-
 
 # Extract GPS start and stop ----------------------------------------------
 
-setwd(L1_wind_dir)
+setwd(L2_GPS_compiled_dir)
 GPS_files <- list.files(pattern='*.csv')
-m <- read.csv(GPS_files[1])
-all_trips <- unique(m$tripID)
 
+# Create compiled file
+for (i in 1:length(GPS_files)) {
+  mi <- read_csv(GPS_files[i])
+  if (i==1) {
+    m <- mi
+  } else {
+    m <- rbind(m,mi)
+  }
+}
+
+all_trips <- unique(m$tripID)
 GPS_times <- data.frame(tripID = character(length(all_trips)),
                         start = character(length(all_trips)),
                         stop = character(length(all_trips)))
 colnames(GPS_times) <- c("tripID", "start", "stop")
+
 for (i in 1:length(all_trips)) {
   mi <- filter(m,tripID==all_trips[i])
   start <- mi$datetime[1]
@@ -125,8 +150,8 @@ for (i in 1:nrow(Acc_times)) {
 # format datetime columns for duration calculations
 allignment$acc_start <- as.POSIXct(allignment$acc_start,format="%Y-%m-%d %H:%M:%S",tz="GMT")
 allignment$acc_stop <- as.POSIXct(allignment$acc_stop,format="%Y-%m-%d %H:%M:%S",tz="GMT")
-allignment$GPS_start <- as.POSIXct(allignment$GPS_start,format="%Y-%m-%d %H:%M:%S",tz="GMT")
-allignment$GPS_stop <- as.POSIXct(allignment$GPS_stop,format="%Y-%m-%d %H:%M:%S",tz="GMT")
+allignment$GPS_start <- as.POSIXct(as.numeric(allignment$GPS_start),format="%Y-%m-%d %H:%M:%S",tz="GMT")
+allignment$GPS_stop <- as.POSIXct(as.numeric(allignment$GPS_stop),format="%Y-%m-%d %H:%M:%S",tz="GMT")
 allignment$meta_recap <- as.POSIXct(allignment$meta_recap,format="%Y%m%d %H%M",tz="GMT")
 
 allignment <- allignment %>% mutate(acc_dur_days = as.numeric(difftime(acc_stop,acc_start,units="days")),
@@ -143,26 +168,7 @@ allignment$GPS_start <- as.character(format(allignment$GPS_start)) # safer for w
 allignment$GPS_stop <- as.character(format(allignment$GPS_stop)) # safer for writing csv in character format
 allignment$meta_recap <- as.character(format(allignment$meta_recap)) # safer for writing csv in character format
 
-# Make sure you're not overwriting something !!!!! -----------------------------
+# Make sure you're not overwriting something !!!!!
 write.csv(allignment,file=paste0(GD_dir,"/metadata/Tag_completeness_allignment/", location,"_",szn,"_",Acc_Type,"_allignment.csv"),row.names = FALSE)
 
-
-# fix meta_acc_diff_mins and meta_GPS_diff_mins --------------------------------
-#
-# # read allignment file
-# szn = "2020_2021"
-# location = "Bird_Island"
-# Acc_Type = "Technosmart"
-# 
-# allignment <- read.csv(paste0(GD_dir,"/metadata/Tag_completeness_allignment/", location,"_",szn,"_",Acc_Type,"_allignment.csv"))
-# allignment$acc_stop <- as.POSIXct(allignment$acc_stop,format="%Y-%m-%d %H:%M:%S",tz="GMT")
-# allignment$GPS_stop <- as.POSIXct(allignment$GPS_stop,format="%Y-%m-%d %H:%M:%S",tz="GMT")
-# # allignment$meta_recap <- as.POSIXct(allignment$meta_recap,format="%Y-%m-%d %H:%M:%S",tz="GMT")
-# allignment$meta_recap <- as.POSIXct(allignment$meta_recap,format="%Y%m%d %H%M",tz="GMT")
-# 
-# allignment <- allignment %>% mutate(meta_acc_diff_mins = as.numeric(difftime(meta_recap,acc_stop,units="mins")),
-#                                     meta_GPS_diff_mins = as.numeric(difftime(meta_recap,GPS_stop,units="mins")))
-# 
-# write.csv(allignment,
-#           file=paste0(GD_dir,"/metadata/Tag_completeness_allignment/", location,"_",szn,"_allignment.csv"),
-#           row.names = FALSE)
+# Manually input this data into Fullmeta.xlsx.

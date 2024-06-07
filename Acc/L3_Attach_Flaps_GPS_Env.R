@@ -11,8 +11,8 @@ rm(list = ls())
 
 # User Inputted Values -----------------------------------------------------
 
-location = 'Bird_Island' # Options: 'Bird_Island', 'Midway'
-szn = "2021_2022"
+# location = 'Bird_Island' # Options: 'Bird_Island', 'Midway'
+# szn = "2019_2020"
 
 locations = c("Bird_Island", "Midway")
 
@@ -40,7 +40,6 @@ for (location in locations) {
 GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/Thorne Lab Shared Drive/Data/Albatross/"
 Acc_dir <- paste0(GD_dir, "L2/",location,"/Tag_Data/Acc/",szn,"/")
 env_L2_dir <- paste0(GD_dir,"L2/",location,"/Env_Data/ERA5_SingleLevels_10m/",szn,"/")
-wave_L2_dir <- paste0(GD_dir,"L2/",location,"/Wave_Data/ERA5_SingleLevels_10m/",szn,"/")
 write_dir <- paste0(GD_dir,"L3/",location,"/Tag_Data/Acc/",szn,"/")
 
 # Load fullmeta
@@ -51,18 +50,19 @@ acc_files <- list.files(pattern='*.csv')
 
 setwd(env_L2_dir)
 env_files <- list.files(pattern='*.csv')
-all_trips <- sub("_BWAs.csv$","",env_files)
+# Extension <- paste(unlist(str_split(env_files[1],"_"))[5:length(unlist(str_split(env_files[1],"_")))],collapse="_")
+# all_trips <- sub(paste(Extension,"$","",env_files))
 
 # Add flaps ---------------------------------------------------------------
 
 for (i in 1:length(env_files)) {
   
-  birdname_trip <- str_sub(env_files[i],1,-10)
-  birdname <- str_sub(env_files[i],1,-12)
+  tripname <- paste(unlist(str_split(env_files[i],"_"))[1:4],collapse="_")
+  birdname <- str_sub(tripname,1,-3)
   birdspp <- str_sub(birdname,1,4)
   birdmeta <- fullmeta %>% filter(Deployment_ID == birdname)
   
-  m <- read.csv(env_files[i])
+  m <- read_csv(env_files[i])
   m$datetime <- as.POSIXct(m$datetime,format="%Y-%m-%d %H:%M:%S", tz="GMT")
  
   if (difftime(m$datetime[nrow(m)],m$datetime[1],units="secs") != 600*(nrow(m)-1)) {
@@ -73,7 +73,7 @@ for (i in 1:length(env_files)) {
   # Attach number of flaps
   acc_filename <- paste0(birdname,"_Acc_L2.csv")
   if (sum(acc_files==acc_filename)==1) {
-    flap_data <- read.csv(paste0(Acc_dir,acc_filename))
+    flap_data <- read_csv(paste0(Acc_dir,acc_filename))
     flap_data$DateTime <- as.POSIXct(flap_data$DateTime,format="%Y-%m-%d %H:%M:%S", tz="GMT")
   
     # find the seconds passed after the first GPS measurement for all flaps
@@ -95,7 +95,7 @@ for (i in 1:length(env_files)) {
     m$flaps <- data$Freq
   
     m$datetime <- as.character(format(m$datetime)) # safer for writing csv in character format  
-    write.csv(m, file=paste0(write_dir,birdname_trip,"_Acc_L3_env_10min.csv"), row.names=FALSE)
+    write.csv(m, file=paste0(write_dir,tripname,"_Acc_L3_env_600s.csv"), row.names=FALSE)
   
   }
 }
