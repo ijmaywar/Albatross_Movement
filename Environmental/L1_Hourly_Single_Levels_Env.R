@@ -1,8 +1,7 @@
 ################################################################################
 #
-# Wind data: Extract data from netcdfs, allign with bird positions
-# Based on 1-mgc_wind_extract-to-latlon_part2_Aug2021.R by Melinda. Rewritten
-# for use in the Terra package becasue rgdal is no longer supported.
+# Extract wind and wave data from .nc files of reanalysis data from 
+# "ERA5 hourly data on single levels from 1940 to present"
 #
 ################################################################################
 
@@ -13,7 +12,7 @@ rm(list = ls())
 # User Inputted Values -----------------------------------------------------
 
 location = 'Bird_Island' # Options: 'Bird_Island', 'Midway'
-szn = "2019_2020"
+szn = "2021_2022"
 
 # Packages  ---------------------------------------------------------
 
@@ -29,7 +28,8 @@ GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu
 GPS_dir <- paste0(GD_dir,"L2/",location,"/Tag_Data/GPS/",szn,"/")
 nc_wind_dir <- paste0(GD_dir,"L0/",location,"/Env_Data/",szn,"/ERA5_Wind_SingleLevels_10m/")
 nc_wave_dir <- paste0(GD_dir,"L0/",location,"/Env_Data/",szn,"/ERA5_Wave_SingleLevels_10m/")
-env_L1_dir <- paste0(GD_dir,"L1/",location,"/Env_Data/ERA5_SingleLevels_10m/",szn,"/")
+# env_L1_dir <- paste0(GD_dir,"L1/",location,"/Env_Data/ERA5_SingleLevels_10m/",szn,"/")
+env_L1_dir <- "/Users/ian/Desktop/Bird_Island_2021_2022_L1_Env/"
 
 # User Functions ----------------------------------------------------------
 
@@ -77,6 +77,18 @@ Lon360to180(min(m$lon))
 min(m$datetime)
 max(m$datetime)
 
+  ###########################################################################################################
+
+# Make sure you encapsulate the min and max of the lat, lon, and datetime for
+# the given season when downloading .nc files.
+# 
+# For wind data you should download: 10m u-component of wind and 10m v-component of wind
+# 
+# For wave data you should download: Free convective velocity over the oceans,
+# Mean direction of total swell, Mean period of total swell, Significant height of total swell
+# Mean direction of wind waves, Mean period of wind waves, Mean wave direction,
+# Mean wave period, Significant height of combined wind waves and swell, and Significant height of wind waves 
+
 ###########################################################################################################
 if (location == "Midway") { 
   
@@ -96,16 +108,22 @@ if (location == "Midway") {
   
   # Wave data
   setwd(nc_wave_dir)
-  wave_files <- list.files(pattern='*.nc') 
-  wave_E_Jan_component <- rast(wave_files[1])
-  wave_W_Jan_component <- rast(wave_files[2])
-  wave_E_Feb_component <- rast(wave_files[3])
-  wave_W_Feb_component <- rast(wave_files[4])
-  wave_Jan_raster <- merge(wave_W_Jan_component,wave_E_Jan_component)
-  wave_Feb_raster <- merge(wave_W_Feb_component,wave_E_Feb_component)
-  wave_raster <- c(wave_Jan_raster,wave_Feb_raster)
-  wave_raster # Make sure you got the right stuff!
+  wave_files <- list.files(pattern='*.nc')
+  if (length(wave_files) == 2) {
+    wave_E_Jan_Feb_component <- rast(wave_files[1])
+    wave_W_Jan_Feb_component <- rast(wave_files[2])
+    wave_raster <- merge(wave_E_Jan_Feb_component,wave_W_Jan_Feb_component)
+  } else if (length(wave_files) == 4) {
+    wave_E_Jan_component <- rast(wave_files[1])
+    wave_W_Jan_component <- rast(wave_files[2])
+    wave_E_Feb_component <- rast(wave_files[3])
+    wave_W_Feb_component <- rast(wave_files[4])
+    wave_Jan_raster <- merge(wave_W_Jan_component,wave_E_Jan_component)
+    wave_Feb_raster <- merge(wave_W_Feb_component,wave_E_Feb_component)
+    wave_raster <- c(wave_Jan_raster,wave_Feb_raster)
+  }
   
+  wave_raster # Make sure you got the right stuff!
   all_wave_times <- unique(time(wave_raster))
   all_wave_times_num <- as.numeric(unique(time(wave_raster)))
   
@@ -184,7 +202,7 @@ for (tripname in all_trips) {
     timej_diff_wind <- abs(all_wind_times_num-timej_num)
     if (min(timej_diff_wind) > 1800) { # 1800 seconds is 30 minutes
       print("Current datetime is outside of the data provided by NETCDF files.")
-      break
+      
     }
     
     closest_wind_dt <- all_wind_times[which.min(timej_diff_wind)]  # Find the min: tells which layer to pull out and isolate. 
@@ -199,7 +217,7 @@ for (tripname in all_trips) {
     } else if (all(is.na(wind_data_j))) {
       print(paste0("wind data not found for lon: ",as.character(xy_j)[1],
                    ", lat: ",as.character(xy_j)[2], 
-                   ", time: ",as.character(closest_dt),
+                   ", time: ",as.character(closest_wind_dt),
                    " for ",m_trip$id[j],"."))
     }
     
@@ -222,7 +240,7 @@ for (tripname in all_trips) {
     } else if (all(is.na(wave_data_j))) {
       print(paste0("wave data not found for lon: ",as.character(xy_j)[1],
                    ", lat: ",as.character(xy_j)[2], 
-                   ", time: ",as.character(closest_dt),
+                   ", time: ",as.character(closest_wave_dt),
                    " for ",m_trip$id[j],"."))
     }
     
