@@ -44,9 +44,6 @@ if (location == "Bird_Island") {
   L2_GPS_compiled_dir <- paste0(GD_dir, "L2/",location,"/Tag_Data/GPS/compiled_2018_2023/compiled_by_spp/")
 }
 
-# env_L1_dir <- paste0(GD_dir,"L1/",location,"/Env_Data/ERA5_SingleLevels_10m/",szn,"/")
-fullmeta <- read_excel(paste0(GD_dir,"metadata/Full_Metadata.xlsx"))
-
 setwd(L1_GPS_summary_dir)
 L1_GPS_summary <- list.files(pattern='*.csv')
 L1_GPS_summary <- read.csv(L1_GPS_summary)

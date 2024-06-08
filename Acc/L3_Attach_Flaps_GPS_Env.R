@@ -11,8 +11,8 @@ rm(list = ls())
 
 # User Inputted Values -----------------------------------------------------
 
-# location = 'Bird_Island' # Options: 'Bird_Island', 'Midway'
-# szn = "2019_2020"
+location = 'Bird_Island' # Options: 'Bird_Island', 'Midway'
+szn = "2021_2022"
 
 locations = c("Bird_Island", "Midway")
 
@@ -50,8 +50,6 @@ acc_files <- list.files(pattern='*.csv')
 
 setwd(env_L2_dir)
 env_files <- list.files(pattern='*.csv')
-# Extension <- paste(unlist(str_split(env_files[1],"_"))[5:length(unlist(str_split(env_files[1],"_")))],collapse="_")
-# all_trips <- sub(paste(Extension,"$","",env_files))
 
 # Add flaps ---------------------------------------------------------------
 
