@@ -11,7 +11,9 @@ rm(list = ls())
 
 # User Inputted Values -----------------------------------------------------
 
-# location = 'Bird_Island' # Options: 'Bird_Island', 'Midway'
+location = 'Bird_Island' # Options: 'Bird_Island', 'Midway'
+species <- "WAAL"
+
 locations = c("Bird_Island","Midway")
 
 # Set Environment ---------------------------------------------------------
@@ -25,24 +27,19 @@ GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu
 
 for (location in locations) {
 szn_dir <- paste0(GD_dir, "L2/",location,"/Tag_Data/GPS/")
+
 if (location == "Bird_Island") {
+  species = c("BBAL", "GHAL", "WAAL")
   compile_dir <- paste0(GD_dir, "L2/",location,"/Tag_Data/GPS/compiled_2019_2022/compiled_by_spp/")
 } else if (location == "Midway") {
+  species = c("BFAL", "LAAL")
   compile_dir <- paste0(GD_dir, "L2/",location,"/Tag_Data/GPS/compiled_2018_2023/compiled_by_spp/")
+} else {
+  print("Can't find location")
 }
 
 setwd(szn_dir)
 seasons <- list.files()[1:length(list.files())-1] # Remove the last folder because that's for the compiled data
-
-# Find species ------------------------------------------------
-
-if (location == "Bird_Island") {
-  species = c("BBAL", "GHAL", "WAAL")
-} else if (location == "Midway") {
-  species = c("BFAL", "LAAL")
-} else {
-  print("Can't find location")
-}
 
 # Write Files ------------------------------------------------
 
