@@ -28,8 +28,7 @@ GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu
 GPS_dir <- paste0(GD_dir,"L2/",location,"/Tag_Data/GPS/",szn,"/")
 nc_wind_dir <- paste0(GD_dir,"L0/",location,"/Env_Data/",szn,"/ERA5_Wind_SingleLevels_10m/")
 nc_wave_dir <- paste0(GD_dir,"L0/",location,"/Env_Data/",szn,"/ERA5_Wave_SingleLevels_10m/")
-# env_L1_dir <- paste0(GD_dir,"L1/",location,"/Env_Data/ERA5_SingleLevels_10m/",szn,"/")
-env_L1_dir <- "/Users/ian/Desktop/Bird_Island_2021_2022_L1_Env/"
+env_L1_dir <- paste0(GD_dir,"L1/",location,"/Env_Data/ERA5_SingleLevels_10m/",szn,"/")
 
 # User Functions ----------------------------------------------------------
 
@@ -178,6 +177,8 @@ for (new_col in new_columns) {
 }
 
 all_trips <- unique(m$tripID)
+
+all_trips <- all_trips[164:length(all_trips)]
 
 for (tripname in all_trips) {
   
