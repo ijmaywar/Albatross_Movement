@@ -10,10 +10,10 @@ rm(list = ls())
 
 # User Inputted Values -----------------------------------------------------
 
-location = 'Midway' # Options: 'Bird_Island', 'Midway'
-szn = "2021_2022"
-Acc_Type = "AxyTrek" # Options: Technosmart, AxyTrek, NRL
-Method = "Sequential" # Options: Parallel, Sequential
+location = 'Bird_Island' # Options: 'Bird_Island', 'Midway'
+szn = "2019_2020"
+Acc_Type = "Technosmart" # Options: Technosmart, NRL
+Method = "Parallel" # Options: Parallel, Sequential
 
 # Load Packages -----------------------------------------------------------
 
@@ -26,16 +26,13 @@ library(doParallel)
 # Set Environment ---------------------------------------------------------
 
 GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/Thorne Lab Shared Drive/Data/Albatross/"
+# Load fullmeta
+fullmeta <- read_xlsx(paste0(GD_dir,"metadata/Full_Metadata.xlsx"))
 
-if (Acc_Type == "AxyTrek") {
-  L1_Acc_dir <- paste0(GD_dir,"L1/",location,"/Tag_Data/Acc/","Acc_Technosmart/",szn,"/AxyTrek/")
-  L1_GPS_summary_dir <- paste0(GD_dir,"L1/",location,"/Tag_Data/GPS/GPS_AxyTrek/",szn,"/GPS_Summaries/")
-} else if (Acc_Type == "Technosmart"){
+if (Acc_Type == "Technosmart"){
   L1_Acc_dir <- paste0(GD_dir,"L1/",location,"/Tag_Data/Acc/","Acc_Technosmart/",szn,"/")
-  L1_GPS_summary_dir <- paste0(GD_dir,"L1/",location,"/Tag_Data/GPS/GPS_Catlog/",szn,"/GPS_Summaries/")
 } else if (Acc_Type == "NRL") {
   L1_Acc_dir <- paste0(GD_dir,"L1/",location,"/Tag_Data/Acc/","Acc_NRL/",szn,"/")
-  L1_GPS_summary_dir <- paste0(GD_dir,"L1/",location,"/Tag_Data/GPS/GPS_Catlog/",szn,"/GPS_Summaries/")
 }
 
 if (location == "Bird_Island") {
@@ -44,9 +41,22 @@ if (location == "Bird_Island") {
   L2_GPS_compiled_dir <- paste0(GD_dir, "L2/",location,"/Tag_Data/GPS/compiled_2018_2023/compiled_by_spp/")
 }
 
-setwd(L1_GPS_summary_dir)
-L1_GPS_summary <- list.files(pattern='*.csv')
-L1_GPS_summary <- read.csv(L1_GPS_summary)
+# These seasons only have Catlog GPS data
+if ((szn=="2021_2022" & location == "Midway") | (szn=="2020_2021" & location == "Bird_Island")) {
+  L1_GPS_summary_dir <- paste0(GD_dir,"L1/",location,"/Tag_Data/GPS/GPS_Catlog/",szn,"/GPS_Summaries/")
+  setwd(L1_GPS_summary_dir)
+  L1_GPS_summary <- list.files(pattern='*.csv')
+  L1_GPS_summary <- read.csv(L1_GPS_summary)
+} else { # These seasons have both AxyTrek and Catlog GPS data
+  setwd(paste0(GD_dir,"L1/",location,"/Tag_Data/GPS/GPS_Catlog/",szn,"/GPS_Summaries/"))
+  L1_GPS_summary_Catlog <- list.files(pattern='*.csv')
+  L1_GPS_summary_Catlog <- read.csv(L1_GPS_summary_Catlog)
+  setwd(paste0(GD_dir,"L1/",location,"/Tag_Data/GPS/GPS_AxyTrek/",szn,"/GPS_Summaries/"))
+  L1_GPS_summary_AxyTrek <- list.files(pattern='*.csv')
+  L1_GPS_summary_AxyTrek <- read.csv(L1_GPS_summary_AxyTrek)
+  L1_GPS_summary <- rbind(L1_GPS_summary_Catlog,L1_GPS_summary_AxyTrek)
+}
+
 
 setwd(L1_Acc_dir)
 acc_files <- list.files(pattern='*.csv')
@@ -166,6 +176,6 @@ allignment$GPS_stop <- as.character(format(allignment$GPS_stop)) # safer for wri
 allignment$meta_recap <- as.character(format(allignment$meta_recap)) # safer for writing csv in character format
 
 # Make sure you're not overwriting something !!!!!
-write.csv(allignment,file=paste0(GD_dir,"/metadata/Tag_completeness_allignment/", location,"_",szn,"_",Acc_Type,"_allignment.csv"),row.names = FALSE)
+write.csv(allignment,file=paste0(GD_dir,"/metadata/Tag_completeness_allignment/", location,"_",szn,"_",Acc_Type,"_allignment_NEW.csv"),row.names = FALSE)
 
 # Manually input this data into Fullmeta.xlsx.
