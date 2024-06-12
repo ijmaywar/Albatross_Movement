@@ -12,8 +12,8 @@ rm(list = ls())
 
 # User Inputted Values -----------------------------------------------------
 
-location = 'Bird_Island'
-szn = "2021_2022"
+# location = 'Bird_Island'
+# szn = "2021_2022"
 
 locations = c("Bird_Island", "Midway")
 
@@ -62,11 +62,11 @@ files <- list.files(pattern='*.csv')
 # Loop thru and process  ---------------------------------------------------------------
 
 for (i in 1:length(files)) {
-  m <- read.csv(files[i])
+  m <- read_csv(files[i])
   m$datetime <- as.POSIXct(m$datetime,format="%Y-%m-%d %H:%M:%S", tz="GMT")
-  birdname_trip <- str_sub(files[i],1,-19)
-  birdname <- str_sub(files[i],1,-21)
-  birdspp <- str_sub(birdname,1,4)
+  
+  birdname_trip <- paste(unlist(str_split(files[i],"_"))[1:4],collapse="_")
+  birdname <- str_sub(birdname_trip,1,-3)
   
   m$rounded_hour <- round_date(m$datetime, unit = "hour")
   m$timediff <- abs(as.numeric(difftime(m$datetime,m$rounded_hour)))

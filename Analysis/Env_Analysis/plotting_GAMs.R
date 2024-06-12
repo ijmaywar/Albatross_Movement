@@ -10,11 +10,6 @@
 
 rm(list = ls())
 
-# User Inputted Values -----------------------------------------------------
-
-locations = c('Bird_Island','Midway')
-min_peak_prob = 0 # What was the min_peak_prob used to create summary data?
-
 # Load Packages -----------------------------------------------------------
 
 library(tidyverse)
@@ -35,18 +30,13 @@ library(viridis)
 # Set Environment ---------------------------------------------------------
 
 GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/Thorne Lab Shared Drive/Data/Albatross/"
-
-if (min_peak_prob == 0) {
-  read_dir <- paste0(GD_dir, "Analysis/Maywar/Flaps_Hourly/Flaps_HMM_GLS_ECG_Compiled/p_0/")
-} else if (min_peak_prob == 0.85) {
-  read_dir <- paste0(GD_dir, "Analysis/Maywar/Flaps_Hourly/Flaps_HMM_GLS_ECG_Compiled/p_085/")
-}
+read_dir <- paste0(GD_dir, "Analysis/Maywar/Merged_Data/Merged_Hourly_Compiled/")
 
 fullmeta <- read_excel(paste0(GD_dir,"metadata/Full_Metadata.xlsx"))
 
 setwd(read_dir)
 files <- list.files(pattern = '*.csv')
-m_all <- read_csv(files[1])
+m_all <- read_csv(files[2])
 
 # Classify 2BEP, E_pip, Ep as BG
 m_all <- m_all %>% mutate(Trip_Type = factor(replace(as.character(Trip_Type),Trip_Type=="2BEP","BG")))
@@ -57,9 +47,21 @@ m_all <- m_all %>% mutate(Trip_Type = factor(replace(as.character(Trip_Type),Tri
 m_all$datetime <- as.POSIXlt(m_all$datetime,format="%Y-%m-%d %H:%M:%S",tz="GMT")
 
 # Categorize BWAs
-m_all <- m_all %>% mutate(BWA_cat = case_when(bwa<60 ~ "tail",
-                                              bwa>=60 & bwa<120 ~ "cross",
-                                              bwa>=120 ~ "head"))
+m_all <- m_all %>% mutate(bird_wind_angle_cat = case_when(bird_wind_angle<60 ~ "tail",
+                                                          bird_wind_angle>=60 & bird_wind_angle<120 ~ "cross",
+                                                          bird_wind_angle>=120 ~ "head"))
+
+m_all <- m_all %>% mutate(bird_wave_angle_cat = case_when(bird_wave_angle<60 ~ "tail",
+                                                          bird_wave_angle>=60 & bird_wave_angle<120 ~ "cross",
+                                                          bird_wave_angle>=120 ~ "head"))
+
+m_all <- m_all %>% mutate(bird_swell_angle_cat = case_when(bird_swell_angle<60 ~ "tail",
+                                                           bird_swell_angle>=60 & bird_swell_angle<120 ~ "cross",
+                                                           bird_swell_angle>=120 ~ "head"))
+
+m_all <- m_all %>% mutate(bird_ww_angle_cat = case_when(bird_ww_angle<60 ~ "tail",
+                                                        bird_ww_angle>=60 & bird_ww_angle<120 ~ "cross",
+                                                        bird_ww_angle>=120 ~ "head"))
 
 # Turn variables into factors
 m_all$id <- as.factor(m_all$id)
@@ -68,7 +70,12 @@ m_all$Field_Season <- as.factor(m_all$Field_Season)
 m_all$Location <- as.factor(m_all$Location)
 m_all$Trip_Type <- as.factor(m_all$Trip_Type)
 m_all$Species <- as.factor(m_all$Species)
-m_all$BWA_cat <- as.factor(m_all$BWA_cat)
+m_all$bird_wind_angle_cat <- as.factor(m_all$bird_wind_angle_cat)
+m_all$bird_wave_angle_cat <- as.factor(m_all$bird_wave_angle_cat)
+m_all$bird_swell_angle_cat <- as.factor(m_all$bird_swell_angle_cat)
+m_all$bird_ww_angle_cat <- as.factor(m_all$bird_ww_angle_cat)
+m_all$HMM_2S_state <- as.factor(m_all$HMM_2S_state)
+m_all$HMM_3S_state <- as.factor(m_all$HMM_3S_state)
 
 # Re-order Species groups and give them their full name
 m_all <- m_all %>% mutate(Species = factor(replace(as.character(Species),Species=="BBAL","Black-browed")),
@@ -78,14 +85,17 @@ m_all <- m_all %>% mutate(Species = factor(replace(as.character(Species),Species
                           Species = factor(replace(as.character(Species),Species=="LAAL","Laysan")))
 m_all$Species <- factor(m_all$Species, levels=c("Black-browed", "Grey-headed", "Wandering", "Black-footed", "Laysan"))
 
-m_all$BWA_cat <- factor(m_all$BWA_cat, levels=c("head", "cross", "tail"))
+m_all$bird_wind_angle_cat <- factor(m_all$bird_wind_angle_cat, levels=c("head", "cross", "tail"))
+m_all$bird_wave_angle_cat <- factor(m_all$bird_wave_angle_cat, levels=c("head", "cross", "tail"))
+m_all$bird_swell_angle_cat <- factor(m_all$bird_swell_angle_cat, levels=c("head", "cross", "tail"))
+m_all$bird_ww_angle_cat <- factor(m_all$bird_ww_angle_cat, levels=c("head", "cross", "tail"))
 
 # Add km/hr of wind_vel
 m_all$wind_vel_kmh <- 3.6*(m_all$wind_vel)
 
-# df without the flaps==NA rows:
 m_all_nonaflaps <- m_all %>% drop_na(flaps)
-m_all_nonaflapsbwas <- m_all_nonaflaps %>% drop_na(bwa)
+m_all_nona_flaps_env <- m_all_nonaflaps %>% drop_na(colnames(m_all)[6:29])
+m_all_nona_flaps_env_poscomplete <- m_all_nona_flaps_env %>% filter(Pos_complete==1)
 
 # Sample stats -----------------------------------------------------------------
 
@@ -100,7 +110,6 @@ m_all %>% group_by(GLS_state,HMM_3S_state) %>% summarize(count=n())
 # stats on the performance of OWB in relation to GLS
 m_all %>% group_by(GLS_state,OWB_state) %>% summarize(count=n())
 
-
 # Flaps/hour vs wind_vel_kmh (continuous) after removing HMM_3S_state == 1 ----------------------
 # WITHOUT A WIND TERM ON ITS OWN.
 
@@ -109,9 +118,9 @@ GAM_list <- list()
 
 for (spp in c("Black-browed", "Grey-headed", "Wandering", "Black-footed", "Laysan")) {
   
-  m_current <- m_all_nonaflapsbwas %>% filter((HMM_3S_state != 1) & (Species == spp))
+  m_current <- m_all_nona_flaps_env %>% filter((HMM_3S_state != 1) & (Species == spp))
   
-  current_GAM <- gam(formula = flaps ~ te(wind_vel_kmh,bwa,k=c(fac_k,fac_k),bs=c('tp','tp')) + 
+  current_GAM <- gam(formula = flaps ~ s(bird_wind_angle,k=fac_k,bs='tp') + 
                        s(id,k=length(unique(m_current$id)),bs="re"),
                      data = m_current,
                      family = "poisson",
@@ -119,49 +128,166 @@ for (spp in c("Black-browed", "Grey-headed", "Wandering", "Black-footed", "Laysa
   
   GAM_list[[spp]] <- current_GAM
   
-  current_ds  <- data_slice(current_GAM, wind_vel_kmh = evenly(wind_vel_kmh, n = 100),
-                            id = unique(m_current$id)[1:10],
-                            bwa = evenly(bwa,n=100))
+  current_ds  <- data_slice(current_GAM, bird_wind_angle = evenly(bird_wind_angle, n = 100),
+                            id = unique(m_current$id)[1:10])
 
   link_df <- cbind(current_ds,
                    rep(spp,nrow(current_ds)),
                    fitted_values(current_GAM, data = current_ds, scale = "link",
-                                 terms = c("(Intercept)","te(wind_vel_kmh,bwa)","s(id)"))[,4:7],
+                                 terms = c("(Intercept)","s(bird_wind_angle)","s(id)"))[,3:6],
                    fitted_values(current_GAM, data = current_ds, scale = "link",
-                                 terms = c("(Intercept)","te(wind_vel_kmh,bwa)"))[,4:7],
-                   fitted_values(current_GAM, data = current_ds, scale = "link",
-                                 terms = c("te(wind_vel_kmh,bwa)"))[,4:7],
-                   fitted_values(current_GAM, data = current_ds, scale = "link",
-                                 terms = c("(Intercept)"))[,4:7],
-                   fitted_values(current_GAM, data = current_ds, scale = "link",
-                                 terms = c("s(id)"))[,4:7]
-  )
-  colnames(link_df) <- c("wind_vel_kmh","id","bwa","Species",
+                                 terms = c("(Intercept)","s(bird_wind_angle)"))[,3:6])
+  
+  colnames(link_df) <- c("bird_wind_angle","id","Species",
                          "fitted_all","se_all","lower_all","upper_all",
-                         "fitted_global","se_global","lower_global","upper_global",
-                         "fitted_intrxn","se_intrxn","lower_intrxn","upper_intrxn",
-                         "fitted_int","se_int","lower_int","upper_int",
-                         "fitted_id","se_id","lower_id","upper_id")
+                         "fitted_global","se_global","lower_global","upper_global")
   
   if (spp == "Black-browed") {
-    ds_df_cont <- current_ds
-    fv_df_cont <- link_df
+    # ds_df_cont <- current_ds
+    fv_df_bird_wind_angle <- link_df
   } else {
-    ds_df_cont <- rbind(ds_df_cont,current_ds)
-    fv_df_cont <- rbind(fv_df_cont,link_df)
+    # ds_df_cont <- rbind(ds_df_cont,current_ds)
+    fv_df_bird_wind_angle <- rbind(fv_df_bird_wind_angle,link_df)
   }
 }
 
-fv_df_cont$Species <- factor(fv_df_cont$Species , levels=c("Black-browed", 
+fv_df_bird_wind_angle$Species <- factor(fv_df_bird_wind_angle$Species , levels=c("Black-browed", 
                       "Grey-headed", "Wandering", "Black-footed", "Laysan"))
 
-# fv_df_cont <- fv_df_cont %>%  mutate(Species = factor(replace(as.character(Species),Species=="BBAL","Black-browed")),
-#                                    Species = factor(replace(as.character(Species),Species=="GHAL","Grey-headed")),
-#                                    Species = factor(replace(as.character(Species),Species=="WAAL","Wandering")),
-#                                    Species = factor(replace(as.character(Species),Species=="BFAL","Black-footed")),
-#                                    Species = factor(replace(as.character(Species),Species=="LAAL","Laysan")))
+# Line plot for bird_wind_angle
+ggplot(fv_df_bird_wind_angle) +
+  geom_line(aes(y=exp(fitted_global),x=bird_wind_angle),linewidth=1) +
+  geom_ribbon(fv_df_bird_wind_angle,mapping=aes(ymin=exp(lower_global),ymax=exp(upper_global),y=NULL,x=bird_wind_angle),alpha=0.2) +
+  labs(y="Flaps/hour") +
+  # xlim(0,25) + 
+  # ylim(0,1500) +
+  facet_wrap(~Species,nrow = 1) + 
+  theme_bw()
 
-# mycolors <- colorRampPalette(brewer.pal(8, "OrRd"))(13)
+for (i in 1:5) {
+  summary_i <- summary(GAM_list[[i]])
+  print(c(format(round(summary_i$dev.expl,3),scientific=F),round(summary_i$r.sq,3),round(AIC(GAM_list[[i]]),3)))
+}
+
+
+################################################################################
+# Interaction GAMs
+
+fac_k <- 3
+GAM_list_waves_continuous <- list()
+
+for (spp in c("Black-browed", "Grey-headed", "Wandering", "Black-footed", "Laysan")) {
+  
+  m_current <- m_all_nona_flaps_env %>% filter((HMM_3S_state != 1) & (Species == spp))
+  
+  current_GAM <- gam(formula = flaps ~ te(shts,bird_swell_angle,k=c(fac_k,fac_k),bs=c('tp','tp')) + 
+                       s(id,k=length(unique(m_current$id)),bs="re"),
+                     data = m_current,
+                     family = "poisson",
+                     method = "REML")
+  
+  GAM_list_waves_continuous[[spp]] <- current_GAM
+  
+  current_ds  <- data_slice(current_GAM, shts = evenly(shts, n = 100),
+                            bird_swell_angle = evenly(bird_swell_angle, n=100),
+                            id = unique(m_current$id)[1:10])
+  
+  link_df <- cbind(current_ds,
+                   rep(spp,nrow(current_ds)),
+                   fitted_values(current_GAM, data = current_ds, scale = "link",
+                                 terms = c("(Intercept)","te(shts,bird_swell_angle)","s(id)"))[,4:7],
+                   fitted_values(current_GAM, data = current_ds, scale = "link",
+                                 terms = c("(Intercept)","te(shts,bird_swell_angle)"))[,4:7])
+  
+  colnames(link_df) <- c("shts","bird_swell_angle","id","Species",
+                         "fitted_all","se_all","lower_all","upper_all",
+                         "fitted_global","se_global","lower_global","upper_global")
+  
+  if (spp == "Black-browed") {
+    # ds_df_cont <- current_ds
+    fv_df_waves_continuous <- link_df
+  } else {
+    # ds_df_cont <- rbind(ds_df_cont,current_ds)
+    fv_df_waves_continuous <- rbind(fv_df_waves_continuous,link_df)
+  }
+}
+
+fv_df_waves_continuous$Species <- factor(fv_df_waves_continuous$Species , 
+                                         levels=c("Black-browed", "Grey-headed", "Wandering", 
+                                                  "Black-footed", "Laysan"))
+
+# ggplot(fv_df_waves_continuous %>% filter(exp(fitted_global)<2000)) +
+ggplot(fv_df_waves_continuous) +
+  # geom_contour_filled(aes(shts,bird_swell_angle,z=exp(fitted_global)),binwidth = 100) +
+  geom_contour_filled(aes(shts,bird_swell_angle,z=exp(fitted_global))) +
+  scale_fill_manual(values=inferno(12),drop=FALSE) +
+  geom_hline(yintercept=60,linetype=2,color="white") +
+  geom_hline(yintercept=120,linetype=2,color="white") +
+  labs(fill = "Flaps/hour") +
+  # ylab(expression(atop("Relative wave angle","(degrees)"))) +
+  scale_y_continuous(breaks=c(0,60,120,180)) + 
+  facet_wrap(~Species,nrow=1) + 
+  theme_bw()
+  # theme(text = element_text(size = 24),
+        # axis.title.x=element_blank(),
+        # axis.title.y=element_blank(),
+        # legend.position = "none")
+
+# Interaction between wave height and period
+# ggplot(fv_df_waves_continuous %>% filter(exp(fitted_global)<1500)) +
+ggplot(fv_df_waves_continuous) +
+  # geom_contour_filled(aes(shts,bird_swell_angle,z=exp(fitted_global))) +
+  geom_contour_filled(aes(shts,bird_swell_angle,z=fitted_global)) +
+  scale_fill_manual(values=inferno(15),drop=FALSE) +
+  # geom_hline(yintercept=60,linetype=2,color="white") +
+  # geom_hline(yintercept=120,linetype=2,color="white") +
+  labs(fill = "Flaps/hour") +
+  # ylab(expression(atop("Relative wave angle","(degrees)"))) +
+  # scale_y_continuous(breaks=c(0,60,120,180)) + 
+  facet_wrap(~Species,nrow=1) + 
+  theme_bw()
+# theme(text = element_text(size = 24),
+# axis.title.x=element_blank(),
+# axis.title.y=element_blank(),
+# legend.position = "none")
+
+# The problem here is that the estimates for flap rate go up to around 450000.
+# This makes the scale for the figure completely fucked. I need to create custom
+# bins so that the colors reflect only up to about 5000 or so flaps. 
+
+# Metrics
+for (i in 1:5) {
+  summary_i <- summary(GAM_list_waves_continuous[[i]])
+  print(c(format(round(summary_i$dev.expl,3),scientific=F),round(summary_i$r.sq,3),round(AIC(GAM_list_waves_continuous[[i]]),3)))
+}
+
+
+
+
+
+################################################################################
+
+
+
+
+
+# # Continuous figure for all species
+cont_all <- ggplot(fv_df_cont) +
+  geom_contour_filled(aes(wind_vel_kmh,bwa,z=exp(fitted_global)),binwidth = 100) +
+  scale_fill_manual(values=inferno(13),drop=FALSE) +
+  geom_hline(yintercept=60,linetype=2,color="white") +
+  geom_hline(yintercept=120,linetype=2,color="white") +
+  labs(fill = "Flaps/hour", x="Windspeed (km/h)") +
+  ylab(expression(atop("Relative wind angle","(degrees)"))) +
+  scale_y_continuous(breaks=c(0,60,120,180)) + 
+  facet_wrap(~Species,nrow=1) + 
+  theme_bw() +
+  theme(text = element_text(size = 24),
+        axis.title.x=element_blank(),
+        axis.title.y=element_blank(),
+        legend.position = "none")
+
+
 
 # # Continuous figure for all species
 cont_all <- ggplot(fv_df_cont) +
@@ -331,7 +457,7 @@ cat_all <- fv_df_cat |>
         strip.text.x = element_blank(),
         axis.title.y=element_blank(),
         legend.position = "none")
-
+ 
 # Link: global for SO spp
 cat_SO <- fv_df_cat %>% filter(Species %in% c("Black-browed","Grey-headed","Wandering"))|>
   ggplot(aes(wind_vel_kmh,exp(fitted_global),color=BWA_cat)) +
