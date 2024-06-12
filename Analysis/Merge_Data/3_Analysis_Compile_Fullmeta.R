@@ -44,6 +44,7 @@ compiled_m$Aux_TagType <- NA
 compiled_m$Body_Mass_Kg <- NA
 compiled_m$Pos_complete <- NA
 compiled_m$Aux_complete <- NA
+compiled_m$Trips_Full_dur <- NA
 
 for (i in 1:length(birds)) {
   current_bird <- birds[i]
@@ -66,6 +67,7 @@ for (i in 1:length(birds)) {
   compiled_m$Body_Mass_Kg[current_bird_rows] <- birdmeta$Body_Mass_Kg
   compiled_m$Pos_complete[current_bird_rows] <- birdmeta$Pos_complete
   compiled_m$Aux_complete[current_bird_rows] <- birdmeta$Aux_complete
+  compiled_m$Trips_Full_dur[current_bird_rows] <- birdmeta$Trips_Full_dur
 }
 
 # Save m

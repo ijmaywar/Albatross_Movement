@@ -10,8 +10,8 @@ rm(list = ls())
 
 # User Inputted Values -----------------------------------------------------
 
-location = 'Bird_Island' # Options: 'Bird_Island', 'Midway'
-szn = "2019_2020"
+location = 'Midway' # Options: 'Bird_Island', 'Midway'
+szn = "2022_2023"
 Acc_Type = "Technosmart" # Options: Technosmart, NRL
 Method = "Parallel" # Options: Parallel, Sequential
 
@@ -42,7 +42,7 @@ if (location == "Bird_Island") {
 }
 
 # These seasons only have Catlog GPS data
-if ((szn=="2021_2022" & location == "Midway") | (szn=="2020_2021" & location == "Bird_Island")) {
+if ((szn=="2022_2023" & location == "Midway") | (szn=="2020_2021" & location == "Bird_Island")) {
   L1_GPS_summary_dir <- paste0(GD_dir,"L1/",location,"/Tag_Data/GPS/GPS_Catlog/",szn,"/GPS_Summaries/")
   setwd(L1_GPS_summary_dir)
   L1_GPS_summary <- list.files(pattern='*.csv')
@@ -176,6 +176,6 @@ allignment$GPS_stop <- as.character(format(allignment$GPS_stop)) # safer for wri
 allignment$meta_recap <- as.character(format(allignment$meta_recap)) # safer for writing csv in character format
 
 # Make sure you're not overwriting something !!!!!
-write.csv(allignment,file=paste0(GD_dir,"/metadata/Tag_completeness_allignment/", location,"_",szn,"_",Acc_Type,"_allignment_NEW.csv"),row.names = FALSE)
+write.csv(allignment,file=paste0(GD_dir,"/metadata/Tag_completeness_allignment/", location,"_",szn,"_",Acc_Type,"_allignment.csv"),row.names = FALSE)
 
 # Manually input this data into Fullmeta.xlsx.
