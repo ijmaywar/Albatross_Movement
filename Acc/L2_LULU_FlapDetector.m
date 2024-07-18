@@ -15,16 +15,16 @@ clearvars
 
 %% USER INPUTED VALUES
 
-szn = '2021_2022';
-location = 'Midway'; % Options: 'Bird_Island', 'Midway'
+szn = '2019_2020';
+location = 'Bird_Island'; % Options: 'Bird_Island', 'Midway'
 AccType = 'Technosmart'; % Options: 'Technosmart', 'NRL'
 
 %% Set envrionment
 
 % set directories
 GD_dir = "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/Thorne Lab Shared Drive/Data/Albatross/";
-L1_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/Acc/Acc_',AccType,'/',szn,'/AxyTrek/');
-% L1_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/Acc/Acc_',AccType,'/',szn,'/');
+% L1_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/Acc/Acc_',AccType,'/',szn,'/AxyTrek/');
+L1_dir = strcat(GD_dir,'L1/',location,'/Tag_Data/Acc/Acc_',AccType,'/',szn,'/');
 L2_dir = strcat(GD_dir,'L2/',location,'/Tag_Data/Acc/',szn,'/');
 
 % Matlab functions toolbox
@@ -218,10 +218,14 @@ ylim([-2,2])
 %%
     nexttile
     plot(Acc.DateTime(range),raw(range))
+    hold on
+    plot(Acc.DateTime(range),filtered(range))
     ylabel('z-axis acceleration (g)')
     xlabel('datetime')
-    ylim([-0.5,2.5])
     fontsize(20,"points")
+    legend({'raw','filtered'})
+    ylim([-2.1,2.1])
+
 %%
     nexttile
     plot(Acc.DateTime(range),filtered(range))
@@ -231,3 +235,52 @@ ylim([-2,2])
     ylim([-2.1,0.1])
     yline(th)
     fontsize(20,"points")
+ 
+%% Plot figures and save
+
+    % th
+    nFlaps_movslp_th = figure('visible','on');
+    yyaxis left
+        plot(th_range,num_flaps_th,'-x')
+        hold on
+        scatter(th_range(th_idx),num_flaps_th(th_idx),'LineWidth',5)
+        ylabel('Number of flaps')
+    yyaxis right
+        scatter(th_range,mvSlp_th)
+        hold on
+        scatter(th_range(th_idx),mvSlp_th(th_idx),'LineWidth',5)
+        ylabel('movingslope')
+    xlabel('threshold')
+
+    % m
+    nFlaps_movslp_m = figure('visible','on');
+    yyaxis left
+        plot(m_range,num_flaps_m,'-x')
+        hold on 
+        scatter(m_range(m_idx),num_flaps_m(m_idx),'LineWidth',5)
+        ylabel('Number of flaps')
+    yyaxis right
+        scatter(m_range,mvSlp_m)
+        hold on
+        scatter(m_range(m_idx),mvSlp_m(m_idx),'LineWidth',5)
+        ylabel('movingslope')
+    xlabel('m')
+
+%% Plot figures and save
+
+    % th
+    nexttile
+    plot(th_range,num_flaps_th,'-x','LineWidth',2)
+    hold on
+    scatter(th_range(th_idx),num_flaps_th(th_idx),[],'MarkerEdgeColor',"#0072BD",'LineWidth',5)
+    ylabel('Number of flaps')
+    xlabel('threshold')
+    fontsize(20,"points")
+
+    %% m
+    nexttile
+    plot(m_range,num_flaps_m,'-x')
+    hold on 
+    scatter(m_range(m_idx),num_flaps_m(m_idx),'LineWidth',5)
+    ylabel('Number of flaps')
+    xlabel('m')

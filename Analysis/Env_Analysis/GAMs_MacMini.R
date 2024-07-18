@@ -26,6 +26,12 @@ library(gratia)
 library(readr)
 library(RColorBrewer)
 library(viridis)
+library(ks)
+library(sp)
+library(terra)
+library(tidyterra)
+library(BAMMtools)
+library(see)
 
 # Set Environment ---------------------------------------------------------
 
@@ -96,6 +102,8 @@ m_all$wind_vel_kmh <- 3.6*(m_all$wind_vel)
 m_all_nonaflaps <- m_all %>% drop_na(flaps)
 m_all_nona_flaps_env <- m_all_nonaflaps %>% drop_na(colnames(m_all)[6:29])
 m_all_poscomplete <- m_all %>% filter(Pos_complete==1)
+
+spp_vec <- c("Black-browed", "Grey-headed", "Wandering", "Black-footed", "Laysan")
 
 # Sample stats -----------------------------------------------------------------
 
@@ -309,12 +317,9 @@ GAM_list_te_wind_vel_angle <- list()
 
 for (spp in c("Black-browed", "Grey-headed", "Wandering", "Black-footed", "Laysan")) {
   
-  m_current <- m_all %>% filter((HMM_3S_state != 1) & (Species == spp))
-  
-  # # Limit data to 5-95% quantile bounds.
-  # m_current <- m_current %>% filter(shts>quantile(m_current$shts,probs=0.05) & shts<quantile(m_current$shts,probs=0.95) &
-  #                                     wind_vel_kmh>quantile(m_current$wind_vel_kmh,probs=0.05) & wind_vel_kmh<quantile(m_current$wind_vel_kmh,probs=0.95))
-  
+  m_current <- m_all %>% filter((HMM_3S_state != 1) & (Species == spp)) %>% 
+                         drop_na(wind_vel_kmh,bird_wind_angle)
+
   current_GAM <- gam(formula = flaps ~ te(wind_vel_kmh,bird_wind_angle,k=c(fac_k,fac_k),bs=c('tp','tp')) + 
                        s(id,k=length(unique(m_current$id)),bs="re"),
                      data = m_current,
@@ -339,23 +344,25 @@ for (spp in c("Black-browed", "Grey-headed", "Wandering", "Black-footed", "Laysa
                          "fitted_global","se_global","lower_global","upper_global")
   
   if (spp == "Black-browed") {
-    # ds_df_cont <- current_ds
     fv_df_te_wind_vel_angle <- link_df
   } else {
-    # ds_df_cont <- rbind(ds_df_cont,current_ds)
     fv_df_te_wind_vel_angle <- rbind(fv_df_te_wind_vel_angle,link_df)
   }
 }
 
 fv_df_te_wind_vel_angle$Species <- factor(fv_df_te_wind_vel_angle$Species , 
-                                             levels=c("Black-browed", "Grey-headed", "Wandering", 
-                                                      "Black-footed", "Laysan"))
+  levels=c("Black-browed", "Grey-headed", "Wandering", "Black-footed", "Laysan"))
 
-ggplot(fv_df_te_wind_vel_angle) +
-  geom_contour_filled(aes(wind_vel_kmh,bird_wind_angle,z=exp(fitted_global)),binwidth = 100) +
-  scale_fill_manual(values=inferno(12),drop=FALSE) +
+fv_df_te_wind_vel_angle_trim <- distinct(fv_df_te_wind_vel_angle %>% 
+               dplyr::select(wind_vel_kmh,bird_wind_angle,fitted_global,Species))
+
+ggplot(fv_df_te_wind_vel_angle_trim) +
+  geom_contour_filled(aes(wind_vel_kmh,bird_wind_angle,z=exp(fitted_global)),
+                      breaks=getJenksBreaks(exp(fv_df_te_wind_vel_angle_trim$fitted_global),21)) +
+  scale_fill_manual(values=inferno(20),drop=FALSE) +
   labs(fill = "Flaps/hour") +
-  # geom_point(data = m_all %>% filter(HMM_3S_state!=1),aes(x=wind_vel_kmh,y=bird_wind_angle),size=0.001,alpha=.1,color="white") + 
+  # geom_point(data = m_all %>% filter(HMM_3S_state!=1) %>% drop_na(wind_vel_kmh,bird_wind_angle),
+    # aes(x=shts,y=shts),size=0.001,alpha=.1,color="white") + 
   facet_wrap(~Species,nrow=1) + 
   theme_bw()
 
@@ -366,6 +373,62 @@ for (i in 1:5) {
           as.numeric(round(AIC(GAM_list_te_wind_vel_angle[[i]]),3))))
 }
 
+################################################################################
+# s(wind_vel_kmh,bird_wind_angle_cat), s(id) ----------------------------------------------
+
+GAM_list_wind_vel_kmh_cat <- list()
+
+for (spp in c("Black-browed", "Grey-headed", "Wandering", "Black-footed", "Laysan")) {
+  
+  m_current <- m_all %>% filter((HMM_3S_state != 1) & (Species == spp)) %>% 
+    drop_na(wind_vel_kmh,bird_wind_angle)
+  
+  current_GAM <- gam(formula = flaps ~ s(wind_vel_kmh,bird_wind_angle_cat,bs='fs',k=3) +
+                       s(id,k=length(unique(m_current$id)),bs="re"),
+                     data = m_current,
+                     family = "poisson",
+                     method = "REML")
+  
+  GAM_list_wind_vel_kmh_cat[[spp]] <- current_GAM
+  
+  current_ds  <- data_slice(current_GAM, wind_vel_kmh = evenly(wind_vel_kmh, n = 100), 
+                            id = unique(m_current$id)[1:10],
+                            bird_wind_angle_cat = unique(m_current$bird_wind_angle_cat))
+  
+  link_df <- cbind(current_ds,
+                   rep(spp,nrow(current_ds)),
+                   fitted_values(current_GAM, data = current_ds, scale = "link",
+                                 terms = c("(Intercept)","s(wind_vel_kmh,bird_wind_angle_cat)","s(id)"))[,4:7],
+                   fitted_values(current_GAM, data = current_ds, scale = "link",
+                                 terms = c("(Intercept)","s(wind_vel_kmh,bird_wind_angle_cat)"))[,4:7])
+  
+  colnames(link_df) <- c("wind_vel_kmh","bird_wind_angle_cat","id","Species",
+                         "fitted_all","se_all","lower_all","upper_all",
+                         "fitted_global","se_global","lower_global","upper_global")
+  
+  if (spp == "Black-browed") {
+    fv_df_wind_vel_kmh_cat <- link_df
+  } else {
+    fv_df_wind_vel_kmh_cat <- rbind(fv_df_wind_vel_kmh_cat,link_df)
+  }
+}
+
+fv_df_wind_vel_kmh_cat$Species <- factor(fv_df_wind_vel_kmh_cat$Species,levels=c("Black-browed", 
+                                                                 "Grey-headed", "Wandering", "Black-footed", "Laysan"))
+
+ggplot(fv_df_wind_vel_kmh_cat) +
+  geom_line(aes(wind_vel_kmh,exp(fitted_global),color=bird_wind_angle_cat)) +
+  # geom_line(aes(wind_vel_kmh,exp(fitted_int+fitted_wind+fitted_id),color=id)) +
+  geom_ribbon(mapping=aes(ymin=exp(lower_global),ymax=exp(upper_global),y=NULL,color=bird_wind_angle_cat),alpha=0.2) +
+  guides(color=guide_legend(title="Relative wind")) +
+  scale_color_manual(values=c("head" = "#440154FF",
+                              "cross" = "#1F968BFF",
+                              "tail" = "#FDE725FF")) + 
+  labs(y="Flaps/hour",x="Windspeed (km/h)") +
+  # xlim(0,25) + 
+  # ylim(0,1500) +
+  facet_wrap(~Species,nrow = 1) + 
+  theme_bw()
 
 ################################################################################
 # s(shts), s(id) -------------------------------------------------------
@@ -558,18 +621,15 @@ for (i in 1:5) {
 }
 
 ################################################################################
-# te(shts,bird_swell_angle), s(id) --------------------------------------
+# te(shts,bird_swell_angle), s(id) ---------------------------------------------
 
 fac_k <- 3
 GAM_list_te_shts_angle <- list()
 
 for (spp in c("Black-browed", "Grey-headed", "Wandering", "Black-footed", "Laysan")) {
   
-  m_current <- m_all %>% filter((HMM_3S_state != 1) & (Species == spp))
-  
-  # # Limit data to 5-95% quantile bounds.
-  # m_current <- m_current %>% filter(shts>quantile(m_current$shts,probs=0.05) & shts<quantile(m_current$shts,probs=0.95) &
-  #                                     shts>quantile(m_current$shts,probs=0.05) & shts<quantile(m_current$shts,probs=0.95))
+  m_current <- m_all %>% filter((HMM_3S_state != 1) & (Species == spp)) %>% 
+                         drop_na(shts,bird_swell_angle)
   
   current_GAM <- gam(formula = flaps ~ te(shts,bird_swell_angle,k=c(fac_k,fac_k),bs=c('tp','tp')) + 
                        s(id,k=length(unique(m_current$id)),bs="re"),
@@ -595,22 +655,42 @@ for (spp in c("Black-browed", "Grey-headed", "Wandering", "Black-footed", "Laysa
                          "fitted_global","se_global","lower_global","upper_global")
   
   if (spp == "Black-browed") {
-    # ds_df_cont <- current_ds
     fv_df_te_shts_angle <- link_df
   } else {
-    # ds_df_cont <- rbind(ds_df_cont,current_ds)
     fv_df_te_shts_angle <- rbind(fv_df_te_shts_angle,link_df)
   }
 }
 
 fv_df_te_shts_angle$Species <- factor(fv_df_te_shts_angle$Species , 
-                                          levels=c("Black-browed", "Grey-headed", "Wandering", 
-                                                   "Black-footed", "Laysan"))
+  levels=c("Black-browed", "Grey-headed", "Wandering", "Black-footed", "Laysan"))
 
-ggplot(fv_df_te_shts_angle) +
-  geom_contour_filled(aes(shts,bird_swell_angle,z=exp(fitted_global)),binwidth = 100) +
-  # geom_contour_filled(aes(shts,shts,z=exp(fitted_global))) +
-  scale_fill_manual(values=inferno(12),drop=FALSE) +
+fv_df_te_shts_angle_trim <- distinct(fv_df_te_shts_angle %>% 
+                              dplyr::select(shts,bird_swell_angle,fitted_global,Species))
+
+ggplot(fv_df_te_shts_angle_trim) +
+  geom_contour_filled(aes(shts,bird_swell_angle,z=exp(fitted_global)),
+    breaks=getJenksBreaks(exp(fv_df_te_shts_angle_trim$fitted_global),21)) +
+  scale_fill_manual(values=inferno(20),drop=FALSE) +
+  labs(fill = "Flaps/hour") +
+  # geom_point(data = m_all %>% filter(HMM_3S_state!=1),aes(x=shts,y=shts),size=0.001,alpha=.1,color="white") + 
+  facet_wrap(~Species,nrow=1) + 
+  theme_bw()
+
+# Blues for swells
+blues <- colorRampPalette(c("white", "navy"))
+ggplot(fv_df_te_shts_angle_trim) +
+  geom_contour_filled(aes(shts,bird_swell_angle,z=exp(fitted_global)),
+    breaks=getJenksBreaks(exp(fv_df_te_shts_angle_trim$fitted_global),21)) +
+  scale_fill_manual(values=blues(20),drop=FALSE) +
+  labs(fill = "Flaps/hour") +
+  # geom_point(data = m_all %>% filter(HMM_3S_state!=1),aes(x=shts,y=shts),size=0.001,alpha=.1,color="white") + 
+  facet_wrap(~Species,nrow=1) + 
+  theme_bw()
+
+ggplot(fv_df_te_shts_angle_trim) +
+  geom_contour_filled(aes(shts,bird_swell_angle,z=exp(fitted_global)),
+                      breaks=getJenksBreaks(exp(fv_df_te_shts_angle_trim$fitted_global),21)) +
+  scale_fill_manual(values=inferno(20),drop=FALSE) +
   labs(fill = "Flaps/hour") +
   # geom_point(data = m_all %>% filter(HMM_3S_state!=1),aes(x=shts,y=shts),size=0.001,alpha=.1,color="white") + 
   facet_wrap(~Species,nrow=1) + 
@@ -623,6 +703,63 @@ for (i in 1:5) {
           as.numeric(round(AIC(GAM_list_te_shts_angle[[i]]),3))))
 }
 
+
+
+
+################################################################################
+# s(shts,bird_swell_angle_cat), s(id) ------------------------------------------
+
+GAM_list_shts_cat <- list()
+
+for (spp in c("Black-browed", "Grey-headed", "Wandering", "Black-footed", "Laysan")) {
+  
+  m_current <- m_all %>% filter((HMM_3S_state != 1) & (Species == spp))
+  
+  current_GAM <- gam(formula = flaps ~ s(shts,bird_swell_angle_cat,bs='fs',k=3) +
+                       s(id,k=length(unique(m_current$id)),bs="re"),
+                     data = m_current,
+                     family = "poisson",
+                     method = "REML")
+  
+  GAM_list_shts_cat[[spp]] <- current_GAM
+  
+  current_ds  <- data_slice(current_GAM, shts = evenly(shts, n = 100), 
+                            id = unique(m_current$id)[1:10],
+                            bird_swell_angle_cat = unique(m_current$bird_swell_angle_cat)[1:3])
+  
+  link_df <- cbind(current_ds,
+                   rep(spp,nrow(current_ds)),
+                   fitted_values(current_GAM, data = current_ds, scale = "link",
+                                 terms = c("(Intercept)","s(shts,bird_swell_angle_cat)","s(id)"))[,4:7],
+                   fitted_values(current_GAM, data = current_ds, scale = "link",
+                                 terms = c("(Intercept)","s(shts,bird_swell_angle_cat)"))[,4:7])
+  
+  colnames(link_df) <- c("shts","id","bird_swell_angle_cat","Species",
+                         "fitted_all","se_all","lower_all","upper_all",
+                         "fitted_global","se_global","lower_global","upper_global")
+  
+  if (spp == "Black-browed") {
+    fv_df_shts_cat <- link_df
+  } else {
+    fv_df_shts_cat <- rbind(fv_df_shts_cat,link_df)
+  }
+}
+
+fv_df_shts_cat$Species <- factor(fv_df_shts_cat$Species,levels=c("Black-browed", 
+                          "Grey-headed", "Wandering", "Black-footed", "Laysan"))
+
+ggplot(fv_df_shts_cat) +
+  geom_line(aes(shts,exp(fitted_global),color=bird_swell_angle_cat)) +
+  geom_ribbon(mapping=aes(x=shts,ymin=exp(lower_global),ymax=exp(upper_global),y=NULL,color=bird_swell_angle_cat),alpha=0.2) +
+  guides(color=guide_legend(title="Relative swell angle")) +
+  scale_color_manual(values=c("head" = "#440154FF",
+                              "cross" = "#1F968BFF",
+                              "tail" = "#FDE725FF")) + 
+  labs(y="Flaps/hour",x="Significant swell height (m)") +
+  # xlim(0,25) + 
+  ylim(0,1500) +
+  facet_wrap(~Species,nrow = 1) + 
+  theme_bw()
 
 ################################################################################
 # s(wind_vel_kmh), s(shts), s(id) -----------------------------------
@@ -678,6 +815,17 @@ ggplot(fv_df_wind_vel_kmh_plus_shts) +
   facet_wrap(~Species,nrow=1) + 
   theme_bw()
 
+# ************* PLOT WITH DATA DENSITIES ************
+ggplot(fv_df_wind_vel_kmh_plus_shts) +
+  geom_contour_filled(aes(wind_vel_kmh,shts,z=exp(fitted_global)),binwidth = 100) +
+  scale_fill_manual(values=inferno(24),drop=FALSE) +
+  labs(fill = "Flaps/hour") +
+  geom_density_2d(m_all_poscomplete, mapping=aes(x=wind_vel_kmh, y=shts)) +
+  # scale_fill_manual(values=inferno(12),drop=FALSE) +
+  geom_point(data = m_all_,aes(x=wind_vel_kmh,y=shts),size=0.001,alpha=.1,color="white") + 
+  facet_wrap(~Species,nrow=1) + 
+  theme_bw()
+
 for (i in 1:5) {
   summary_i <- summary(GAM_list_wind_vel_kmh_plus_shts[[i]])
   print(c(as.numeric(format(round(summary_i$dev.expl,3),scientific=F)),
@@ -693,11 +841,8 @@ GAM_list_te_wind_vel_shts <- list()
 
 for (spp in c("Black-browed", "Grey-headed", "Wandering", "Black-footed", "Laysan")) {
   
-  m_current <- m_all %>% filter((HMM_3S_state != 1) & (Species == spp))
-  
-  # # Limit data to 5-95% quantile bounds.
-  # m_current <- m_current %>% filter(wind_vel_kmh>quantile(m_current$wind_vel_kmh,probs=0.05) & wind_vel_kmh<quantile(m_current$wind_vel_kmh,probs=0.95) &
-  #                                     wind_vel_kmh>quantile(m_current$wind_vel_kmh,probs=0.05) & wind_vel_kmh<quantile(m_current$wind_vel_kmh,probs=0.95))
+  m_current <- m_all %>% filter((HMM_3S_state != 1) & (Species == spp)) %>% 
+    drop_na(wind_vel_kmh,shts)
   
   current_GAM <- gam(formula = flaps ~ te(wind_vel_kmh,shts,k=c(fac_k,fac_k),bs=c('tp','tp')) + 
                        s(id,k=length(unique(m_current$id)),bs="re"),
@@ -735,20 +880,88 @@ fv_df_te_wind_vel_shts$Species <- factor(fv_df_te_wind_vel_shts$Species ,
                                       levels=c("Black-browed", "Grey-headed", "Wandering", 
                                                "Black-footed", "Laysan"))
 
-ggplot(fv_df_te_wind_vel_shts) +
-  geom_contour_filled(aes(wind_vel_kmh,shts,z=exp(fitted_global)),binwidth = 10000) +
-  scale_fill_manual(values=inferno(7),drop=FALSE) +
-  labs(fill = "Flaps/hour") +
-  # geom_point(data = m_all %>% filter(HMM_3S_state!=1),aes(x=wind_vel_kmh,y=shts),size=0.001,alpha=.1,color="white") + 
-  facet_wrap(~Species,nrow=1) + 
-  theme_bw()
-
 for (i in 1:5) {
   summary_i <- summary(GAM_list_te_wind_vel_shts[[i]])
   print(c(as.numeric(format(round(summary_i$dev.expl,3),scientific=F)),
           as.numeric(round(summary_i$r.sq,3)),
           as.numeric(round(AIC(GAM_list_te_wind_vel_shts[[i]]),3))))
 }
+
+# Create geom_contours with terra wraps
+grid_size <- 1000
+response_df_mask_all <- list()
+for (spp in c("Black-browed", "Grey-headed", "Wandering", "Black-footed", "Laysan")) {
+  
+  # Create 99% KDEs
+  kd_current <- ks::kde(m_all %>% 
+                          filter(HMM_3S_state != 1, Species == spp) %>% 
+                          dplyr::select(wind_vel_kmh,shts), 
+                        compute.cont=TRUE,gridsize = grid_size)
+  contour_99_current <- data.frame(with(kd_current, contourLines(x=eval.points[[1]], y=eval.points[[2]],
+                                           z=estimate, levels=cont["1%"])[[1]]))
+  contour_99_current_vect <- as.polygons(as.lines((contour_99_current %>% vect(geom=c('x','y')))))
+  
+  # Mask GAM response values for plotting
+  response_rast_current <- rast(fv_df_te_wind_vel_shts %>% filter(Species == spp) %>% select(wind_vel_kmh, shts, fitted_global), type='xyz')
+  response_rast_mask_current = terra::mask(response_rast_current, contour_99_current_vect)
+  response_df_mask_current = as.data.frame(response_rast_mask_current, xy=T)
+  
+  # Save values for all spp
+  # response_df_mask_all[[spp]] <- response_df_mask_current
+  
+  contour_99_current$Species <- spp
+  response_df_mask_current$Species <- spp
+  
+  if (spp == "Black-browed") {
+    contour_99_all <- contour_99_current
+    response_df_mask_all <- response_df_mask_current
+  } else {
+    contour_99_all <- rbind(contour_99_all,contour_99_current)
+    response_df_mask_all <- rbind(response_df_mask_all,response_df_mask_current)
+  }
+  
+}
+
+# Try breaking it so that everything over 1500 is bright yellow, and everything
+# else is evenly breaked.
+
+
+response_df_mask_all$Species <- factor(response_df_mask_all$Species, 
+  levels=c("Black-browed", "Grey-headed", "Wandering", "Black-footed", "Laysan"))
+
+# Figures: geom_contour with wrap applied
+ggplot(response_df_mask_all) +
+  # geom_contour_filled(aes(x,y,z=exp(fitted_global)),binwidth=100) +
+  geom_contour_filled(aes(x,y,z=exp(fitted_global)),
+                      breaks=getJenksBreaks(exp(response_df_mask_all$fitted_global),21)) +
+  scale_fill_manual(values=inferno(20),drop=FALSE) +
+  labs(fill = "Flaps/hour") +
+  xlim(0,90) +
+  ylim(0,7.75) +
+  xlab("Windspeed (km/h)") +
+  ylab("Significant height of total swell (m)") +
+  facet_wrap(~Species,nrow=1) + 
+  theme_bw()
+
+# plot everything and layer wrap contour on top
+# this is with the RAW GAM output
+contour_99_all |> 
+  mutate(across(Species, ~factor(., levels=c("Black-browed", "Grey-headed", "Wandering", "Black-footed", "Laysan"))))
+fv_df_te_wind_vel_shts |> 
+  mutate(across(Species, ~factor(., levels=c("Black-browed", "Grey-headed", "Wandering", "Black-footed", "Laysan"))))
+m_all |> 
+  mutate(across(Species, ~factor(., levels=c("Black-browed", "Grey-headed", "Wandering", "Black-footed", "Laysan"))))
+
+ggplot(fv_df_te_wind_vel_shts) +
+  geom_contour_filled(aes(wind_vel_kmh,shts,z=fitted_global)) +
+  scale_fill_manual(values=inferno(12),drop=FALSE) +
+  labs(fill = "Flaps/hour") +
+  geom_path(data=contour_99_all,aes(x,y),color="red") +
+  geom_point(data = m_all %>% filter(HMM_3S_state!=1),
+             aes(x=wind_vel_kmh,y=shts),size=0.001,alpha=.1,color="white") + 
+  facet_wrap(~Species,nrow=1) + 
+  theme_bw()
+  
 
 
 ################################################################################
@@ -875,8 +1088,59 @@ ggplot(m_all_poscomplete, aes(x=wind_vel_kmh, y=shts)) +
   # geom_point(data = m_all_poscomplete,aes(x=wind_vel_kmh,y=shts),size=0.001,alpha=.1,color="white") + 
   facet_wrap(~Species,nrow = 1)
 
+# 2D density plot using continuous data
+density_BBAL <- ggplot(m_all_poscomplete %>% filter(Species=="Black-browed"), aes(x=wind_vel_kmh, y=shts)) +
+  geom_density_2d_filled(binwidth=.002) +
+  xlim(0,100) +
+  ylim(0,8) +
+  scale_fill_manual(values=inferno(12),drop=FALSE) +
+  theme(axis.title.y=element_blank(),
+        axis.title.x=element_blank(),
+        legend.position = "none")
 
+density_GHAL <- ggplot(m_all_poscomplete %>% filter(Species=="Grey-headed"), aes(x=wind_vel_kmh, y=shts)) +
+  geom_density_2d_filled(binwidth=.002) +
+  xlim(0,100) +
+  ylim(0,8) +
+  scale_fill_manual(values=inferno(12),drop=FALSE) +
+  theme(axis.title.y=element_blank(),
+        axis.title.x=element_blank(),
+        legend.position = "none")
 
+density_WAAL <- ggplot(m_all_poscomplete %>% filter(Species=="Wandering"), aes(x=wind_vel_kmh, y=shts)) +
+  geom_density_2d_filled(binwidth=.002) +
+  xlim(0,100) +
+  ylim(0,8) +
+  scale_fill_manual(values=inferno(12),drop=FALSE) +
+  theme(axis.title.y=element_blank(),
+        axis.title.x=element_blank(),
+        legend.position = "none")
+
+density_BFAL <- ggplot(m_all_poscomplete %>% filter(Species=="Black-footed"), aes(x=wind_vel_kmh, y=shts)) +
+  geom_density_2d_filled(binwidth=.002) +
+  xlim(0,100) +
+  ylim(0,8) +
+  scale_fill_manual(values=inferno(12),drop=FALSE) +
+  theme(axis.title.y=element_blank(),
+        axis.title.x=element_blank(),
+        legend.position = "none")
+
+density_LAAL <- ggplot(m_all_poscomplete %>% filter(Species=="Laysan"), aes(x=wind_vel_kmh, y=shts)) +
+  geom_density_2d_filled(binwidth=.002) +
+  xlim(0,100) +
+  ylim(0,8) +
+  scale_fill_manual(values=inferno(12),drop=FALSE) +
+  theme(axis.title.y=element_blank(),
+        axis.title.x=element_blank(),
+        legend.position = "none")
+
+# Use the tag label as an x-axis label
+wrap_elements(panel = density_BBAL | density_GHAL | density_WAAL | density_BFAL | density_LAAL) +
+  labs(tag = "Windspeed (km/h)") +
+  theme(
+    plot.tag = element_text(size = 24),
+    plot.tag.position = "bottom"
+  )
 
 
 
@@ -909,6 +1173,13 @@ ggplot(m_all_nona_flaps_env %>% filter((HMM_3S_state != 1))) +
   geom_point(aes(x=shww+shts,y=swh),size=0.001,alpha=1,color="black") + 
   facet_wrap(~Species,nrow = 1) + 
   theme_bw()
+
+
+# Use histograms to show that shts > shww
+# Try to justify from the literature that waves need to be a certain height to be useful
+# for windwave soar
+# Period
+hist(m_all$shts)
 
 # VERY HIGH correlation between wind_vel and shww because wind cause wind waves.
 # Pretty high correlation between wind_vel and swh because wind waves are a component of total waves.

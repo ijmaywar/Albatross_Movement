@@ -57,7 +57,7 @@ rm(list = ls())
 
 # User Inputted Values -----------------------------------------------------
 
-loc = 'Bird_Island'
+loc = 'Midway'
 
 # Load Packages -----------------------------------------------------------
 
@@ -90,7 +90,7 @@ if (loc == "Bird_Island") {
   GPS_dir <- paste0(GD_dir,"L2/",loc,"/Tag_Data/GPS/compiled_2018_2023/compiled_complete/")
 }
 
-all_data <- read_csv(paste0(GPS_dir,loc,"_compiled_complete.csv"))
+all_data <- read_csv(paste0(GPS_dir,loc,"_Compiled_600s_compiled_complete.csv"))
 all_data$datetime <- as.POSIXlt(all_data$datetime,format="%Y-%m-%d %H:%M:%S",tz="GMT")
 
 # Split all_data into spp and Trip Types
@@ -127,63 +127,63 @@ if (loc == "Bird_Island") {
   # Create BBAL Inc Href Kernel
   BBAL_Inc.sp <- BBAL_Inc_data %>% dplyr::select(tripID,lon,lat)
   sp::coordinates(BBAL_Inc.sp) <- c("lon","lat")
-  sp::proj4string(BBAL_Inc.sp) <- sp::CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+  sp::proj4string(BBAL_Inc.sp) <- sp::CRS("epsg:4326")
   BBAL_Inc.sp <- spTransform(BBAL_Inc.sp,CRS(paste0("+proj=utm +zone=",utmzone," +ellps=WGS84 +datum=WGS84 +units=m +no_defs")))
   BBAL_Inc.Href.kernel <- kernelUD(BBAL_Inc.sp, h="href", same4all = TRUE, grid=250)
   
   # Create BBAL BG Href Kernel
   BBAL_BG.sp <- BBAL_BG_data %>% dplyr::select(tripID,lon,lat)
   sp::coordinates(BBAL_BG.sp) <- c("lon","lat")
-  sp::proj4string(BBAL_BG.sp) <- sp::CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+  sp::proj4string(BBAL_BG.sp) <- sp::CRS("epsg:4326")
   BBAL_BG.sp <- spTransform(BBAL_BG.sp,CRS(paste0("+proj=utm +zone=",utmzone," +ellps=WGS84 +datum=WGS84 +units=m +no_defs")))
   BBAL_BG.Href.kernel <- kernelUD(BBAL_BG.sp, h="href", same4all = TRUE, grid=250)
   
   # Create BBAL all Href Kernel
   BBAL_all.sp <- BBAL_all_data %>% dplyr::select(tripID,lon,lat)
   sp::coordinates(BBAL_all.sp) <- c("lon","lat")
-  sp::proj4string(BBAL_all.sp) <- sp::CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+  sp::proj4string(BBAL_all.sp) <- sp::CRS("epsg:4326")
   BBAL_all.sp <- spTransform(BBAL_all.sp,CRS(paste0("+proj=utm +zone=",utmzone," +ellps=WGS84 +datum=WGS84 +units=m +no_defs")))
   BBAL_all.Href.kernel <- kernelUD(BBAL_all.sp, h="href", same4all = TRUE, grid=250)
   
   # Create GHAL Inc Href Kernel
   GHAL_Inc.sp <- GHAL_Inc_data %>% dplyr::select(tripID,lon,lat)
   sp::coordinates(GHAL_Inc.sp) <- c("lon","lat")
-  sp::proj4string(GHAL_Inc.sp) <- sp::CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+  sp::proj4string(GHAL_Inc.sp) <- sp::CRS("epsg:4326")
   GHAL_Inc.sp <- spTransform(GHAL_Inc.sp,CRS(paste0("+proj=utm +zone=",utmzone," +ellps=WGS84 +datum=WGS84 +units=m +no_defs")))
   GHAL_Inc.Href.kernel <- kernelUD(GHAL_Inc.sp, h="href", same4all = TRUE, grid=250)
   
   # Create GHAL BG Href Kernel
   GHAL_BG.sp <- GHAL_BG_data %>% dplyr::select(tripID,lon,lat)
   sp::coordinates(GHAL_BG.sp) <- c("lon","lat")
-  sp::proj4string(GHAL_BG.sp) <- sp::CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+  sp::proj4string(GHAL_BG.sp) <- sp::CRS("epsg:4326")
   GHAL_BG.sp <- spTransform(GHAL_BG.sp,CRS(paste0("+proj=utm +zone=",utmzone," +ellps=WGS84 +datum=WGS84 +units=m +no_defs")))
   GHAL_BG.Href.kernel <- kernelUD(GHAL_BG.sp, h="href", same4all = TRUE, grid=250)
   
   # Create GHAL all Href Kernel
   GHAL_all.sp <- GHAL_all_data %>% dplyr::select(tripID,lon,lat)
   sp::coordinates(GHAL_all.sp) <- c("lon","lat")
-  sp::proj4string(GHAL_all.sp) <- sp::CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+  sp::proj4string(GHAL_all.sp) <- sp::CRS("epsg:4326")
   GHAL_all.sp <- spTransform(GHAL_all.sp,CRS(paste0("+proj=utm +zone=",utmzone," +ellps=WGS84 +datum=WGS84 +units=m +no_defs")))
   GHAL_all.Href.kernel <- kernelUD(GHAL_all.sp, h="href", same4all = TRUE, grid=250)
   
   # Create WAAL Inc Href Kernel
   WAAL_Inc.sp <- WAAL_Inc_data %>% dplyr::select(tripID,lon,lat)
   sp::coordinates(WAAL_Inc.sp) <- c("lon","lat")
-  sp::proj4string(WAAL_Inc.sp) <- sp::CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+  sp::proj4string(WAAL_Inc.sp) <- sp::CRS("epsg:4326")
   WAAL_Inc.sp <- spTransform(WAAL_Inc.sp,CRS(paste0("+proj=utm +zone=",utmzone," +ellps=WGS84 +datum=WGS84 +units=m +no_defs")))
   WAAL_Inc.Href.kernel <- kernelUD(WAAL_Inc.sp, h="href", same4all = TRUE, grid=250)
   
   # Create WAAL BG Href Kernel
   WAAL_BG.sp <- WAAL_BG_data %>% dplyr::select(tripID,lon,lat)
   sp::coordinates(WAAL_BG.sp) <- c("lon","lat")
-  sp::proj4string(WAAL_BG.sp) <- sp::CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+  sp::proj4string(WAAL_BG.sp) <- sp::CRS("epsg:4326")
   WAAL_BG.sp <- spTransform(WAAL_BG.sp,CRS(paste0("+proj=utm +zone=",utmzone," +ellps=WGS84 +datum=WGS84 +units=m +no_defs")))
   WAAL_BG.Href.kernel <- kernelUD(WAAL_BG.sp, h="href", same4all = TRUE, grid=250)
   
   # Create WAAL all Href Kernel
   WAAL_all.sp <- WAAL_all_data %>% dplyr::select(tripID,lon,lat)
   sp::coordinates(WAAL_all.sp) <- c("lon","lat")
-  sp::proj4string(WAAL_all.sp) <- sp::CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+  sp::proj4string(WAAL_all.sp) <- sp::CRS("epsg:4326")
   WAAL_all.sp <- spTransform(WAAL_all.sp,CRS(paste0("+proj=utm +zone=",utmzone," +ellps=WGS84 +datum=WGS84 +units=m +no_defs")))
   WAAL_all.Href.kernel <- kernelUD(WAAL_all.sp, h="href", same4all = TRUE, grid=250)
   
@@ -192,42 +192,42 @@ if (loc == "Bird_Island") {
   # Create BFAL Inc Href Kernel
   BFAL_Inc.sp <- BFAL_Inc_data %>% dplyr::select(tripID,lon,lat)
   sp::coordinates(BFAL_Inc.sp) <- c("lon","lat")
-  sp::proj4string(BFAL_Inc.sp) <- sp::CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+  sp::proj4string(BFAL_Inc.sp) <- sp::CRS("epsg:4326")
   BFAL_Inc.sp <- spTransform(BFAL_Inc.sp,CRS(paste0("+proj=utm +zone=",utmzone," +ellps=WGS84 +datum=WGS84 +units=m +no_defs")))
   BFAL_Inc.Href.kernel <- kernelUD(BFAL_Inc.sp, h="href", same4all = TRUE, grid=250)
   
   # Create BFAL BG Href Kernel
   BFAL_BG.sp <- BFAL_BG_data %>% dplyr::select(tripID,lon,lat)
   sp::coordinates(BFAL_BG.sp) <- c("lon","lat")
-  sp::proj4string(BFAL_BG.sp) <- sp::CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+  sp::proj4string(BFAL_BG.sp) <- sp::CRS("epsg:4326")
   BFAL_BG.sp <- spTransform(BFAL_BG.sp,CRS(paste0("+proj=utm +zone=",utmzone," +ellps=WGS84 +datum=WGS84 +units=m +no_defs")))
   BFAL_BG.Href.kernel <- kernelUD(BFAL_BG.sp, h="href", same4all = TRUE, grid=250)
   
   # Create BFAL all Href Kernel
   BFAL_all.sp <- BFAL_all_data %>% dplyr::select(tripID,lon,lat)
   sp::coordinates(BFAL_all.sp) <- c("lon","lat")
-  sp::proj4string(BFAL_all.sp) <- sp::CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+  sp::proj4string(BFAL_all.sp) <- sp::CRS("epsg:4326")
   BFAL_all.sp <- spTransform(BFAL_all.sp,CRS(paste0("+proj=utm +zone=",utmzone," +ellps=WGS84 +datum=WGS84 +units=m +no_defs")))
   BFAL_all.Href.kernel <- kernelUD(BFAL_all.sp, h="href", same4all = TRUE, grid=250)
   
   # Create LAAL Inc Href Kernel
   LAAL_Inc.sp <- LAAL_Inc_data %>% dplyr::select(tripID,lon,lat)
   sp::coordinates(LAAL_Inc.sp) <- c("lon","lat")
-  sp::proj4string(LAAL_Inc.sp) <- sp::CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+  sp::proj4string(LAAL_Inc.sp) <- sp::CRS("epsg:4326")
   LAAL_Inc.sp <- spTransform(LAAL_Inc.sp,CRS(paste0("+proj=utm +zone=",utmzone," +ellps=WGS84 +datum=WGS84 +units=m +no_defs")))
   LAAL_Inc.Href.kernel <- kernelUD(LAAL_Inc.sp, h="href", same4all = TRUE, grid=250)
   
   # Create LAAL BG Href Kernel
   LAAL_BG.sp <- LAAL_BG_data %>% dplyr::select(tripID,lon,lat)
   sp::coordinates(LAAL_BG.sp) <- c("lon","lat")
-  sp::proj4string(LAAL_BG.sp) <- sp::CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+  sp::proj4string(LAAL_BG.sp) <- sp::CRS("epsg:4326")
   LAAL_BG.sp <- spTransform(LAAL_BG.sp,CRS(paste0("+proj=utm +zone=",utmzone," +ellps=WGS84 +datum=WGS84 +units=m +no_defs")))
   LAAL_BG.Href.kernel <- kernelUD(LAAL_BG.sp, h="href", same4all = TRUE, grid=250)
   
   # Create LAAL all Href Kernel
   LAAL_all.sp <- LAAL_all_data %>% dplyr::select(tripID,lon,lat)
   sp::coordinates(LAAL_all.sp) <- c("lon","lat")
-  sp::proj4string(LAAL_all.sp) <- sp::CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+  sp::proj4string(LAAL_all.sp) <- sp::CRS("epsg:4326")
   LAAL_all.sp <- spTransform(LAAL_all.sp,CRS(paste0("+proj=utm +zone=",utmzone," +ellps=WGS84 +datum=WGS84 +units=m +no_defs")))
   LAAL_all.Href.kernel <- kernelUD(LAAL_all.sp, h="href", same4all = TRUE, grid=250)
 }
@@ -551,32 +551,26 @@ if (loc == "Bird_Island") {
   # BBAL Inc
   BBAL_Inc_KDE_95 <- getverticeshr(BBAL_Inc_avg_estUD,percent=95)
   plot(BBAL_Inc_KDE_95)
-  BBAL_Inc_KDE_95_longlat <- spTransform(BBAL_Inc_KDE_95, CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"))
-  summary(BBAL_Inc_KDE_95_longlat)
-  
-  # Save Multipolygon shapefile
-  BBAL_Inc_KDE_95_longlat_vect <- vect(st_as_sf(BBAL_Inc_KDE_95_longlat))
-  writeVector(BBAL_Inc_KDE_95_longlat_vect,paste0(write_dir,"BBAL_Inc_KDE_95"),filetype="ESRI Shapefile",overwrite=TRUE)
+  BBAL_Inc_KDE_95_vect <- vect(BBAL_Inc_KDE_95)
+  crs(BBAL_Inc_KDE_95_vect, proj=TRUE)
+  BBAL_Inc_KDE_95_longlat_vect <- terra::project(BBAL_Inc_KDE_95_vect, "epsg:4326")
+  writeVector(BBAL_Inc_KDE_95_longlat_vect,paste0(write_dir,"BBAL_Inc_KDE_95.gpkg"),overwrite=TRUE)
   
   # BBAL BG
   BBAL_BG_KDE_95 <- getverticeshr(BBAL_BG_avg_estUD,percent=95)
   plot(BBAL_BG_KDE_95)
-  BBAL_BG_KDE_95_longlat <- spTransform(BBAL_BG_KDE_95, CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"))
-  summary(BBAL_BG_KDE_95_longlat)
-  
-  # Save Multipolygon shapefile
-  BBAL_BG_KDE_95_longlat_vect <- vect(st_as_sf(BBAL_BG_KDE_95_longlat))
-  writeVector(BBAL_BG_KDE_95_longlat_vect,paste0(write_dir,"BBAL_BG_KDE_95"),filetype="ESRI Shapefile",overwrite=TRUE)
+  BBAL_BG_KDE_95_vect <- vect(BBAL_BG_KDE_95)
+  crs(BBAL_BG_KDE_95_vect, proj=TRUE)
+  BBAL_BG_KDE_95_longlat_vect <- terra::project(BBAL_BG_KDE_95_vect, "epsg:4326")
+  writeVector(BBAL_BG_KDE_95_longlat_vect,paste0(write_dir,"BBAL_BG_KDE_95.gpkg"),overwrite=TRUE)
   
   # BBAL all
   BBAL_all_KDE_95 <- getverticeshr(BBAL_all_avg_estUD,percent=95)
   plot(BBAL_all_KDE_95)
-  BBAL_all_KDE_95_longlat <- spTransform(BBAL_all_KDE_95, CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"))
-  summary(BBAL_all_KDE_95_longlat)
-  
-  # Save Multipolygon shapefile
-  BBAL_all_KDE_95_longlat_vect <- vect(st_as_sf(BBAL_all_KDE_95_longlat))
-  writeVector(BBAL_all_KDE_95_longlat_vect,paste0(write_dir,"BBAL_all_KDE_95"),filetype="ESRI Shapefile",overwrite=TRUE)
+  BBAL_all_KDE_95_vect <- vect(BBAL_all_KDE_95)
+  crs(BBAL_all_KDE_95_vect, proj=TRUE)
+  BBAL_all_KDE_95_longlat_vect <- terra::project(BBAL_all_KDE_95_vect, "epsg:4326")
+  writeVector(BBAL_all_KDE_95_longlat_vect,paste0(write_dir,"BBAL_all_KDE_95.gpkg"),overwrite=TRUE)
   
   
   # Plot GHAL KDEs and save polygons ---------------------------------------------
@@ -584,65 +578,53 @@ if (loc == "Bird_Island") {
   # GHAL Inc
   GHAL_Inc_KDE_95 <- getverticeshr(GHAL_Inc_avg_estUD,percent=95)
   plot(GHAL_Inc_KDE_95)
-  GHAL_Inc_KDE_95_longlat <- spTransform(GHAL_Inc_KDE_95, CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"))
-  summary(GHAL_Inc_KDE_95_longlat)
-  
-  # Save Multipolygon shapefile
-  GHAL_Inc_KDE_95_longlat_vect <- vect(st_as_sf(GHAL_Inc_KDE_95_longlat))
-  writeVector(GHAL_Inc_KDE_95_longlat_vect,paste0(write_dir,"GHAL_Inc_KDE_95"),filetype="ESRI Shapefile",overwrite=TRUE)
+  GHAL_Inc_KDE_95_vect <- vect(GHAL_Inc_KDE_95)
+  crs(GHAL_Inc_KDE_95_vect, proj=TRUE)
+  GHAL_Inc_KDE_95_longlat_vect <- terra::project(GHAL_Inc_KDE_95_vect, "epsg:4326")
+  writeVector(GHAL_Inc_KDE_95_longlat_vect,paste0(write_dir,"GHAL_Inc_KDE_95.gpkg"),overwrite=TRUE)
   
   # GHAL BG
   GHAL_BG_KDE_95 <- getverticeshr(GHAL_BG_avg_estUD,percent=95)
   plot(GHAL_BG_KDE_95)
-  GHAL_BG_KDE_95_longlat <- spTransform(GHAL_BG_KDE_95, CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"))
-  summary(GHAL_BG_KDE_95_longlat)
-  
-  # Save Multipolygon shapefile
-  GHAL_BG_KDE_95_longlat_vect <- vect(st_as_sf(GHAL_BG_KDE_95_longlat))
-  writeVector(GHAL_BG_KDE_95_longlat_vect,paste0(write_dir,"GHAL_BG_KDE_95"),filetype="ESRI Shapefile",overwrite=TRUE)
+  GHAL_BG_KDE_95_vect <- vect(GHAL_BG_KDE_95)
+  crs(GHAL_BG_KDE_95_vect, proj=TRUE)
+  GHAL_BG_KDE_95_longlat_vect <- terra::project(GHAL_BG_KDE_95_vect, "epsg:4326")
+  writeVector(GHAL_BG_KDE_95_longlat_vect,paste0(write_dir,"GHAL_BG_KDE_95.gpkg"),overwrite=TRUE)
   
   # GHAL all
   GHAL_all_KDE_95 <- getverticeshr(GHAL_all_avg_estUD,percent=95)
   plot(GHAL_all_KDE_95)
-  GHAL_all_KDE_95_longlat <- spTransform(GHAL_all_KDE_95, CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"))
-  summary(GHAL_all_KDE_95_longlat)
-  
-  # Save Multipolygon shapefile
-  GHAL_all_KDE_95_longlat_vect <- vect(st_as_sf(GHAL_all_KDE_95_longlat))
-  writeVector(GHAL_all_KDE_95_longlat_vect,paste0(write_dir,"GHAL_all_KDE_95"),filetype="ESRI Shapefile",overwrite=TRUE)
+  GHAL_all_KDE_95_vect <- vect(GHAL_all_KDE_95)
+  crs(GHAL_all_KDE_95_vect, proj=TRUE)
+  GHAL_all_KDE_95_longlat_vect <- terra::project(GHAL_all_KDE_95_vect, "epsg:4326")
+  writeVector(GHAL_all_KDE_95_longlat_vect,paste0(write_dir,"GHAL_all_KDE_95.gpkg"),overwrite=TRUE)
   
   # Plot WAAL KDEs and save polygons ---------------------------------------------
   
   # WAAL Inc
   WAAL_Inc_KDE_95 <- getverticeshr(WAAL_Inc_avg_estUD,percent=95)
   plot(WAAL_Inc_KDE_95)
-  WAAL_Inc_KDE_95_longlat <- spTransform(WAAL_Inc_KDE_95, CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"))
-  summary(WAAL_Inc_KDE_95_longlat)
-  
-  # Save Multipolygon shapefile
-  WAAL_Inc_KDE_95_longlat_vect <- vect(st_as_sf(WAAL_Inc_KDE_95_longlat))
-  writeVector(WAAL_Inc_KDE_95_longlat_vect,paste0(write_dir,"WAAL_Inc_KDE_95"),filetype="ESRI Shapefile",overwrite=TRUE)
+  WAAL_Inc_KDE_95_vect <- vect(WAAL_Inc_KDE_95)
+  crs(WAAL_Inc_KDE_95_vect, proj=TRUE)
+  WAAL_Inc_KDE_95_longlat_vect <- terra::project(WAAL_Inc_KDE_95_vect, "epsg:4326")
+  writeVector(WAAL_Inc_KDE_95_longlat_vect,paste0(write_dir,"WAAL_Inc_KDE_95.gpkg"),overwrite=TRUE)
   
   # WAAL BG
   WAAL_BG_KDE_95 <- getverticeshr(WAAL_BG_avg_estUD,percent=95)
   plot(WAAL_BG_KDE_95)
-  WAAL_BG_KDE_95_longlat <- spTransform(WAAL_BG_KDE_95, CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"))
-  summary(WAAL_BG_KDE_95_longlat)
-  
-  # Save Multipolygon shapefile
-  WAAL_BG_KDE_95_longlat_vect <- vect(st_as_sf(WAAL_BG_KDE_95_longlat))
-  writeVector(WAAL_BG_KDE_95_longlat_vect,paste0(write_dir,"WAAL_BG_KDE_95"),filetype="ESRI Shapefile",overwrite=TRUE)
+  WAAL_BG_KDE_95_vect <- vect(WAAL_BG_KDE_95)
+  crs(WAAL_BG_KDE_95_vect, proj=TRUE)
+  WAAL_BG_KDE_95_longlat_vect <- terra::project(WAAL_BG_KDE_95_vect, "epsg:4326")
+  writeVector(WAAL_BG_KDE_95_longlat_vect,paste0(write_dir,"WAAL_BG_KDE_95.gpkg"),overwrite=TRUE)
   
   # WAAL all
   WAAL_all_KDE_95 <- getverticeshr(WAAL_all_avg_estUD,percent=95)
   plot(WAAL_all_KDE_95)
-  WAAL_all_KDE_95_longlat <- spTransform(WAAL_all_KDE_95, CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"))
-  summary(WAAL_all_KDE_95_longlat)
+  WAAL_all_KDE_95_vect <- vect(WAAL_all_KDE_95)
+  crs(WAAL_all_KDE_95_vect, proj=TRUE)
+  WAAL_all_KDE_95_longlat_vect <- terra::project(WAAL_all_KDE_95_vect, "epsg:4326")
+  writeVector(WAAL_all_KDE_95_longlat_vect,paste0(write_dir,"WAAL_all_KDE_95.gpkg"),overwrite=TRUE)
   
-  # Save Multipolygon shapefile
-  WAAL_all_KDE_95_longlat_vect <- vect(st_as_sf(WAAL_all_KDE_95_longlat))
-  writeVector(WAAL_all_KDE_95_longlat_vect,paste0(write_dir,"WAAL_all_KDE_95"),filetype="ESRI Shapefile",overwrite=TRUE)
-
 } else if (loc == "Midway") {
 
 
@@ -651,68 +633,53 @@ if (loc == "Bird_Island") {
   # BFAL Inc
   BFAL_Inc_KDE_95 <- getverticeshr(BFAL_Inc_avg_estUD,percent=95)
   plot(BFAL_Inc_KDE_95)
-  BFAL_Inc_KDE_95_longlat <- spTransform(BFAL_Inc_KDE_95, CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"))
-  summary(BFAL_Inc_KDE_95_longlat)
-  
-  # Save Multipolygon shapefile
-  BFAL_Inc_KDE_95_longlat_vect <- vect(st_as_sf(BFAL_Inc_KDE_95_longlat))
-  writeVector(BFAL_Inc_KDE_95_longlat_vect,paste0(write_dir,"BFAL_Inc_KDE_95"),filetype="ESRI Shapefile",overwrite=TRUE)
-  
+  BFAL_Inc_KDE_95_vect <- vect(BFAL_Inc_KDE_95)
+  crs(BFAL_Inc_KDE_95_vect, proj=TRUE)
+  BFAL_Inc_KDE_95_longlat_vect <- terra::project(BFAL_Inc_KDE_95_vect, "epsg:4326")
+  writeVector(BFAL_Inc_KDE_95_longlat_vect,paste0(write_dir,"BFAL_Inc_KDE_95.gpkg"),overwrite=TRUE)
   
   # BFAL BG
   BFAL_BG_KDE_95 <- getverticeshr(BFAL_BG_avg_estUD,percent=95)
   plot(BFAL_BG_KDE_95)
-  BFAL_BG_KDE_95_longlat <- spTransform(BFAL_BG_KDE_95, CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"))
-  summary(BFAL_BG_KDE_95_longlat)
-  
-  # Save Multipolygon shapefile
-  BFAL_BG_KDE_95_longlat_vect <- vect(st_as_sf(BFAL_BG_KDE_95_longlat))
-  writeVector(BFAL_BG_KDE_95_longlat_vect,paste0(write_dir,"BFAL_BG_KDE_95"),filetype="ESRI Shapefile",overwrite=TRUE)
-  
+  BFAL_BG_KDE_95_vect <- vect(BFAL_BG_KDE_95)
+  crs(BFAL_BG_KDE_95_vect, proj=TRUE)
+  BFAL_BG_KDE_95_longlat_vect <- terra::project(BFAL_BG_KDE_95_vect, "epsg:4326")
+  writeVector(BFAL_BG_KDE_95_longlat_vect,paste0(write_dir,"BFAL_BG_KDE_95.gpkg"),overwrite=TRUE)
   
   # BFAL all
   BFAL_all_KDE_95 <- getverticeshr(BFAL_all_avg_estUD,percent=95)
   plot(BFAL_all_KDE_95)
-  BFAL_all_KDE_95_longlat <- spTransform(BFAL_all_KDE_95, CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"))
-  summary(BFAL_all_KDE_95_longlat)
-  
-  # Save Multipolygon shapefile
-  BFAL_all_KDE_95_longlat_vect <- vect(st_as_sf(BFAL_all_KDE_95_longlat))
-  writeVector(BFAL_all_KDE_95_longlat_vect,paste0(write_dir,"BFAL_all_KDE_95"),filetype="ESRI Shapefile",overwrite=TRUE)
+  BFAL_all_KDE_95_vect <- vect(BFAL_all_KDE_95)
+  crs(BFAL_all_KDE_95_vect, proj=TRUE)
+  BFAL_all_KDE_95_longlat_vect <- terra::project(BFAL_all_KDE_95_vect, "epsg:4326")
+  writeVector(BFAL_all_KDE_95_longlat_vect,paste0(write_dir,"BFAL_all_KDE_95.gpkg"),overwrite=TRUE)
   
   # Plot LAAL KDEs and save polygons ---------------------------------------------
   
   # LAAL Inc
   LAAL_Inc_KDE_95 <- getverticeshr(LAAL_Inc_avg_estUD,percent=95)
   plot(LAAL_Inc_KDE_95)
-  LAAL_Inc_KDE_95_longlat <- spTransform(LAAL_Inc_KDE_95, CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"))
-  summary(LAAL_Inc_KDE_95_longlat)
-  
-  # Save Multipolygon shapefile
-  LAAL_Inc_KDE_95_longlat_vect <- vect(st_as_sf(LAAL_Inc_KDE_95_longlat))
-  writeVector(LAAL_Inc_KDE_95_longlat_vect,paste0(write_dir,"LAAL_Inc_KDE_95"),filetype="ESRI Shapefile",overwrite=TRUE)
-  
+  LAAL_Inc_KDE_95_vect <- vect(LAAL_Inc_KDE_95)
+  crs(LAAL_Inc_KDE_95_vect, proj=TRUE)
+  # LAAL_Inc_KDE_95_longlat_vect <- terra::project(LAAL_Inc_KDE_95_vect, "epsg:4326")
+  LAAL_Inc_KDE_95_longlat_vect <- terra::project(LAAL_Inc_KDE_95_vect, "epsg:4326")
+  writeVector(LAAL_Inc_KDE_95_longlat_vect,paste0(write_dir,"LAAL_Inc_KDE_95.gpkg"),overwrite=TRUE)
   
   # LAAL BG
   LAAL_BG_KDE_95 <- getverticeshr(LAAL_BG_avg_estUD,percent=95)
   plot(LAAL_BG_KDE_95)
-  LAAL_BG_KDE_95_longlat <- spTransform(LAAL_BG_KDE_95, CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"))
-  summary(LAAL_BG_KDE_95_longlat)
-  
-  # Save Multipolygon shapefile
-  LAAL_BG_KDE_95_longlat_vect <- vect(st_as_sf(LAAL_BG_KDE_95_longlat))
-  writeVector(LAAL_BG_KDE_95_longlat_vect,paste0(write_dir,"LAAL_BG_KDE_95"),filetype="ESRI Shapefile",overwrite=TRUE)
-  
+  LAAL_BG_KDE_95_vect <- vect(LAAL_BG_KDE_95)
+  crs(LAAL_BG_KDE_95_vect, proj=TRUE)
+  LAAL_BG_KDE_95_longlat_vect <- terra::project(LAAL_BG_KDE_95_vect, "epsg:4326")
+  writeVector(LAAL_BG_KDE_95_longlat_vect,paste0(write_dir,"LAAL_BG_KDE_95.gpkg"),overwrite=TRUE)
   
   # LAAL all
   LAAL_all_KDE_95 <- getverticeshr(LAAL_all_avg_estUD,percent=95)
   plot(LAAL_all_KDE_95)
-  LAAL_all_KDE_95_longlat <- spTransform(LAAL_all_KDE_95, CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"))
-  summary(LAAL_all_KDE_95_longlat)
-  
-  # Save Multipolygon shapefile
-  LAAL_all_KDE_95_longlat_vect <- vect(st_as_sf(LAAL_all_KDE_95_longlat))
-  writeVector(LAAL_all_KDE_95_longlat_vect,paste0(write_dir,"LAAL_all_KDE_95"),filetype="ESRI Shapefile",overwrite=TRUE)
+  LAAL_all_KDE_95_vect <- vect(LAAL_all_KDE_95)
+  crs(LAAL_all_KDE_95_vect, proj=TRUE)
+  LAAL_all_KDE_95_longlat_vect <- terra::project(LAAL_all_KDE_95_vect, "epsg:4326")
+  writeVector(LAAL_all_KDE_95_longlat_vect,paste0(write_dir,"LAAL_all_KDE_95.gpkg"),overwrite=TRUE)
   
 }
 

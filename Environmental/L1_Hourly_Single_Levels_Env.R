@@ -245,7 +245,9 @@ for (tripname in all_trips) {
                    " for ",m_trip$id[j],"."))
     }
     
+    # Combine wind and wave data into "env data"
     env_data_j <- cbind(wind_data_j,wave_data_j)
+    
     # Rename columns to match the variables
     names(env_data_j) <- unlist(str_split(colnames(env_data_j), "_"))[seq(1,2*length(colnames(env_data_j)),2)]
     # Ensure that the data is in the right order and add data to m_trip
