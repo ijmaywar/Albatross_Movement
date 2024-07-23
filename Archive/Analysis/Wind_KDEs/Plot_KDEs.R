@@ -69,10 +69,10 @@ ggplot() +
         axis.title.y=element_blank())
 
 
-# Find wind data for the entirety of this figure -------------------------------
+# Find env data for the entirety of this figure -------------------------------
 
 setwd(paste0(GD_dir,"Analysis/Maywar/Global_Wind/"))
-wind_t1 <- rast("Global_18_23_All_Months.nc")
+wind_t1 <- rast("Global_Wind_18_23_All_Months.nc")
 
 # Create data vectors
 wind_t1
@@ -80,7 +80,7 @@ times_t1 <- time(wind_t1)  # stores times from each file
 all_times <- unique(times_t1) # find unique values because there should be two of every datetime (for u and v)
 all_times_num <- as.numeric(all_times)
 
-grid_res <- 2.5
+grid_res <- 10
 # Create a grid
 grid <- expand.grid(lon = seq(0,360,grid_res), lat = seq(-90,90,grid_res))
 grid_sf <- st_as_sf(grid, coords = c("lon", "lat"), crs = 4326)
@@ -117,9 +117,9 @@ for (j in 1:nrow(grid_polys_df)) {
     break
   }
   
-  # Remove unwanted mth/yrs...
-  monthly_avgs <- monthly_avgs %>% filter(
-    datetime > as.Date("2018-06-01") & datetime < as.Date("2023-06-01"))
+  # # Remove unwanted mth/yrs...
+  # monthly_avgs <- monthly_avgs %>% filter(
+  #   datetime > as.Date("2018-06-01") & datetime < as.Date("2023-06-01"))
   
   # # Trim data so that only the months you are interested are kept
   for (mth_idx in 1:12) {
@@ -134,7 +134,7 @@ colnames(grid_polys_df) <- c("geometry","centroid_lon","centroid_lat",
 
 # Add column for the average of Jan, Feb, Mar, Dec - the months we are mainly studying
 # across both sites
-grid_polys_df <- grid_polys_df %>% mutate(breeding_szn = rowMeans(select(as.data.frame(grid_polys_df),c("Jan","Feb","Mar","Dec"))))
+grid_polys_df <- grid_polys_df %>% mutate(breeding_szn = rowMeans(dplyr::select(as.data.frame(grid_polys_df),c("Jan","Feb","Mar","Dec"))))
 
 # modify world dataset to remove overlapping portions with world's polygons
 grid_polys_df_mod <- grid_polys_df %>% st_difference(polygon)

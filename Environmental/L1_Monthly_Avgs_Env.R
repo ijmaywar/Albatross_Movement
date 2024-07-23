@@ -47,7 +47,7 @@ weighted_avg <- function(x, w) {
 # Set environment --------------------------------------------------------------
 
 GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/Thorne Lab Shared Drive/Data/Albatross/"
-write_dir <- paste0(GD_dir,"/Analysis/Maywar/Wind_KDEs/")
+write_dir <- paste0(GD_dir,"L1/",location,"/Env_Data/ERA5_MonthlyAvg_10m/")
 
 if (location == "Bird_Island") {
   setwd(paste0(GD_dir,"L2/Bird_Island/Tag_Data/GPS/compiled_2019_2022/compiled_by_spp/"))
@@ -95,7 +95,7 @@ Lon360to180(min(m$lon))
 min(m$datetime)
 max(m$datetime)
 
-# Get wind data raster ---------------------------------------------------------
+# Get env data rasters ---------------------------------------------------------
 
 if (location == "Bird_Island") {
   
@@ -176,8 +176,10 @@ for (KDE_idx in 1:length(KDEs)) {
   if (BirdSpp %in% c("BBAL","GHAL")) {
     if (TripType == "Inc") {
       months_on <- 10:12
+      months_off <- 1:9
     } else if (TripType == "BG") {
       months_on <- 1:5
+      months_off <- 6:12
     } else if (TripType == "all") {
       months_on <- c(1:5,9:12)
       months_off <- 6:8
@@ -185,8 +187,10 @@ for (KDE_idx in 1:length(KDEs)) {
   } else if (BirdSpp %in% c("BFAL","LAAL")) {
     if (TripType == "Inc") {
       months_on <- c(1,11,12)
+      months_off <- 2:10
     } else if (TripType == "BG") {
       months_on <- 2:6
+      months_off <- c(1,7:12)
     } else if (TripType == "all") {
       months_on <- c(1:7,11:12)
       months_off <- 8:10
@@ -194,8 +198,10 @@ for (KDE_idx in 1:length(KDEs)) {
   } else if (BirdSpp == "WAAL") {
     if (TripType == "Inc") {
       months_on <- c(1,2,12)
+      months_off <- 3:11
     } else if (TripType == "BG") {
       months_on <- 3:11
+      months_off <- c(1,2,12)
     } else if (TripType == "all") {
       months_on <- c(1:12)
     }
@@ -243,9 +249,9 @@ for (KDE_idx in 1:length(KDEs)) {
   wind_data_on <- wind_data[,c(which(month(as.POSIXct(as.numeric(time(wind_raster)),tz="GMT")) %in% months_on),ncol(wind_data))]
   wave_data_on <- wave_data[,c(which(month(as.POSIXct(as.numeric(time(wave_raster)),tz="GMT")) %in% months_on),ncol(wave_data))]
   
-  # Create off-colony data for KDEs created by TripType == "all"
+  # Create off-colony data for KDEs
   # NOTE: WAALs are never "off-colony"
-  if (BirdSpp != "WAAL" & TripType=="all") {
+  if (!(BirdSpp == "WAAL" & TripType == "all")) {
     wind_data_off <- wind_data[,c(which(month(as.POSIXct(as.numeric(time(wind_raster)),tz="GMT")) %in% months_off),ncol(wind_data))]
     wave_data_off <- wave_data[,c(which(month(as.POSIXct(as.numeric(time(wave_raster)),tz="GMT")) %in% months_off),ncol(wave_data))]
   }
@@ -284,7 +290,7 @@ for (KDE_idx in 1:length(KDEs)) {
   poly_avg_env$on_colony <- 1
   
   # For off-colony
-  if (BirdSpp != "WAAL" & TripType=="all") {
+  if (!(BirdSpp == "WAAL" & TripType == "all")) {
 
     # For wind speed
     poly_avg_wind_off <- t(wind_data_off %>%

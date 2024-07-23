@@ -32,6 +32,8 @@ library(terra)
 library(tidyterra)
 library(BAMMtools)
 library(see)
+library(reshape2)
+library(ggExtra)
 
 # Set Environment ---------------------------------------------------------
 
@@ -68,6 +70,7 @@ m_all <- m_all %>% mutate(bird_swell_angle_cat = case_when(bird_swell_angle<60 ~
 m_all <- m_all %>% mutate(bird_ww_angle_cat = case_when(bird_ww_angle<60 ~ "tail",
                                                         bird_ww_angle>=60 & bird_ww_angle<120 ~ "cross",
                                                         bird_ww_angle>=120 ~ "head"))
+
 
 # Turn variables into factors
 m_all$id <- as.factor(m_all$id)
@@ -1143,178 +1146,7 @@ wrap_elements(panel = density_BBAL | density_GHAL | density_WAAL | density_BFAL 
   )
 
 
-
-
 ################################################################################
-# How does wind velocity compare to swell and wave height? ---------------------
-
-# Total waves
-ggplot(m_all_nona_flaps_env %>% filter((HMM_3S_state != 1))) +
-  geom_point(aes(x=wind_vel,y=swh),size=0.001,alpha=1,color="black") + 
-  facet_wrap(~Species,nrow = 1) + 
-  theme_bw()
-
-# Swells
-ggplot(m_all_nona_flaps_env %>% filter((HMM_3S_state != 1))) +
-  geom_point(aes(x=wind_vel_kmh,y=shts),size=0.001,alpha=1,color="black") + 
-  facet_wrap(~Species,nrow = 1) + 
-  theme_bw()
-
-# Wind waves
-ggplot(m_all_nona_flaps_env %>% filter((HMM_3S_state != 1))) +
-  geom_point(aes(x=wind_vel,y=shww),size=0.001,alpha=1,color="black") + 
-  facet_wrap(~Species,nrow = 1) + 
-  theme_bw()
-
-# Total waves vs. swell + ww:
-# It looks like total waves isn't exactly the addition of swell and wind components.
-# This is probably because of different periods and directions
-ggplot(m_all_nona_flaps_env %>% filter((HMM_3S_state != 1))) +
-  geom_point(aes(x=shww+shts,y=swh),size=0.001,alpha=1,color="black") + 
-  facet_wrap(~Species,nrow = 1) + 
-  theme_bw()
-
-
-# Use histograms to show that shts > shww
-# Try to justify from the literature that waves need to be a certain height to be useful
-# for windwave soar
-# Period
-hist(m_all$shts)
-
-# VERY HIGH correlation between wind_vel and shww because wind cause wind waves.
-# Pretty high correlation between wind_vel and swh because wind waves are a component of total waves.
-# No/low correlation between wind_vel and shts because wind_vel doesn't directly effect swell.
-
-wind_vel_kmh_box <- m_all_poscomplete |>
-  ggplot(aes(Species,wind_vel_kmh)) +
-  geom_boxplot(width=0.4) +
-  theme_bw()
-
-swh_box <- m_all_poscomplete |>
-  ggplot(aes(Species,swh)) +
-  geom_boxplot(width=0.4) +
-  ylim(0,13) + 
-  theme_bw()
-
-shts_box <- m_all_poscomplete |>
-  ggplot(aes(Species,shts)) +
-  geom_boxplot(width=0.4) +
-  ylim(0,13) +
-  theme_bw()
-
-shww_box <- m_all_poscomplete |>
-  ggplot(aes(Species,shww)) +
-  geom_boxplot(width=0.4) +
-  ylim(0,13) +
-  theme_bw()
-
-# Display all 4 figs
-wrap_elements(panel = swh_box | shts_box | shww_box | wind_vel_kmh_box)
-
-
-mwp_box <- m_all_poscomplete |>
-  ggplot(aes(Species,mwp)) +
-  geom_boxplot(width=0.4) +
-  ylim(0,17) +
-  theme_bw()
-
-mpts_box <- m_all_poscomplete |>
-  ggplot(aes(Species,mpts)) +
-  geom_boxplot(width=0.4) +
-  ylim(0,17) +
-  theme_bw()
-
-mpww_box <- m_all_poscomplete |>
-  ggplot(aes(Species,mpww)) +
-  geom_boxplot(width=0.4) +
-  ylim(0,17) +
-  theme_bw()
-
-# Display all 3 figs
-wrap_elements(panel = mwp_box | mpts_box | mpww_box)
-
-
-
-
-# Flapping rate is generally lower for NP species
-flap_box_all_winds <- m_all %>% filter((HMM_3S_state != 1)) |>
-  ggplot(aes(Species,flaps)) +
-  geom_boxplot(width=0.4) +
-  ylim(0,1000) +
-  labs(main="All winds") + 
-  theme_bw()
-# At low windspeeds, NP birds are flapping less
-flap_box_low_winds <- m_all %>% filter((HMM_3S_state != 1) & (wind_vel_kmh<25)) |>
-  ggplot(aes(Species,flaps)) +
-  geom_boxplot(width=0.4) +
-  ylim(0,1000) +
-  labs(main="Low winds") + 
-  theme_bw()
-# At high windspeeds, all birds are flapping at a similar rate
-flap_box_high_winds <- m_all %>% filter((HMM_3S_state != 1) & (wind_vel_kmh>50)) |>
-  ggplot(aes(Species,flaps)) +
-  geom_boxplot(width=0.4) +
-  ylim(0,1000) +
-  labs(main="High winds") + 
-  theme_bw()
-
-# Display all 3 figs
-wrap_elements(panel = flap_box_all_winds | flap_box_low_winds | flap_box_high_winds)
-
-
-# At low windspeeds, the height of swells == total wave height and are 
-# greater for NP spp
-low_winds_swh <- m_all_poscomplete %>% filter((HMM_3S_state != 1) & (wind_vel_kmh<25)) |>
-  ggplot(aes(Species,swh)) +
-  geom_boxplot(width=0.4) +
-  ylim(0,12.5) +
-  theme_bw()
-low_winds_shts <- m_all_poscomplete %>% filter((HMM_3S_state != 1) & (wind_vel_kmh<25)) |>
-  ggplot(aes(Species,shts)) +
-  geom_boxplot(width=0.4) +
-  ylim(0,12.5) +
-  theme_bw()
-low_winds_shww <- m_all_poscomplete %>% filter((HMM_3S_state != 1) & (wind_vel_kmh<25)) |>
-  ggplot(aes(Species,shww)) +
-  geom_boxplot(width=0.4) +
-  ylim(0,12.5) +
-  theme_bw()
-
-# Display all 3 figs
-wrap_elements(panel = low_winds_swh | low_winds_shts | low_winds_shww)
-
-# At high windspeeds, swh is less similar to shts and 
-high_winds_swh <- m_all_poscomplete %>% filter((HMM_3S_state != 1) & (wind_vel_kmh>50)) |>
-  ggplot(aes(Species,swh)) +
-  geom_boxplot(width=0.4) +
-  ylim(0,12.5) +
-  theme_bw()
-high_winds_shts <- m_all_poscomplete %>% filter((HMM_3S_state != 1) & (wind_vel_kmh>50)) |>
-  ggplot(aes(Species,shts)) +
-  geom_boxplot(width=0.4) +
-  ylim(0,12.5) +
-  theme_bw()
-high_winds_shww <- m_all_poscomplete %>% filter((HMM_3S_state != 1) & (wind_vel_kmh>50)) |>
-  ggplot(aes(Species,shww)) +
-  geom_boxplot(width=0.4) +
-  ylim(0,12.5) +
-  theme_bw()
-
-# Display all 3 figs
-wrap_elements(panel = high_winds_swh | high_winds_shts | high_winds_shww)
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 # # Continuous figure for all species
 cont_all <- ggplot(fv_df_cont) +
