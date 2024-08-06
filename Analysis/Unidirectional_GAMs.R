@@ -1,10 +1,8 @@
-# Trying out a simple GAM for all directions of winds and waves for simplicity.
-
 ################################################################################
-# Figures of wind responses by species (as for conference talk)
-#   2x5 plot
-#   Continuous tensor product model of flapping response ( wind*waves)
-#   Categorical response of flaps to wind for head / side/ tail (for illustration purposes)
+#
+# GAMs with no relative climate variable direction component
+#
+################################################################################
 
 # s(wind_vel_kmh), s(id) --------------------------------------
 
@@ -50,20 +48,17 @@ fv_df_wind_vel$Species <- factor(fv_df_wind_vel$Species, levels=spp_vec)
 fig_wind_simple <- ggplot(fv_df_wind_vel) +
   geom_line(aes(wind_vel_kmh,exp(fitted_global))) +
   geom_ribbon(mapping=aes(x=wind_vel_kmh,ymin=exp(lower_global),ymax=exp(upper_global),y=NULL),alpha=0.2) +
-  # geom_point(data = m_all %>% filter((HMM_3S_state != 1)) %>% 
-  #              drop_na(wind_vel_kmh),
-  #            aes(x=wind_vel_kmh,y=rep(500,length(wind_vel_kmh)))) +
   labs(y="Flaps/hour",
        x="Windspeed (km/h)") +
-  # xlim(0,25) + 
-  # ylim(0,1500) +
-  facet_wrap(~Species,nrow = 1) +
-  theme_bw() +
-  theme(axis.title.x = element_blank())
+  facet_wrap(~Species,nrow=1) +
+  theme_linedraw() +
+  theme(axis.title.x = element_blank(),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        strip.text = element_blank())
 
 fig_wind_simple
 
-# ggMarginal(fig_wind_simple,type="boxplot")
 
 # Summary ----------------------------------------------------------------------
 
@@ -127,11 +122,12 @@ fig_shts_simple <- ggplot(fv_df_shts) +
   guides(color=guide_legend(title="Relative wind")) +
   labs(y="Flaps/hour",
        x="Significant height of total swell (m)") +
-  # xlim(0,25) + 
-  # ylim(0,1500) +
-  facet_wrap(~Species,nrow = 1) + 
-  theme_bw() +
-  theme(axis.title.x = element_blank())
+  facet_wrap(~Species,nrow=1) +
+  theme_linedraw() +
+  theme(axis.title.x = element_blank(),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        strip.text = element_blank())
 
 fig_shts_simple
 
@@ -172,25 +168,6 @@ fig_wind_simple + ws_boxplot +
   theme(plot.tag.position = "bottom")
 
 
-# Windspeed density plot
-ws_density <- m_all_poscomplete |>
-  ggplot(aes(x=wind_vel_kmh)) +
-  geom_density(aes(y=after_stat(density))) +
-  theme_void() +
-  # xlim(-1,.5) +
-  scale_y_reverse() +
-  facet_wrap(~Species,nrow=1) +
-  theme(axis.title.y = element_blank(),
-        axis.text.y = element_blank(),
-        axis.ticks.y = element_blank(),
-        strip.text = element_blank(),
-        axis.title.x = element_blank())
-
-fig_wind_simple + ws_density +
-  plot_layout(heights=c(5,1)) +
-  labs(tag = "Windspeed (km/h)") +
-  theme(plot.tag.position = "bottom")
-
 # Windspeed box plot
 shts_boxplot <- ggplot(m_all_poscomplete, aes(y = shts)) +
   geom_boxplot(width=1) +
@@ -209,6 +186,27 @@ fig_shts_simple + shts_boxplot +
   labs(tag = "Significant height of total swell (m)") +
   theme(plot.tag.position = "bottom")
 
+################################################################################
+# Wrap GAM figure with env density plot ----------------------------------------
+
+# Windspeed density plot
+ws_density <- m_all_poscomplete |>
+  ggplot(aes(x=wind_vel_kmh)) +
+  geom_density(aes(y=after_stat(density))) +
+  theme_void() +
+  # xlim(-1,.5) +
+  scale_y_reverse() +
+  facet_wrap(~Species,nrow=1) +
+  theme(axis.title.y = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        strip.text = element_blank(),
+        axis.title.x = element_blank())
+
+fig_wind_simple + ws_density +
+  plot_layout(heights=c(5,1)) +
+  labs(tag = "Windspeed (km/h)") +
+  theme(plot.tag.position = "bottom")
 
 # shts density plot
 shts_density <- m_all_poscomplete |>

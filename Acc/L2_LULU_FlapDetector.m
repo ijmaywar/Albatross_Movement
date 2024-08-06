@@ -213,13 +213,16 @@ ylim([-2,2])
 
 %% Plot data
     
-    range = 251:500;
+    range = 251:475;
    %  tiledlayout(1,2)
 %%
+    % set(gca,'TickDir','out')
     nexttile
-    plot(Acc.DateTime(range),raw(range))
+    set(gca,'TickDir','out')
     hold on
-    plot(Acc.DateTime(range),filtered(range))
+    plot(Acc.DateTime(range),raw(range),'color',"#8B0000",'LineWidth',2)
+    hold on
+    plot(Acc.DateTime(range),filtered(range),'color',"#000080",'LineWidth',2)
     ylabel('z-axis acceleration (g)')
     xlabel('datetime')
     fontsize(20,"points")
@@ -228,7 +231,7 @@ ylim([-2,2])
 
 %%
     nexttile
-    plot(Acc.DateTime(range),filtered(range))
+    plot(Acc.DateTime(range),filtered(range),color="#8B0000")
     hold on
     ylabel('filtered z-axis acceleration')
     xlabel('datetime')

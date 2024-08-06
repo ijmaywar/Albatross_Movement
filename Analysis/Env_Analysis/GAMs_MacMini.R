@@ -34,6 +34,8 @@ library(BAMMtools)
 library(see)
 library(reshape2)
 library(ggExtra)
+library(grid)
+library(paletteer)
 
 # Set Environment ---------------------------------------------------------
 

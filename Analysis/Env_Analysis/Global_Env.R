@@ -44,7 +44,7 @@ wave_raster
 # all_times <- unique(times_t1) # find unique values because there should be two of every datetime (for u and v)
 # all_times_num <- as.numeric(all_times)
 
-grid_res <- 10
+grid_res <- 0.25
 # Create a grid
 grid <- expand.grid(lon = seq(0,360,grid_res), lat = seq(-90,90,grid_res))
 grid_sf <- st_as_sf(grid, coords = c("lon", "lat"), crs = 4326)
@@ -64,7 +64,7 @@ grid_polys_df$centroid_lon <- NA
 grid_polys_df$centroid_lat <- NA
 grid_polys_df[4:123] <- NA
 
-for (j in 1:nrow(grid_polys_df)) {
+for (j in 32808:nrow(grid_polys_df)) {
   
   # isolate center of polygon as the coordinates to extract wind data
   centroid <- st_centroid(grid_polys_df$geometry[[j]])
@@ -74,7 +74,14 @@ for (j in 1:nrow(grid_polys_df)) {
   xy_j <- as.data.frame(cbind(centroid[1],centroid[2]))
   colnames(xy_j) <- c("lon","lat")
   
-  # Extract speed for cell j with centroid (x,y)
+  # if (xy_j$lat == 87) {
+  #   next
+  # } else {
+  #   # Extract speed for cell j with centroid (x,y)
+  #   wind_j <- terra::extract(wind_raster, xy_j, ID=FALSE)
+  #   wave_j <- terra::extract(wave_raster, xy_j, ID=FALSE)
+  # }
+  
   wind_j <- terra::extract(wind_raster, xy_j, ID=FALSE)
   wave_j <- terra::extract(wave_raster, xy_j, ID=FALSE)
   
@@ -124,5 +131,6 @@ colnames(grid_polys_df) <- c("geometry","centroid_lon","centroid_lat",
                              names(subset(wave_raster,1:12+(8*60))))
 
 # Save gpkg file
-sf::st_write(grid_polys_df,dsn=paste0(env_dir,"Global_avg_env_GS",grid_res,".gpkg"))
+# sf::st_write(grid_polys_df,dsn=paste0(env_dir,"Global_avg_env_GS",grid_res,".gpkg"))
+sf::st_write(grid_polys_df,dsn=paste0(env_dir,"Global_avg_env_GS_max.gpkg"))
 

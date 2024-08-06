@@ -20,6 +20,7 @@ library(maps)
 library(sf)
 library(rnaturalearth)
 library(readxl)
+library(paletteer)
 
 # Set environment --------------------------------------------------------------
 
@@ -30,7 +31,8 @@ worldmap <- ne_countries(scale = 'medium', returnclass = 'sf') %>% st_make_valid
 # Find env data for the entirety of this figure -------------------------------
 
 setwd(env_dir)
-grid_polys_df <- st_read("Global_avg_env_GS10.gpkg")
+# grid_polys_df <- st_read("Global_avg_env_GS10.gpkg")
+grid_polys_df <- st_read("Global_avg_env_GS2.gpkg")
 
 # Plot the two study sites on a world map --------------------------------------
 
@@ -89,16 +91,18 @@ grid_polys_df_rot <- grid_polys_df_mod %>% st_transform(crs = target_crs)
 # Wind in Breeding szn
 ggplot() +
   geom_sf(grid_polys_df_rot,mapping=aes(geometry=geom,fill=3.6*breeding_szn_si10),color=NA,alpha=1) +
-  scale_fill_gradient(low = "white", high = "red", na.value = NA,
+  scale_fill_gradient(low = "white", high = "red4", na.value = NA,
                       limits = c(0,3.6*max(grid_polys_df_rot$breeding_szn_si10)),
                       breaks = c(0,10,20,30,40),
                       labels = c("0","10","20","30","40"),
                       name = "Windspeed (km/h)") +
   geom_sf(worldmap_rot,mapping=aes()) + 
-  geom_point(aes(x=90-177.3813,y=28.19989),size=5,color="#26828EFF") +
-  geom_point(aes(x=90-38.0658417,y=-54.0101833),size=5,color="#26828EFF") +
-  theme_bw() +
-  theme(text = element_text(size = 24),
-        axis.title.x=element_blank(),
-        axis.title.y=element_blank())#, legend.position = "none")
+  geom_point(aes(x=90-177.3813,y=28.19989),size=5,color="#476F84FF") +
+  geom_point(aes(x=90-38.0658417,y=-54.0101833),size=5,color="#476F84FF") +
+  # ylim(-50,50) +
+  # xlim(-100,140) +
+  theme_linedraw() +
+  theme(axis.title.x=element_blank(),
+        axis.title.y=element_blank(),
+        panel.grid = element_blank())
 

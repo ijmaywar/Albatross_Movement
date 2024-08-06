@@ -33,8 +33,8 @@ GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu
 fullmeta <- read_excel(paste0(GD_dir,"/metadata/Full_Metadata.xlsx"))
 worldmap <- ne_countries(scale = 'medium', returnclass = 'sf') %>% st_make_valid()
 
-Bird_Island_df <- read_csv(paste0("L1/Bird_Island/Env_Data/ERA5_MonthlyAvg_10m/Bird_Island_KDEs_avg_env.csv"))
-Midway_df <- read_csv(paste0("L1/Midway/Env_Data/ERA5_MonthlyAvg_10m/Midway_KDEs_avg_env.csv"))
+Bird_Island_df <- read_csv(paste0(GD_dir,"L1/Bird_Island/Env_Data/ERA5_MonthlyAvg_10m/Bird_Island_KDEs_avg_env.csv"))
+Midway_df <- read_csv(paste0(GD_dir,"L1/Midway/Env_Data/ERA5_MonthlyAvg_10m/Midway_KDEs_avg_env.csv"))
 compiled_df <- rbind(Bird_Island_df,Midway_df)
 
 # Turn columns into factors
@@ -113,12 +113,15 @@ ggplot(compiled_df %>% filter(KDE_type=="all" & on_colony==1), aes(x = Species, 
   theme_bw()
 
 # Create plot for months of the year
-ggplot(compiled_df %>% filter(KDE_type=="all"), aes(x = Species, y = si10)) +
-  geom_boxplot() +
-  labs(title = "", x = "Species") + #, y = "Average WindSpeed") +
-  theme_bw() + 
-  facet_wrap(~Month)
-
+ggplot(compiled_df %>% filter(KDE_type=="all"), aes(x = Species, y = si10*3.6)) +
+  geom_boxplot(width=0.6,outliers = FALSE) +
+  labs(y = "Average windspeed (km/h)") +
+  theme_linedraw() + 
+  facet_wrap(~Month, nrow=1) + 
+  theme(axis.title.x = element_blank(),
+        panel.spacing = unit(4, "pt"),
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+  
 # Create plot for months of the year
 ggplot(compiled_df %>% filter(KDE_type=="BG"), aes(x = Species, y = si10)) +
   geom_boxplot() +

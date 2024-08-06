@@ -50,13 +50,15 @@ wave_height_long <- melt(m_all_poscomplete %>% dplyr::select(Species,shts,shww,s
 
 # Create the boxplot
 ggplot(data_long, aes(x = Species, y = Wave_height, fill = Wave_type)) +
-  scale_fill_brewer(palette = "Set1") +
-  geom_boxplot() +
+  scale_fill_brewer(palette = "Set1", labels = c("Swell", "Wind wave", "Combined")) +
+  geom_boxplot(outliers = FALSE) +
   labs(x = "Species",
        y = "Significant wave height (m)") +
-  theme_minimal()
-
-
+  theme_linedraw() +
+  theme(axis.title.x = element_blank(),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank()) +
+  guides(fill=guide_legend(title="Wave type"))
 
 
 # VERY HIGH correlation between wind_vel and shww because wind cause wind waves.
