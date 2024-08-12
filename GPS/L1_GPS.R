@@ -92,9 +92,7 @@ colnames(df)<-c('bird','tagid','interval_minutes','int_sd','int_max','duration_t
 ################################################################################
 # Loop Through Birds
 
-# for (i in 1:length(gpsfiles)) { 
-for (i in 57:length(gpsfiles)) { 
-#for (i in 15:15) {   
+for (i in 1:length(gpsfiles)) {
   
   namesplit <- strsplit(gpsfiles[i],"_")[[1]]
   dep_ID <- paste0(namesplit[1],"_",namesplit[2],"_",namesplit[3])
