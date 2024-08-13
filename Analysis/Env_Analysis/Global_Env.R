@@ -64,7 +64,7 @@ grid_polys_df$centroid_lon <- NA
 grid_polys_df$centroid_lat <- NA
 grid_polys_df[4:123] <- NA
 
-for (j in 32808:nrow(grid_polys_df)) {
+for (j in 554972:nrow(grid_polys_df)) {
   
   # isolate center of polygon as the coordinates to extract wind data
   centroid <- st_centroid(grid_polys_df$geometry[[j]])
