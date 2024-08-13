@@ -216,7 +216,6 @@ ylim([-2,2])
     range = 251:475;
    %  tiledlayout(1,2)
 %%
-    % set(gca,'TickDir','out')
     nexttile
     set(gca,'TickDir','out')
     hold on
@@ -228,62 +227,24 @@ ylim([-2,2])
     fontsize(20,"points")
     legend({'raw','filtered'})
     ylim([-2.1,2.1])
+    ax = gca % Get handle to current axes.
+    ax.XColor = 'black';
+    ax.YColor = 'black';
+    box on
 
 %%
-    nexttile
-    plot(Acc.DateTime(range),filtered(range),color="#8B0000")
-    hold on
-    ylabel('filtered z-axis acceleration')
-    xlabel('datetime')
-    ylim([-2.1,0.1])
-    yline(th)
-    fontsize(20,"points")
- 
-%% Plot figures and save
-
-    % th
-    nFlaps_movslp_th = figure('visible','on');
-    yyaxis left
-        plot(th_range,num_flaps_th,'-x')
-        hold on
-        scatter(th_range(th_idx),num_flaps_th(th_idx),'LineWidth',5)
-        ylabel('Number of flaps')
-    yyaxis right
-        scatter(th_range,mvSlp_th)
-        hold on
-        scatter(th_range(th_idx),mvSlp_th(th_idx),'LineWidth',5)
-        ylabel('movingslope')
-    xlabel('threshold')
-
-    % m
-    nFlaps_movslp_m = figure('visible','on');
-    yyaxis left
-        plot(m_range,num_flaps_m,'-x')
-        hold on 
-        scatter(m_range(m_idx),num_flaps_m(m_idx),'LineWidth',5)
-        ylabel('Number of flaps')
-    yyaxis right
-        scatter(m_range,mvSlp_m)
-        hold on
-        scatter(m_range(m_idx),mvSlp_m(m_idx),'LineWidth',5)
-        ylabel('movingslope')
-    xlabel('m')
-
-%% Plot figures and save
 
     % th
     nexttile
-    plot(th_range,num_flaps_th,'-x','LineWidth',2)
+    set(gca,'TickDir','out')
     hold on
-    scatter(th_range(th_idx),num_flaps_th(th_idx),[],'MarkerEdgeColor',"#0072BD",'LineWidth',5)
+    plot(th_range,num_flaps_th,'-x','LineWidth',2,'color',"#000080")
+    hold on
+    plot(th_range(th_idx),num_flaps_th(th_idx),'.','MarkerEdgeColor',"#8B0000",'MarkerSize',50)
     ylabel('Number of flaps')
-    xlabel('threshold')
+    xlabel('threshold (th)')
     fontsize(20,"points")
-
-    %% m
-    nexttile
-    plot(m_range,num_flaps_m,'-x')
-    hold on 
-    scatter(m_range(m_idx),num_flaps_m(m_idx),'LineWidth',5)
-    ylabel('Number of flaps')
-    xlabel('m')
+    ax = gca % Get handle to current axes.
+    ax.XColor = 'black';
+    ax.YColor = 'black';
+    box on

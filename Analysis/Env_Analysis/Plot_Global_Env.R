@@ -32,7 +32,7 @@ worldmap <- ne_countries(scale = 'medium', returnclass = 'sf') %>% st_make_valid
 
 setwd(env_dir)
 # grid_polys_df <- st_read("Global_avg_env_GS10.gpkg")
-grid_polys_df <- st_read("Global_avg_env_GS2.gpkg")
+grid_global_df <- st_read("Global_avg_env_GS_max.gpkg")
 
 # Plot the two study sites on a world map --------------------------------------
 
@@ -71,7 +71,7 @@ ggplot() +
 # Add column for the average of Jan, Feb, Mar, Dec - the months we are mainly studying
 # across both sites
 
-grid_polys_df <- grid_polys_df %>% mutate(breeding_szn_si10 = rowMeans(dplyr::select(as.data.frame(grid_polys_df),paste0("si10_", c("1","2","3","12")))),
+grid_global_breeding_szn_df <- grid_global_df %>% mutate(breeding_szn_si10 = rowMeans(dplyr::select(as.data.frame(grid_polys_df),paste0("si10_", c("1","2","3","12")))),
                                           breeding_szn_mdts = rowMeans(dplyr::select(as.data.frame(grid_polys_df),paste0("mdts_", c("1","2","3","12")))),
                                           breeding_szn_mdww = rowMeans(dplyr::select(as.data.frame(grid_polys_df),paste0("mdww_", c("1","2","3","12")))),
                                           breeding_szn_mpts = rowMeans(dplyr::select(as.data.frame(grid_polys_df),paste0("mpww_", c("1","2","3","12")))),
@@ -79,20 +79,22 @@ grid_polys_df <- grid_polys_df %>% mutate(breeding_szn_si10 = rowMeans(dplyr::se
                                           breeding_szn_mwp = rowMeans(dplyr::select(as.data.frame(grid_polys_df),paste0("mwp_", c("1","2","3","12")))),
                                           breeding_szn_swh = rowMeans(dplyr::select(as.data.frame(grid_polys_df),paste0("swh_", c("1","2","3","12")))),
                                           breeding_szn_shts = rowMeans(dplyr::select(as.data.frame(grid_polys_df),paste0("shts_", c("1","2","3","12")))),
-                                          breeding_szn_shww = rowMeans(dplyr::select(as.data.frame(grid_polys_df),paste0("shww_", c("1","2","3","12")))))
+                                          breeding_szn_shww = rowMeans(dplyr::select(as.data.frame(grid_polys_df),paste0("shww_", c("1","2","3","12"))))) %>% 
+                                          dplyr::select(centroid_lon,centroid_lat,breeding_szn_si10,breeding_szn_shts,geom)
 
 # modify world dataset to remove overlapping portions with world's polygons
-grid_polys_df_mod <- grid_polys_df %>% st_difference(polygon)
+grid_polys_df_mod <- grid_global_breeding_szn_df %>% st_difference(polygon)
 
+# grid_global_df_mod <- grid_polys_df_mod
 # Transform
-grid_polys_df_rot <- grid_polys_df_mod %>% st_transform(crs = target_crs)
+grid_global_df_rot <- grid_global_df_mod %>% st_transform(crs = target_crs)
 
 # Multiply windspeeds by 3.6 to get km/h
 # Wind in Breeding szn
 ggplot() +
-  geom_sf(grid_polys_df_rot,mapping=aes(geometry=geom,fill=3.6*breeding_szn_si10),color=NA,alpha=1) +
+  geom_sf(grid_global_df_rot,mapping=aes(geometry=geom,fill=3.6*breeding_szn_si10),color=NA,alpha=1) +
   scale_fill_gradient(low = "white", high = "red4", na.value = NA,
-                      limits = c(0,3.6*max(grid_polys_df_rot$breeding_szn_si10)),
+                      limits = c(0,3.6*max(grid_global_df_rot$breeding_szn_si10)),
                       breaks = c(0,10,20,30,40),
                       labels = c("0","10","20","30","40"),
                       name = "Windspeed (km/h)") +

@@ -46,21 +46,35 @@ for (spp in spp_vec) {
 fv_df_wind_vel_kmh_cat$Species <- factor(fv_df_wind_vel_kmh_cat$Species,
                                          levels=spp_vec)
 
+dir_cat_cols <- c("#9484B1FF", "#F1C100FF","#496849FF")
 fig_wind_cat <- ggplot(fv_df_wind_vel_kmh_cat) +
   geom_line(aes(wind_vel_kmh,exp(fitted_global),color=bird_wind_angle_cat)) +
-  # geom_line(aes(wind_vel_kmh,exp(fitted_int+fitted_wind+fitted_id),color=id)) +
-  geom_ribbon(mapping=aes(x=wind_vel_kmh,ymin=exp(lower_global),ymax=exp(upper_global),y=NULL,color=bird_wind_angle_cat),alpha=0.2) +
-  guides(color=guide_legend(title="Relative wind")) +
-  scale_color_manual(values=c("head" = "#440154FF",
-                              "cross" = "#1F968BFF",
-                              "tail" = "#FDE725FF")) + 
+  geom_ribbon(mapping=aes(x=wind_vel_kmh,ymin=exp(lower_global),ymax=exp(upper_global),y=NULL,color=bird_wind_angle_cat,fill=bird_wind_angle_cat),alpha=0.2) +
+  guides(color=guide_legend(title = "Wind direction category",
+                            override.aes = list(fill = dir_cat_cols)),
+         fill="none") +
+  scale_color_manual(values=dir_cat_cols,
+                     labels=c("Head","Cross","Tail")) + 
+  scale_fill_manual(values=dir_cat_cols,
+                     labels=c("Head","Cross","Tail")) + 
   labs(y="Flaps/hour") +
   # xlim(0,25) + 
   # ylim(0,1500) +
   facet_wrap(~Species,nrow = 1) + 
-  theme(axis.title.x = element_blank())
+  theme_linedraw() +
+  theme(axis.title.x = element_blank(),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        strip.text = element_blank())
 
 fig_wind_cat
+
+for (i in 1:5) {
+  summary_i <- summary(GAM_list_wind_vel_kmh_cat[[i]])
+  print(c(as.numeric(format(round(summary_i$dev.expl,3),scientific=F)),
+          as.numeric(round(summary_i$r.sq,3)),
+          as.numeric(round(AIC(GAM_list_wind_vel_kmh_cat[[i]]),3))))
+}
 
 # s(shts,bird_swell_angle_cat), s(id) ------------------------------------------
 
@@ -106,28 +120,29 @@ fv_df_shts_cat$Species <- factor(fv_df_shts_cat$Species,
 
 fig_swells_cat <- ggplot(fv_df_shts_cat) +
   geom_line(aes(shts,exp(fitted_global),color=bird_swell_angle_cat)) +
-  geom_ribbon(mapping=aes(x=shts,ymin=exp(lower_global),ymax=exp(upper_global),y=NULL,color=bird_swell_angle_cat),alpha=0.2) +
-  guides(color=guide_legend(title="Relative swell angle")) +
-  scale_color_manual(values=c("head" = "#440154FF",
-                              "cross" = "#1F968BFF",
-                              "tail" = "#FDE725FF")) + 
+  geom_ribbon(mapping=aes(x=shts,ymin=exp(lower_global),ymax=exp(upper_global),y=NULL,color=bird_swell_angle_cat,fill=bird_swell_angle_cat),alpha=0.2) +
+  guides(color=guide_legend(title = "Swell direction category",
+                            override.aes = list(fill = dir_cat_cols)),
+         fill="none") +
+  scale_color_manual(values=dir_cat_cols,
+                     labels=c("Head","Cross","Tail")) + 
+  scale_fill_manual(values=dir_cat_cols,
+                    labels=c("Head","Cross","Tail")) + 
   labs(y="Flaps/hour") +
   # xlim(0,25) + 
   # ylim(0,1500) +
   facet_wrap(~Species,nrow = 1) + 
-  theme(axis.title.x = element_blank())
+  theme_linedraw() +
+  theme(axis.title.x = element_blank(),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        strip.text = element_blank())
 
 fig_swells_cat
 
 for (i in 1:5) {
   summary_i <- summary(GAM_list_shts_cat[[i]])
-  summary_i_df <- as.data.frame(summary_i$s.table,row.names = FALSE)
-  summary_i_df$Species <- spp_vec[i]
-  if (i==1) {
-    summary_df <- summary_i_df
-  } else {
-    summary_df <- rbind(summary_df,summary_i_df)
-  }
+  print(c(as.numeric(format(round(summary_i$dev.expl,3),scientific=F)),
+          as.numeric(round(summary_i$r.sq,3)),
+          as.numeric(round(AIC(GAM_list_shts_cat[[i]]),3))))
 }
-
-summary_df
