@@ -63,7 +63,7 @@ world2 <- worldmap %>% st_difference(polygon)
 # Transform
 worldmap_rot <- world2 %>% st_transform(crs = target_crs)
 
-grid_polys_df <- st_read(paste0(GD_dir,"Analysis/Maywar/Global_Env/Global_avg_env_GS10.gpkg"))
+grid_polys_df <- st_read(paste0(GD_dir,"Analysis/Maywar/Global_Env/Global_avg_env_GS_max.gpkg"))
 
 grid_polys_df <- grid_polys_df %>% mutate(breeding_szn_si10 = rowMeans(dplyr::select(as.data.frame(grid_polys_df),paste0("si10_", c("1","2","3","12")))),
                                           breeding_szn_mdts = rowMeans(dplyr::select(as.data.frame(grid_polys_df),paste0("mdts_", c("1","2","3","12")))),
@@ -73,7 +73,8 @@ grid_polys_df <- grid_polys_df %>% mutate(breeding_szn_si10 = rowMeans(dplyr::se
                                           breeding_szn_mwp = rowMeans(dplyr::select(as.data.frame(grid_polys_df),paste0("mwp_", c("1","2","3","12")))),
                                           breeding_szn_swh = rowMeans(dplyr::select(as.data.frame(grid_polys_df),paste0("swh_", c("1","2","3","12")))),
                                           breeding_szn_shts = rowMeans(dplyr::select(as.data.frame(grid_polys_df),paste0("shts_", c("1","2","3","12")))),
-                                          breeding_szn_shww = rowMeans(dplyr::select(as.data.frame(grid_polys_df),paste0("shww_", c("1","2","3","12")))))
+                                          breeding_szn_shww = rowMeans(dplyr::select(as.data.frame(grid_polys_df),paste0("shww_", c("1","2","3","12"))))) %>% 
+                                          dplyr::select(centroid_lon,centroid_lat,breeding_szn_si10,breeding_szn_shts,geom)
 
 # modify world dataset to remove overlapping portions with world's polygons
 grid_polys_df_mod <- grid_polys_df %>% st_difference(polygon)
@@ -157,13 +158,14 @@ ggplot() +
   geom_sf(data = st_as_sf(BBAL_Polygon),fill=NA,color='blue',linewidth=1,alpha=0.5) +
   geom_sf(data = st_as_sf(GHAL_Polygon),fill=NA,color='green',linewidth=1,alpha=0.5) +
   geom_sf(data = st_as_sf(WAAL_Polygon),fill=NA,color='black',linewidth=1,alpha=0.5) +
-  coord_sf(xlim = c(-90,-10), ylim = c(-80,-30), expand = FALSE) +
+  coord_sf(xlim = c(-120,-10), ylim = c(-75,-32.5), expand = FALSE) +
   geom_path(data=Bird_Island_GPS_compiled_complete %>% filter(substr(id,1,4)=="BBAL"),aes(x=Lon360to180(lon),y=lat,group=tripID),linewidth=0.1,color='blue') +
   geom_path(data=Bird_Island_GPS_compiled_complete %>% filter(substr(id,1,4)=="GHAL"),aes(x=Lon360to180(lon),y=lat,group=tripID),linewidth=0.1,color='green') +
   geom_path(data=Bird_Island_GPS_compiled_complete %>% filter(substr(id,1,4)=="WAAL"),aes(x=Lon360to180(lon),y=lat,group=tripID),linewidth=0.1,color='black') +
   geom_point(aes(x=-38.0658417,y=-54.0101833),size=5,color='yellow') + 
-  theme_bw() +
-  labs(x="Longitude",y="Latitude")
+  theme_linedraw() +
+  theme(axis.title.x = element_blank(),
+        axis.title.y = element_blank())
 
 ggplot() +
   geom_sf(grid_polys_df_mod,mapping=aes(geometry=geom,fill=3.6*breeding_szn_si10),color=NA,alpha=1) +
@@ -181,8 +183,9 @@ ggplot() +
   geom_path(data=Bird_Island_GPS_compiled_complete %>% filter(substr(id,1,4)=="GHAL"),aes(x=Lon360to180(lon),y=lat,group=tripID),linewidth=0.1,color='green') +
   geom_path(data=Bird_Island_GPS_compiled_complete %>% filter(substr(id,1,4)=="WAAL"),aes(x=Lon360to180(lon),y=lat,group=tripID),linewidth=0.1,color='black') +
   geom_point(aes(x=-38.0658417,y=-54.0101833),size=5,color='yellow') + 
-  theme_bw() +
-  labs(x="Longitude",y="Latitude")
+  theme_linedraw() +
+  theme(axis.title.x = element_blank(),
+        axis.title.y = element_blank())
 
 
 # Plot the NP KDEs -------------------------------------------------------------
@@ -203,12 +206,13 @@ ggplot() +
   geom_sf(data = st_shift_longitude(st_crop(worldmap,xmin=-120,xmax=120,ymin=10,ymax=70))) + 
   geom_sf(data = st_shift_longitude(st_as_sf(BFAL_Polygon)),fill=NA,color="Blue",linewidth=1,alpha=0.5) + 
   geom_sf(data = st_shift_longitude(st_as_sf(LAAL_Polygon)),fill=NA,color="Green",linewidth=1,alpha=0.5) + 
-  coord_sf(xlim = c(120,240), ylim = c(10,70), expand = FALSE) +
-  geom_point(aes(x=360-177.3813,y=28.19989),size=5,color='red') + 
+  coord_sf(xlim = c(140,220), ylim = c(15,55), expand = FALSE) +
   geom_path(data=Midway_GPS_compiled_complete %>% filter(substr(id,1,4)=="BFAL"),aes(x=lon,y=lat,group=tripID),linewidth=0.1,color='blue') +
   geom_path(data=Midway_GPS_compiled_complete %>% filter(substr(id,1,4)=="LAAL"),aes(x=lon,y=lat,group=tripID),linewidth=0.1,color='green') +
-  theme_bw() +
-  labs(x="Longitude",y="Latitude")
+  geom_point(aes(x=360-177.3813,y=28.19989),size=5,color='yellow') +
+  theme_linedraw() +
+  theme(axis.title.x = element_blank(),
+        axis.title.y = element_blank())
 
 # With windfield and complete GPS tracks
 ggplot() +
@@ -226,7 +230,8 @@ ggplot() +
   geom_point(aes(x=90-177.3813,y=28.19989),size=5,color='black') +
   geom_path(data=Midway_GPS_compiled_complete %>% filter(substr(id,1,4)=="BFAL"),aes(x=Lon360to180(lon+90),y=lat,group=tripID),linewidth=0.1,color='blue') +
   geom_path(data=Midway_GPS_compiled_complete %>% filter(substr(id,1,4)=="LAAL"),aes(x=Lon360to180(lon+90),y=lat,group=tripID),linewidth=0.1,color='green') +
-  theme_bw() +
-  labs(x="Longitude",y="Latitude")
+  theme_linedraw() +
+  theme(axis.title.x = element_blank(),
+        axis.title.y = element_blank())
 
 
