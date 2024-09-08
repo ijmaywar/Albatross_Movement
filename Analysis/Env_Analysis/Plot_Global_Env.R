@@ -101,8 +101,8 @@ ggplot() +
                       labels = c("0","10","20","30","40"),
                       name = "Windspeed (km/h)") +
   geom_sf(worldmap_rot,mapping=aes()) + 
-  geom_point(aes(x=90-177.3813,y=28.19989),size=5,color="#476F84FF") +
-  geom_point(aes(x=90-38.0658417,y=-54.0101833),size=5,color="#476F84FF") +
+  geom_point(aes(x=90-177.3813,y=28.19989),size=5,color="#F8DE02FF") +
+  geom_point(aes(x=90-38.0658417,y=-54.0101833),size=5,color="#F8DE02FF") +
   coord_sf(expand = FALSE) +
   scale_y_continuous(breaks = seq(-90, 90, by = 30)) +
   theme_linedraw() + 

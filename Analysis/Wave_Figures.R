@@ -49,8 +49,8 @@ wave_height_long <- melt(m_all_poscomplete %>% dplyr::select(Species,shts,shww,s
                   id.vars = "Species", variable.name = "Wave_type", value.name = "Wave_height")
 
 # Create the boxplot
-ggplot(data_long, aes(x = Species, y = Wave_height, fill = Wave_type)) +
-  scale_fill_brewer(palette = "Set1", labels = c("Swell", "Wind wave", "Combined")) +
+ggplot(wave_height_long, aes(x = Species, y = Wave_height, fill = Wave_type)) +
+  scale_fill_brewer(palette = "Set1", labels = c("Total swell", "Wind waves", "Surface sea waves")) +
   geom_boxplot(outliers = FALSE) +
   labs(x = "Species",
        y = "Significant wave height (m)") +

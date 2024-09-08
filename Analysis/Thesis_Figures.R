@@ -317,40 +317,6 @@ wave_height_prop <- ggplot(shts_cat_density_data) +
 wrap_elements(panel = windspeed_prop / wave_height_prop)
 
 
-ggplot(wind_vel_kmh_cat_density_data) +
-  facet_wrap(~Species) +
-  geom_density(aes(x=proportion,fill=wind_vel_kmh_cat),alpha=0.5) +
-  # scale_fill_manual(values=cat_hist_colors) + 
-  labs(y="Density") +
-  theme_bw() +
-  scale_x_continuous(name ="Proportion of time", 
-                     breaks=c(0,0.25,0.5,0.75,1),
-                     labels = c("0",".25",".5",".75","1"),
-                     limits = c(0,1)) + 
-  theme(legend.position = c(0.85, 0.2), # c(0,0) bottom left, c(1,1) top-right.
-        legend.background = element_rect(fill = NA, colour = NA)) +
-  guides(fill=guide_legend(title="Windspeed")) +
-  theme(text = element_text(size = 24))
-
-ggplot(shts_cat_density_data) +
-  facet_wrap(~Species) +
-  geom_density(aes(x=proportion,fill=shts_cat),alpha=0.5) +
-  # scale_fill_manual(values=cat_hist_colors) + 
-  labs(y="Density") +
-  theme_bw() +
-  scale_x_continuous(name ="Proportion of time", 
-                     breaks=c(0,0.25,0.5,0.75,1),
-                     labels = c("0",".25",".5",".75","1"),
-                     limits = c(0,1)) + 
-  theme(legend.position = c(0.85, 0.2), # c(0,0) bottom left, c(1,1) top-right.
-        legend.background = element_rect(fill = NA, colour = NA)) +
-  guides(fill=guide_legend(title="Swell height")) +
-  theme(text = element_text(size = 24))
-
-
-
-
-
 ################################################################################
 # Box or violin plots [or density plots?] of prop. time spent in 
 # high/ side/ tail winds AND wave direction [with/  against/ across wave direction] 
@@ -434,66 +400,89 @@ ggplot(swell_bird_angle_cat_density_data) +
   theme(text = element_text(size = 24))
 
 ################################################################################
-# Table of sample size - no. accel + GPS deployments by species 
-
-# poscomplete are when GPS tag writes for the entire trip, ignores acc data.
-# This is for summarizing IDs
-merge(as.data.frame(m_all %>% group_by(Species) %>% summarize(IDs=n_distinct(id))),
-               as.data.frame(m_all_poscomplete %>% group_by(Species) %>% summarize(IDs_poscomplete=n_distinct(id))),
-               by = "Species")
-
-# This is for summarizing tripIDs
-merge(as.data.frame(m_all %>% group_by(Species) %>% summarize(tripIDs=n_distinct(tripID))),
-               as.data.frame(m_all_poscomplete %>% group_by(Species) %>% summarize(tripIDs_poscomplete=n_distinct(tripID))),
-               by = "Species")
-
-
-################################################################################
-# Table of deployments based on tag combinations
-
-m_all %>% 
-  group_by(Species,Location,Pos_TagType,Aux_TagType) %>% 
-  summarize(unique_IDs=n_distinct(id),n=n()) %>% 
-  arrange(Location,Species,Pos_TagType,Aux_TagType)
-
-temp <- m_all %>% 
-  filter(HMM_3S_state!=1) %>% 
-  group_by(Species,Location,Pos_TagType,Aux_TagType) %>% 
-  summarize(unique_IDs=n_distinct(id),n=n()) %>% 
-  arrange(Location,Species,Pos_TagType,Aux_TagType)
-
-m_all_poscomplete %>% 
-  group_by(Species,Location,Pos_TagType,Aux_TagType) %>% 
-  summarize(unique_IDs=n_distinct(id),n=n()) %>% 
-  arrange(Location,Species,Pos_TagType,Aux_TagType)
-
-m_all_poscomplete %>% 
-  filter(HMM_3S_state!=1) %>% 
-  group_by(Species,Location,Pos_TagType,Aux_TagType) %>% 
-  summarize(unique_IDs=n_distinct(id),n=n()) %>% 
-  arrange(Location,Species,Pos_TagType,Aux_TagType)
-
-################################################################################
 # Table of deployments based on field season
 
-temp <- m_all %>% 
+m_all %>% 
   group_by(Species,Field_Season) %>% 
   summarize(unique_IDs=n_distinct(id),n=n()) %>% 
   arrange(Species)
 
-temp <- m_all_poscomplete %>% 
+m_all_poscomplete %>% 
   group_by(Species,Field_Season) %>% 
   summarize(unique_IDs=n_distinct(id),n=n()) %>% 
   arrange(Species)
-
-clipr::write_clip(temp)
 
 ################################################################################
 # Supplemental figures and tables
 ################################################################################
 
-################################################################################
-# Pie graphic ------------------------------------------------------------------
+# s1 and s2 are showing how the LULU filter and flap detection works
+
+# s3: relationship between windspeed and significant height of waves
+
+# Swells
+fig_ws_shts <- ggplot(m_all_poscomplete %>% filter((HMM_3S_state != 1))) +
+  geom_point(aes(x=wind_vel_kmh,y=shts),size=0.001,alpha=1,color="black") + 
+  facet_wrap(~Species,nrow = 1) + 
+  labs(x="Windspeed (km/h)", y="Total swell") +
+  ylim(0,13) + 
+  theme_linedraw() +
+  theme(axis.title.x = element_blank(),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        strip.text = element_blank())
+
+# Wind waves
+fig_ws_shww <- ggplot(m_all_poscomplete %>% filter((HMM_3S_state != 1))) +
+  geom_point(aes(x=wind_vel_kmh,y=shww),size=0.001,alpha=1,color="black") + 
+  facet_wrap(~Species,nrow = 1) + 
+  labs(x="Windspeed (km/h)", y="Wind waves") +
+  ylim(0,13) + 
+  theme_linedraw() +
+  theme(axis.title.x = element_blank(),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        strip.text = element_blank())
+
+# Total waves
+fig_ws_swh <- ggplot(m_all_poscomplete %>% filter((HMM_3S_state != 1))) +
+  geom_point(aes(x=wind_vel_kmh,y=swh),size=0.001,alpha=1,color="black") + 
+  facet_wrap(~Species,nrow = 1) + 
+  labs(x="Windspeed (km/h)", y="Surface sea waves") +
+  ylim(0,13) + 
+  theme_linedraw() +
+  theme(axis.title.x = element_blank(),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        strip.text = element_blank())
+
+# Wrap windspeed vs wave height figs
+wrap_elements(panel = fig_ws_shts / fig_ws_shww / fig_ws_swh) +
+  labs(tag = "Windspeed (km/h)") +
+  theme(plot.tag.position = "bottom")
+
+
+# s4: Comparing the significant heights of the 3 swell types -------------------
+
+# Categorize wave heights
+# Reshape data to long format
+wave_height_long <- melt(m_all_poscomplete %>% dplyr::select(Species,shts,shww,swh), 
+                         id.vars = "Species", variable.name = "Wave_type", value.name = "Wave_height")
+
+# Create the boxplot
+ggplot(wave_height_long) +
+  geom_boxplot(aes(x=Species,y=Wave_height,fill=Wave_type),outliers = FALSE) +
+  scale_fill_manual(values = rev(blues(3)),labels = c("Total swell", "Wind waves", "Surface sea waves")) +
+  labs(y="Significant height of wave (m)") +
+  theme_linedraw() +
+  theme(axis.title.x = element_blank(),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        strip.text = element_blank()) +
+  guides(fill=guide_legend(title="Wave type"))
+
+
+# s5: Pie graphic --------------------------------------------------------------
 
 pie_colors <- c("#9484B1FF", "#F1C100FF","#496849FF", "#F1C100FF")
 ggplot(data.frame(cat=factor(c("head","cross","tail","cross_2"),levels=c("head","cross","tail","cross_2")),
