@@ -151,19 +151,19 @@ for (spp in spp_vec) {
 response_df_mask_all$Species <- factor(response_df_mask_all$Species, 
  levels=spp_vec)
 
-# Higher res figure
-ggplot(response_df_mask_all) +
-  # geom_contour_filled(aes(x,y,z=exp(fitted_global)),binwidth=100) +
-  geom_contour_filled(aes(x,y,z=exp(fitted_global)),
-                      breaks=getJenksBreaks(exp(response_df_mask_all$fitted_global),21)) +
-  scale_fill_manual(values=inferno(20),drop=FALSE) +
-  labs(fill = "Flaps/hour") +
-  xlim(0,90) +
-  ylim(0,7.75) +
-  xlab("Windspeed (km/h)") +
-  ylab("Significant height of total swell (m)") +
-  facet_wrap(~Species,nrow=1) + 
-  theme_bw()
+# # Higher res figure
+# ggplot(response_df_mask_all) +
+#   # geom_contour_filled(aes(x,y,z=exp(fitted_global)),binwidth=100) +
+#   geom_contour_filled(aes(x,y,z=exp(fitted_global)),
+#                       breaks=getJenksBreaks(exp(response_df_mask_all$fitted_global),21)) +
+#   scale_fill_manual(values=inferno(20),drop=FALSE, guide = guide_legend(reverse = TRUE)) +
+#   labs(fill = "Flaps/hour") +
+#   xlim(0,90) +
+#   ylim(0,7.75) +
+#   xlab("Windspeed (km/h)") +
+#   ylab("Significant height of total swell (m)") +
+#   facet_wrap(~Species,nrow=1) + 
+#   theme_bw()
 
 # Lower res figure
 # purples <- colorRampPalette(c("cornsilk", "darkmagenta"))
@@ -171,7 +171,7 @@ ggplot(response_df_mask_all) +
   # geom_contour_filled(aes(x,y,z=exp(fitted_global)),binwidth=100) +
   geom_contour_filled(aes(x,y,z=exp(fitted_global)),
                       breaks=getJenksBreaks(exp(response_df_mask_all$fitted_global),11)) +
-  scale_fill_manual(values=magma(10),drop=FALSE) +
+  scale_fill_manual(values=magma(10),drop=FALSE,guide = guide_legend(reverse = TRUE)) +
   labs(fill = "Flaps/hour") +
   xlim(0,90) +
   ylim(0,7.75) +
