@@ -178,8 +178,6 @@ for (new_col in new_columns) {
 
 all_trips <- unique(m$tripID)
 
-all_trips <- all_trips[164:length(all_trips)]
-
 for (tripname in all_trips) {
   
   m_trip <- m %>% filter(tripID==tripname)
