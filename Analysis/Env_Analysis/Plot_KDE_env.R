@@ -20,6 +20,8 @@ library(maps)
 library(sf)
 library(rnaturalearth)
 library(readxl)
+library(viridis)
+library(scales)
 
 # User functions ---------------------------------------------------------------
 
@@ -153,22 +155,76 @@ crs(WAAL_Polygon) <- crs(worldmap)
 Bird_Island_GPS_compiled_complete <- read_csv(paste0(GD_dir,"L2/Bird_Island/Tag_Data/GPS/compiled_2019_2022/compiled_complete/Bird_Island_Compiled_600s_compiled_complete.csv"))
 Bird_Island_GPS_compiled_complete$datetime <- as.POSIXlt(Bird_Island_GPS_compiled_complete$datetime,format="%Y-%m-%d %H:%M:%S",tz="GMT")
 
+
 ggplot() +
   geom_sf(worldmap,mapping=aes()) + 
-  geom_sf(data = st_as_sf(BBAL_Polygon),fill=NA,color='black',linewidth=1,alpha=0.5) +
-  geom_sf(data = st_as_sf(GHAL_Polygon),fill=NA,color='#6DBAC6FF',linewidth=1,alpha=0.5) +
-  geom_sf(data = st_as_sf(WAAL_Polygon),fill=NA,color='#9A5155FF',linewidth=1,alpha=0.5) +
+  geom_sf(data = st_as_sf(BBAL_Polygon),fill='black',color='black',linewidth=1,alpha=0.5) +
+  geom_sf(data = st_as_sf(GHAL_Polygon),fill='#6A00A8FF',color='#6A00A8FF',linewidth=1,alpha=0.5) +
+  geom_sf(data = st_as_sf(WAAL_Polygon),fill='#FCA636FF',color='#FCA636FF',linewidth=1,alpha=0.5) +
   coord_sf(xlim = c(-120,-10), ylim = c(-72.5,-32.5), expand = FALSE) +
   geom_path(data=Bird_Island_GPS_compiled_complete %>% filter(substr(id,1,4)=="BBAL"),
-            aes(x=Lon360to180(lon),y=lat,group=tripID),linewidth=0.1,color='black') +
+            aes(x=Lon360to180(lon),y=lat,group=tripID),linewidth=0.2,color='black') +
   geom_path(data=Bird_Island_GPS_compiled_complete %>% filter(substr(id,1,4)=="GHAL"),
-            aes(x=Lon360to180(lon),y=lat,group=tripID),linewidth=0.1,color='#6DBAC6FF') +
+            aes(x=Lon360to180(lon),y=lat,group=tripID),linewidth=0.2,color='#6A00A8FF') +
   geom_path(data=Bird_Island_GPS_compiled_complete %>% filter(substr(id,1,4)=="WAAL"),
-            aes(x=Lon360to180(lon),y=lat,group=tripID),linewidth=0.1,color='#9A5155FF') +
-  geom_point(aes(x=-38.0658417,y=-54.0101833),size=5,color='yellow') + 
+            aes(x=Lon360to180(lon),y=lat,group=tripID),linewidth=0.2,color='#FCA636FF') +
+  geom_point(aes(x=-38.0658417,y=-54.0101833),size=5,color='#479125FF') + 
   theme_linedraw() +
   theme(axis.title.x = element_blank(),
         axis.title.y = element_blank())
+
+
+# Extent map of SO foraging map
+ggplot() + 
+  geom_sf(worldmap_rot,mapping=aes()) + # worldmap_rot is from Plot_Global_Env.R
+  geom_rect(aes(xmin = 90-120, ymin = -72.5, xmax = 90-10, ymax = -32.5), 
+            fill = NA, colour = "black", size = 1) + 
+  coord_sf(expand = FALSE) +
+  scale_y_continuous(breaks = seq(-90, 90, by = 30)) +
+  theme_linedraw() + 
+  xlim(-177,180) +
+  theme(text = element_text(size = 14),
+        axis.title.x=element_blank(),
+        axis.title.y=element_blank())
+
+
+# Only BBAL
+ggplot() +
+  geom_sf(worldmap,mapping=aes()) + 
+  geom_sf(data = st_as_sf(BBAL_Polygon),fill='black',color='black',linewidth=1,alpha=0.5) +
+  coord_sf(xlim = c(-120,-10), ylim = c(-72.5,-32.5), expand = FALSE) +
+  geom_path(data=Bird_Island_GPS_compiled_complete %>% filter(substr(id,1,4)=="BBAL"),
+            aes(x=Lon360to180(lon),y=lat,group=tripID),linewidth=0.2,color='black') +
+  geom_point(aes(x=-38.0658417,y=-54.0101833),size=5,color='#479125FF') + 
+  theme_linedraw() +
+  theme(axis.title.x = element_blank(),
+        axis.title.y = element_blank())
+
+
+# Only GHAL
+ggplot() +
+  geom_sf(worldmap,mapping=aes()) + 
+  geom_sf(data = st_as_sf(GHAL_Polygon),fill='#6A00A8FF',color='#6A00A8FF',linewidth=1,alpha=0.5) +
+  coord_sf(xlim = c(-120,-10), ylim = c(-72.5,-32.5), expand = FALSE) +
+  geom_path(data=Bird_Island_GPS_compiled_complete %>% filter(substr(id,1,4)=="GHAL"),
+            aes(x=Lon360to180(lon),y=lat,group=tripID),linewidth=0.2,color='#6A00A8FF') +
+  geom_point(aes(x=-38.0658417,y=-54.0101833),size=5,color='#479125FF') + 
+  theme_linedraw() +
+  theme(axis.title.x = element_blank(),
+        axis.title.y = element_blank())
+
+# Only WAAL
+ggplot() +
+  geom_sf(worldmap,mapping=aes()) + 
+  geom_sf(data = st_as_sf(WAAL_Polygon),fill='#FCA636FF',color='#FCA636FF',linewidth=1,alpha=0.5) +
+  coord_sf(xlim = c(-120,-10), ylim = c(-72.5,-32.5), expand = FALSE) +
+  geom_path(data=Bird_Island_GPS_compiled_complete %>% filter(substr(id,1,4)=="WAAL"),
+            aes(x=Lon360to180(lon),y=lat,group=tripID),linewidth=0.2,color='#FCA636FF') +
+  geom_point(aes(x=-38.0658417,y=-54.0101833),size=5,color='#479125FF') + 
+  theme_linedraw() +
+  theme(axis.title.x = element_blank(),
+        axis.title.y = element_blank())
+
 
 ggplot() +
   geom_sf(grid_polys_df_mod,mapping=aes(geometry=geom,fill=3.6*breeding_szn_si10),color=NA,alpha=1) +
@@ -207,17 +263,35 @@ Midway_GPS_compiled_complete$datetime <- as.POSIXlt(Midway_GPS_compiled_complete
 # Without windfield, with complete GPS track
 ggplot() +
   geom_sf(data = st_shift_longitude(st_crop(worldmap,xmin=-120,xmax=120,ymin=10,ymax=70))) + 
-  geom_sf(data = st_shift_longitude(st_as_sf(BFAL_Polygon)),fill=NA,color='black',linewidth=1,alpha=0.5) + 
-  geom_sf(data = st_shift_longitude(st_as_sf(LAAL_Polygon)),fill=NA,color='#6DBAC6FF',linewidth=1,alpha=0.5) + 
+  # geom_sf(data = st_shift_longitude(st_as_sf(BFAL_Polygon)),fill='black',color='black',linewidth=1,alpha=0.5) +
+  # geom_sf(data = st_shift_longitude(st_as_sf(LAAL_Polygon)),fill='#6A00A8FF',color='#6A00A8FF',linewidth=1,alpha=0.5) +
   coord_sf(xlim = c(140,220), ylim = c(15,55), expand = FALSE) +
   geom_path(data=Midway_GPS_compiled_complete %>% filter(substr(id,1,4)=="BFAL"),
-            aes(x=lon,y=lat,group=tripID),linewidth=0.1,color='black') +
+            aes(x=lon,y=lat,group=tripID),linewidth=0.2,color='black') +
   geom_path(data=Midway_GPS_compiled_complete %>% filter(substr(id,1,4)=="LAAL"),
-            aes(x=lon,y=lat,group=tripID),linewidth=0.1,color='#6DBAC6FF') +
-  geom_point(aes(x=360-177.3813,y=28.19989),size=5,color='yellow') +
+            aes(x=lon,y=lat,group=tripID),linewidth=0.2,color='#6A00A8FF') +
+  geom_point(aes(x=360-177.3813,y=28.19989),size=5,color='#1170AAFF') +
   theme_linedraw() +
   theme(axis.title.x = element_blank(),
         axis.title.y = element_blank())
+
+
+# Extent map of SO foraging map
+ggplot() + 
+  geom_sf(worldmap_rot,mapping=aes()) + # worldmap_rot is from Plot_Global_Env.R
+  geom_rect(aes(xmin = 90-220, ymin = 15, xmax = 90-140, ymax = 55), 
+            fill = NA, colour = "black", size = 1) + 
+  coord_sf(expand = FALSE) +
+  scale_y_continuous(breaks = seq(-90, 90, by = 30)) +
+  theme_linedraw() + 
+  xlim(-177,180) +
+  theme(text = element_text(size = 14),
+        axis.title.x=element_blank(),
+        axis.title.y=element_blank())
+
+
+
+
 
 # With windfield and complete GPS tracks
 ggplot() +
