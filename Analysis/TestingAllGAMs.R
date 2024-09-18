@@ -6,7 +6,9 @@ fac_k <- 3
 pois_GAMs <- list()
 nbinom_GAMs <- list()
 
-for (dist in c("poisson","negbin")) {
+# POISSON IS WORSE - USE NEGATIVE BINOMIAL DISTRIBUTION
+# for (dist in c("poisson","nb")) {
+for (dist in c("nb")) {
   for (spp in spp_vec) {
     
     m_current <- m_all %>% filter((HMM_3S_state != 1) & (Species == spp)) %>% 
@@ -70,7 +72,7 @@ for (dist in c("poisson","negbin")) {
       pois_GAMs[[paste0(spp,"_s1")]] <- cat_wind_GAM
       pois_GAMs[[paste0(spp,"_s2")]] <- cat_swell_GAM
       
-    } else if (dist == "negbin") {
+    } else if (dist == "nb") {
       
       nbinom_GAMs[[paste0(spp,"_0")]] <- null_GAM
       nbinom_GAMs[[paste0(spp,"_1")]] <- uni_wind_GAM
@@ -88,26 +90,47 @@ for (dist in c("poisson","negbin")) {
 # Find metrics -----------------------------------------------------------------
 
 for (spp in spp_vec) {
-  spp_AICs <- AICctab(All_GAMs[[paste0(spp,"_0")]], All_GAMs[[paste0(spp,"_1")]], 
-          All_GAMs[[paste0(spp,"_2")]], All_GAMs[[paste0(spp,"_3")]],
-          All_GAMs[[paste0(spp,"_4")]], All_GAMs[[paste0(spp,"_5")]],
-          All_GAMs[[paste0(spp,"_s1")]], All_GAMs[[paste0(spp,"_s2")]],
+  
+  spp_pois_AICs <- AICctab(pois_GAMs[[paste0(spp,"_0")]], pois_GAMs[[paste0(spp,"_1")]], 
+          pois_GAMs[[paste0(spp,"_2")]], pois_GAMs[[paste0(spp,"_3")]],
+          pois_GAMs[[paste0(spp,"_4")]], pois_GAMs[[paste0(spp,"_5")]],
+          pois_GAMs[[paste0(spp,"_s1")]], pois_GAMs[[paste0(spp,"_s2")]],
           weights = TRUE, delta = TRUE, base=TRUE, sort = FALSE)
   
-  spp_r.sq <- c()
-  spp_dev.expl <- c()
+  spp_nbinom_AICs <- AICctab(nbinom_GAMs[[paste0(spp,"_0")]], nbinom_GAMs[[paste0(spp,"_1")]], 
+                           nbinom_GAMs[[paste0(spp,"_2")]], nbinom_GAMs[[paste0(spp,"_3")]],
+                           nbinom_GAMs[[paste0(spp,"_4")]], nbinom_GAMs[[paste0(spp,"_5")]],
+                           nbinom_GAMs[[paste0(spp,"_s1")]], nbinom_GAMs[[paste0(spp,"_s2")]],
+                           weights = TRUE, delta = TRUE, base=TRUE, sort = FALSE)
+  
+  spp_pois_r.sq <- c()
+  spp_pois_dev.expl <- c()
+  
+  spp_nbinom_r.sq <- c()
+  spp_nbinom_dev.expl <- c()
+  
   for (model in c(0:5,"s1","s2")) {
-    spp_r.sq <- c(spp_r.sq,summary(All_GAMs[[paste0(spp,"_",model)]])$r.sq)
-    spp_dev.expl <- c(spp_dev.expl,summary(All_GAMs[[paste0(spp,"_",model)]])$dev.expl)
+    
+    spp_pois_r.sq <- c(spp_pois_r.sq,summary(pois_GAMs[[paste0(spp,"_",model)]])$r.sq)
+    spp_pois_dev.expl <- c(spp_pois_dev.expl,summary(pois_GAMs[[paste0(spp,"_",model)]])$dev.expl)
+    
+    spp_nbinom_r.sq <- c(spp_nbinom_r.sq,summary(nbinom_GAMs[[paste0(spp,"_",model)]])$r.sq)
+    spp_nbinom_dev.expl <- c(spp_nbinom_dev.expl,summary(nbinom_GAMs[[paste0(spp,"_",model)]])$dev.expl)
+    
   }
   
-  # Keep the tiny digits for weight bc they are disspearing when converting to a df.
-  spp_metrics <- as.data.frame(spp_AICs)
-  spp_metrics$r.sq <- spp_r.sq
-  spp_metrics$dev.expl <- spp_dev.expl
+  spp_pois_metrics <- as.data.frame(spp_pois_AICs)
+  spp_pois_metrics$r.sq <- spp_pois_r.sq
+  spp_pois_metrics$dev.expl <- spp_pois_dev.expl
+  
+  spp_nbinom_metrics <- as.data.frame(spp_nbinom_AICs)
+  spp_nbinom_metrics$r.sq <- spp_nbinom_r.sq
+  spp_nbinom_metrics$dev.expl <- spp_nbinom_dev.expl
+  
 }
 
-
+spp_pois_metrics
+spp_nbinom_metrics
 
 ################################################################################
 # Testing variance inflation to test poisson distribution 
@@ -121,3 +144,31 @@ fit.pois <- fitdist(m_current$flaps, "pois")
 
 fit.nbinom$aic
 fit.pois$aic
+
+################################################################################
+# Plotting all models
+
+# unidirectional
+for (spp in spp_vec) {
+  
+  spp_pois_AICs <- AICctab(pois_GAMs[[paste0(spp,"_0")]]
+
+current_ds  <- data_slice(current_GAM, shts = evenly(shts, n = 100),
+                          id = unique(m_current$id)[1:10])
+
+link_df <- cbind(current_ds,
+                 rep(spp,nrow(current_ds)),
+                 fitted_values(current_GAM, data = current_ds, scale = "link",
+                               terms = c("(Intercept)","s(shts)","s(id)"))[,3:6],
+                 fitted_values(current_GAM, data = current_ds, scale = "link",
+                               terms = c("(Intercept)","s(shts)"))[,3:6])
+
+colnames(link_df) <- c("shts","id","Species",
+                       "fitted_all","se_all","lower_all","upper_all",
+                       "fitted_global","se_global","lower_global","upper_global")
+
+if (spp == "Black-browed") {
+  fv_df_shts <- link_df
+} else {
+  fv_df_shts <- rbind(fv_df_shts,link_df)
+}
