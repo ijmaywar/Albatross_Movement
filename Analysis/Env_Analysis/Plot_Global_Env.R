@@ -90,19 +90,30 @@ grid_global_df_mod <- grid_global_breeding_szn_df %>% st_difference(polygon)
 # Transform
 grid_global_df_rot <- grid_global_df_mod %>% st_transform(crs = target_crs)
 
+# Assuming your data frame is named 'df' and the column is named 'longitude'
+grid_global_df_rot$centroid_lon <- ifelse(grid_global_df_rot$centroid_lon-270 < -180, 
+                                       grid_global_df_rot$centroid_lon + 360, 
+                                       grid_global_df_rot$centroid_lon)
+
 # Multiply windspeeds by 3.6 to get km/h
 # Wind in Breeding szn (Dec, Jan, Feb)
 
+reds <- colorRampPalette(c("#E2E2E2FF","red4"))
+
 ggplot() +
-  geom_sf(grid_global_df_rot,mapping=aes(geometry=geom,fill=3.6*breeding_szn_si10),color=NA,alpha=1) +
-  scale_fill_gradient(low = "white", high = "red4", na.value = NA,
-                      limits = c(0,3.6*max(grid_global_df_rot$breeding_szn_si10)),
-                      breaks = c(0,10,20,30,40),
-                      labels = c("0","10","20","30","40"),
-                      name = "Windspeed (km/h)") +
+  # geom_sf(grid_global_df_rot,mapping=aes(geometry=geom,fill=3.6*breeding_szn_si10),color=NA,alpha=1) +
+  # scale_fill_gradient(low = "white", high = "red4", na.value = NA,
+  #                     limits = c(0,3.6*max(grid_global_df_rot$breeding_szn_si10)),
+  #                     breaks = c(0,10,20,30,40),
+  #                     labels = c("0","10","20","30","40"),
+  #                     name = "Windspeed (km/h)") +
+  geom_contour_filled(grid_global_df_rot,
+                        mapping=aes(centroid_lon-270,centroid_lat,z=3.6*breeding_szn_si10),
+                      breaks=seq(from=0,to=50,by=5)) +
+  scale_fill_manual(values=reds(10),drop=FALSE,guide = guide_legend(reverse = TRUE)) +
   geom_sf(worldmap_rot,mapping=aes()) + 
-  geom_point(aes(x=90-177.3813,y=28.19989),size=5,color="#F8DE02FF") +
-  geom_point(aes(x=90-38.0658417,y=-54.0101833),size=5,color="#F8DE02FF") +
+  geom_point(aes(x=90-177.3813,y=28.19989),size=5,color="#1170AAFF") +
+  geom_point(aes(x=90-38.0658417,y=-54.0101833),size=5,color="#479125FF") +
   coord_sf(expand = FALSE) +
   scale_y_continuous(breaks = seq(-90, 90, by = 30)) +
   theme_linedraw() + 
@@ -110,5 +121,7 @@ ggplot() +
   theme(axis.title.x=element_blank(),
         axis.title.y=element_blank(),
         panel.grid = element_blank())
+
+# 800 x 500
 
 
