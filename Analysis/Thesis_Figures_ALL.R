@@ -31,16 +31,20 @@ for (spp in spp_vec) {
                        family = dist,
                        method = "REML")
   
-  cat_wind_GAM <- gam(formula = flaps ~ s(wind_vel_kmh,by=bird_wind_angle_cat,bs='tp',k=3) +
+  cat_wind_GAM <- gam(formula = flaps ~ s(wind_vel_kmh,bs='tp',k=3) +
+                        bird_wind_angle_cat + 
+                        s(wind_vel_kmh,by=bird_wind_angle_cat,bs='tp',k=3) +
                         s(id,k=length(unique(m_current$id)),bs="re"),
                       data = m_current,
-                      family = dist,
+                      family = "nb",
                       method = "REML")
   
-  cat_swell_GAM <- gam(formula = flaps ~ s(shts,by=bird_swell_angle_cat,bs='tp',k=3) +
+  cat_swell_GAM <- gam(formula = flaps ~ s(shts,bs='tp',k=3) +
+                         bird_swell_angle_cat + 
+                         s(shts,by=bird_swell_angle_cat,bs='tp',k=3) +
                          s(id,k=length(unique(m_current$id)),bs="re"),
                        data = m_current,
-                       family = dist,
+                       family = "nb",
                        method = "REML")
   
   cont_wind_GAM <- gam(formula = flaps ~ te(wind_vel_kmh,bird_wind_angle,k=c(fac_k,fac_k),bs=c('tp','tp')) + 
@@ -142,8 +146,8 @@ for (spp in spp_vec) {
   # Call GAMs from list
   null_GAM <- All_GAMs[[paste0(spp,"_0")]] 
   uni_wind_GAM <- All_GAMs[[paste0(spp,"_1")]]
-  cont_wind_GAM <- All_GAMs[[paste0(spp,"_2")]] 
-  uni_swell_GAM <- All_GAMs[[paste0(spp,"_3")]]
+  uni_swell_GAM <- All_GAMs[[paste0(spp,"_2")]]
+  cont_wind_GAM <- All_GAMs[[paste0(spp,"_3")]] 
   cont_swell_GAM <- All_GAMs[[paste0(spp,"_4")]]
   best_GAM <- All_GAMs[[paste0(spp,"_5")]]
   cat_wind_GAM <- All_GAMs[[paste0(spp,"_s1")]]
@@ -182,11 +186,11 @@ for (spp in spp_vec) {
   cat_wind_fv_spp <- cbind(cat_wind_ds[,1:2],
                    rep(spp,nrow(cat_wind_ds)),
                    fitted_values(cat_wind_GAM, data = cat_wind_ds, scale = "link",
-                                 terms = c("(Intercept)","s(wind_vel_kmh,bird_wind_angle_cat)"))[,4:7])
+                                 terms = c("(Intercept)",smooths(cat_wind_GAM)[1:3]))[,4:7])
   cat_swell_fv_spp <- cbind(cat_swell_ds[,1:2],
                        rep(spp,nrow(cat_swell_ds)),
                        fitted_values(cat_swell_GAM, data = cat_swell_ds, scale = "link",
-                                     terms = c("(Intercept)","s(shts,bird_swell_angle_cat)"))[,4:7])
+                                     terms = c("(Intercept)",smooths(cat_swell_GAM)[1:3]))[,4:7])
   
   if (spp == "Black-browed") {
     uni_wind_fv <- uni_wind_fv_spp
