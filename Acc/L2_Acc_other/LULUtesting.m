@@ -1,4 +1,7 @@
 
+% Matlab functions toolbox
+addpath(genpath('/Users/ian/Documents/GitHub/'))
+
 %% Figure 2 data set
 x = [3,3,3,1,1,3,3,3,3,5,5,3,3,3,1,1,1,1,3,3,3,3,5,5,5,5,3,3,3,3,1,1,1,1,1,1,3,3,3,3,5,5,5,4,4,6,6,3,3,3];
 i = 1;
@@ -43,7 +46,17 @@ subplot(2,1,2)
 plot(Ukm(X,2,11),'-r','MarkerFaceColor', 'r')
 ylim([-15 0])
 
-
-
+%% Testing movmin and movmax
+figure
+subplot(3,1,1)
+plot(x,'-b','MarkerFaceColor', 'b')
+subplot(3,1,2)
+plot(x,'-b','MarkerFaceColor', 'b')
+hold on
+plot(movmax(x,[0 5]))
+subplot(3,1,3)
+plot(x,'-b','MarkerFaceColor', 'b')
+hold on
+plot(movmin(x,[5 0]))
 
 
