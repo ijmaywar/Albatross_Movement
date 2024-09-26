@@ -7,8 +7,7 @@ pois_GAMs <- list()
 nbinom_GAMs <- list()
 
 # POISSON IS WORSE - USE NEGATIVE BINOMIAL DISTRIBUTION
-# for (dist in c("poisson","nb")) {
-for (dist in c("nb")) {
+for (dist in c("poisson","nb")) {
   for (spp in spp_vec) {
     
     m_current <- m_all %>% filter((HMM_3S_state != 1) & (Species == spp)) %>% 

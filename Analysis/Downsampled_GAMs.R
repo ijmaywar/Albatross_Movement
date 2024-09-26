@@ -18,17 +18,18 @@ GAM_list_wind_vel <- list()
     # the 101st iter. is not downsampled 
     if (iter==101) {
       m_current <- m_all %>% filter((HMM_3S_state != 1) & (Species == spp)) %>% 
-        drop_na(wind_vel_kmh)
+        drop_na(flaps,wind_vel_kmh,shts,bird_wind_angle,bird_swell_angle,bird_wind_angle_cat,bird_swell_angle_cat)
     } else {
       # There are 18 black-footed albatross for m_all
       m_current <- m_all %>% filter((HMM_3S_state != 1) & (Species == spp)) %>% 
-        drop_na(wind_vel_kmh) %>% filter(id %in% sample(unique(id), 18))
+        drop_na(flaps,wind_vel_kmh,shts,bird_wind_angle,bird_swell_angle,bird_wind_angle_cat,bird_swell_angle_cat) %>% 
+        filter(id %in% sample(unique(id), 18))
     }
       
     current_GAM <- gam(formula = flaps ~ s(wind_vel_kmh,k=fac_k,bs='tp') + 
                          s(id,k=length(unique(m_current$id)),bs="re"),
                        data = m_current,
-                       family = "poisson",
+                       family = "nb",
                        method = "REML")
     
     GAM_list_wind_vel[[spp]] <- current_GAM
@@ -66,6 +67,7 @@ fig_wind_simple <- ggplot() +
        x="Windspeed (km/h)") +
   facet_wrap(~Species,nrow=1) +
   theme_linedraw() +
+  ylim(0,2500) + 
   theme(panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(),
         strip.text = element_blank())
@@ -86,17 +88,18 @@ for (iter in 1:101) {
     # the 101st iter. is not downsampled 
     if (iter==101) {
       m_current <- m_all %>% filter((HMM_3S_state != 1) & (Species == spp)) %>% 
-        drop_na(shts)
+        drop_na(flaps,wind_vel_kmh,shts,bird_wind_angle,bird_swell_angle,bird_wind_angle_cat,bird_swell_angle_cat)
     } else {
       # There are 18 black-footed albatross for m_all
       m_current <- m_all %>% filter((HMM_3S_state != 1) & (Species == spp)) %>% 
-        drop_na(shts) %>% filter(id %in% sample(unique(id), 18))
+        drop_na(flaps,wind_vel_kmh,shts,bird_wind_angle,bird_swell_angle,bird_wind_angle_cat,bird_swell_angle_cat) %>% 
+        filter(id %in% sample(unique(id), 18))
     }
     
     current_GAM <- gam(formula = flaps ~ s(shts,k=fac_k,bs='tp') + 
                          s(id,k=length(unique(m_current$id)),bs="re"),
                        data = m_current,
-                       family = "poisson",
+                       family = "nb",
                        method = "REML")
     
     GAM_list_shts[[spp]] <- current_GAM
@@ -134,6 +137,7 @@ fig_shts_simple <- ggplot() +
        x="Significant height of total swell (m)") +
   facet_wrap(~Species,nrow=1) +
   theme_linedraw() +
+  ylim(0,2500) + 
   theme(panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(),
         strip.text = element_blank())

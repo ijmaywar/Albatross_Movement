@@ -188,65 +188,6 @@ ggplot() +
         axis.title.y=element_blank())
 
 
-# Only BBAL
-ggplot() +
-  geom_sf(worldmap,mapping=aes()) + 
-  geom_sf(data = st_as_sf(BBAL_Polygon),fill='black',color='black',linewidth=1,alpha=0.5) +
-  coord_sf(xlim = c(-120,-10), ylim = c(-72.5,-32.5), expand = FALSE) +
-  geom_path(data=Bird_Island_GPS_compiled_complete %>% filter(substr(id,1,4)=="BBAL"),
-            aes(x=Lon360to180(lon),y=lat,group=tripID),linewidth=0.2,color='black') +
-  geom_point(aes(x=-38.0658417,y=-54.0101833),size=5,color='#479125FF') + 
-  theme_linedraw() +
-  theme(axis.title.x = element_blank(),
-        axis.title.y = element_blank())
-
-
-# Only GHAL
-ggplot() +
-  geom_sf(worldmap,mapping=aes()) + 
-  geom_sf(data = st_as_sf(GHAL_Polygon),fill='#6A00A8FF',color='#6A00A8FF',linewidth=1,alpha=0.5) +
-  coord_sf(xlim = c(-120,-10), ylim = c(-72.5,-32.5), expand = FALSE) +
-  geom_path(data=Bird_Island_GPS_compiled_complete %>% filter(substr(id,1,4)=="GHAL"),
-            aes(x=Lon360to180(lon),y=lat,group=tripID),linewidth=0.2,color='#6A00A8FF') +
-  geom_point(aes(x=-38.0658417,y=-54.0101833),size=5,color='#479125FF') + 
-  theme_linedraw() +
-  theme(axis.title.x = element_blank(),
-        axis.title.y = element_blank())
-
-# Only WAAL
-ggplot() +
-  geom_sf(worldmap,mapping=aes()) + 
-  geom_sf(data = st_as_sf(WAAL_Polygon),fill='#FCA636FF',color='#FCA636FF',linewidth=1,alpha=0.5) +
-  coord_sf(xlim = c(-120,-10), ylim = c(-72.5,-32.5), expand = FALSE) +
-  geom_path(data=Bird_Island_GPS_compiled_complete %>% filter(substr(id,1,4)=="WAAL"),
-            aes(x=Lon360to180(lon),y=lat,group=tripID),linewidth=0.2,color='#FCA636FF') +
-  geom_point(aes(x=-38.0658417,y=-54.0101833),size=5,color='#479125FF') + 
-  theme_linedraw() +
-  theme(axis.title.x = element_blank(),
-        axis.title.y = element_blank())
-
-
-ggplot() +
-  geom_sf(grid_polys_df_mod,mapping=aes(geometry=geom,fill=3.6*breeding_szn_si10),color=NA,alpha=1) +
-  scale_fill_gradient(low = "white", high = "red", na.value = NA,
-                      limits = c(0,3.6*max(grid_polys_df_mod$breeding_szn_si10)),
-                      breaks = c(0,10,20,30,40),
-                      labels = c("0","10","20","30","40"),
-                      name = "Windspeed (km/h)") +
-  geom_sf(worldmap,mapping=aes()) + 
-  geom_sf(data = st_as_sf(BBAL_Polygon),fill=NA,color='blue',linewidth=1,alpha=0.5) +
-  geom_sf(data = st_as_sf(GHAL_Polygon),fill=NA,color='green',linewidth=1,alpha=0.5) +
-  geom_sf(data = st_as_sf(WAAL_Polygon),fill=NA,color='black',linewidth=1,alpha=0.5) +
-  coord_sf(xlim = c(-90,-10), ylim = c(-80,-30), expand = FALSE) +
-  geom_path(data=Bird_Island_GPS_compiled_complete %>% filter(substr(id,1,4)=="BBAL"),aes(x=Lon360to180(lon),y=lat,group=tripID),linewidth=0.1,color='blue') +
-  geom_path(data=Bird_Island_GPS_compiled_complete %>% filter(substr(id,1,4)=="GHAL"),aes(x=Lon360to180(lon),y=lat,group=tripID),linewidth=0.1,color='green') +
-  geom_path(data=Bird_Island_GPS_compiled_complete %>% filter(substr(id,1,4)=="WAAL"),aes(x=Lon360to180(lon),y=lat,group=tripID),linewidth=0.1,color='black') +
-  geom_point(aes(x=-38.0658417,y=-54.0101833),size=5,color='yellow') + 
-  theme_linedraw() +
-  theme(axis.title.x = element_blank(),
-        axis.title.y = element_blank())
-
-
 # Plot the NP KDEs -------------------------------------------------------------
 
 GPS_dir <- paste0(GD_dir,"L4/Midway/Tag_Data/GPS/")
@@ -288,29 +229,5 @@ ggplot() +
   theme(text = element_text(size = 14),
         axis.title.x=element_blank(),
         axis.title.y=element_blank())
-
-
-
-
-
-# With windfield and complete GPS tracks
-ggplot() +
-  # geom_sf(grid_polys_df_mod,mapping=aes(geometry=geom,fill=3.6*breeding_szn_si10),color=NA,alpha=1) +
-  geom_sf(grid_polys_df_rot,mapping=aes(geometry=geom,fill=3.6*breeding_szn_si10),color=NA,alpha=1) +
-  scale_fill_gradient(low = "white", high = "red", na.value = NA,
-                      limits = c(0,3.6*max(grid_polys_df_rot$breeding_szn_si10)),
-                      breaks = c(0,10,20,30,40),
-                      labels = c("0","10","20","30","40"),
-                      name = "Windspeed (km/h)") +
-  geom_sf(worldmap_rot,mapping=aes()) + 
-  geom_sf(data = sf::st_shift_longitude(st_as_sf(BFAL_Polygon)),fill=NA,color='blue',linewidth=1,alpha=0.5) +
-  geom_sf(data = sf::st_shift_longitude(st_as_sf(LAAL_Polygon)),fill=NA,color='green',linewidth=1,alpha=0.5) +
-  coord_sf(xlim = c(Lon360to180(120+90),Lon360to180(240+90)), ylim = c(10,70), expand = FALSE) +
-  geom_point(aes(x=90-177.3813,y=28.19989),size=5,color='black') +
-  geom_path(data=Midway_GPS_compiled_complete %>% filter(substr(id,1,4)=="BFAL"),aes(x=Lon360to180(lon+90),y=lat,group=tripID),linewidth=0.1,color='blue') +
-  geom_path(data=Midway_GPS_compiled_complete %>% filter(substr(id,1,4)=="LAAL"),aes(x=Lon360to180(lon+90),y=lat,group=tripID),linewidth=0.1,color='green') +
-  theme_linedraw() +
-  theme(axis.title.x = element_blank(),
-        axis.title.y = element_blank())
 
 

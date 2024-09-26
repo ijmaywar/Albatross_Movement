@@ -1,4 +1,4 @@
-cutoff <- .05
+cutoff <- .1
 
 temp <- m_all_nonaflaps %>% filter(shts<=quantile(m_all_nonaflaps$shts,probs=cutoff,na.rm=TRUE),
                          wind_vel_kmh<=quantile(m_all_nonaflaps$wind_vel_kmh,probs=cutoff,na.rm=TRUE))
@@ -50,13 +50,21 @@ ggplot(m_hiflaps,aes(shts,wind_vel_kmh)) +
   ylim(0,100) + 
   xlim(0,8)
 
-mean(m_hiflaps$flaps)
+# Where do the env predictors fall for the lowest flap rates for each species individually
+ggplot(m_all_nonaflaps,aes(shts,wind_vel_kmh)) +
+  geom_point() + 
+  geom_point(m_lowflaps,mapping=aes(shts,wind_vel_kmh),color='red') +
+  ylim(0,100) + 
+  xlim(0,8) +
+  facet_wrap(~Species,nrow = 1)
+
+mean(m_him_all_nonaflapsmean(m_hiflaps$flaps))
 mean(m_all_nonaflaps$flaps)
 
 ################################################################################
 # Systematically find theoretical max wingbeats for all species
 
-cutoff <- .05
+cutoff <- .2
 
 meta_corner <- data.frame(spp = character(),
                           num_rows = numeric(),
