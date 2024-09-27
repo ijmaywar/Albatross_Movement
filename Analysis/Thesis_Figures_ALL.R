@@ -350,8 +350,9 @@ response_df_mask_best_all$Species <- factor(response_df_mask_best_all$Species,
 reds <- colorRampPalette(c("#E2E2E2FF","red4"))
 fig_wave_cont_trim <- ggplot(response_df_mask_wind_all) +
   geom_contour_filled(aes(x,y,z=exp(fitted_global)),
-                      breaks=seq(from=0,to=1600,by=100)) +
-  scale_fill_manual(values=reds(16),drop=FALSE,guide = guide_legend(reverse = TRUE)) +
+                      # breaks=seq(from=0,to=1600,by=100)) +
+                      breaks=getJenksBreaks(exp(response_df_mask_wind_all$fitted_global),11)) +
+  scale_fill_manual(values=reds(10),drop=FALSE,guide = guide_legend(reverse = TRUE)) +
   labs(fill = "Flaps/hour") +
   scale_y_continuous(breaks=seq(0,180,60)) +
   xlab("Windspeed (km/h)") +
@@ -366,8 +367,9 @@ fig_wave_cont_trim <- ggplot(response_df_mask_wind_all) +
 blues <- colorRampPalette(c("#E2E2E2FF","navy"))
 fig_swell_cont_trim <- ggplot(response_df_mask_swell_all) +
   geom_contour_filled(aes(x,y,z=exp(fitted_global)),
-                      breaks=seq(from=0,to=1600,by=100)) + 
-  scale_fill_manual(values=blues(16),drop=FALSE,guide = guide_legend(reverse = TRUE)) +
+                      # breaks=seq(from=0,to=1600,by=100)) +
+                      breaks=getJenksBreaks(exp(response_df_mask_swell_all$fitted_global),11)) +
+  scale_fill_manual(values=blues(10),drop=FALSE,guide = guide_legend(reverse = TRUE)) +
   labs(fill = "Flaps/hour") +
   scale_y_continuous(breaks=seq(0,180,60)) +
   xlab("Significant height of total swell (m)") +
@@ -386,8 +388,9 @@ wrap_elements(panel = fig_wave_cont_trim / fig_swell_cont_trim)
 
 ggplot(response_df_mask_best_all) +
   geom_contour_filled(aes(x,y,z=exp(fitted_global)),
-                      breaks=seq(from=0,to=4000,by=100)) +
-  scale_fill_manual(values=magma(40),drop=FALSE,guide = guide_legend(reverse = TRUE)) +
+                      # breaks=seq(from=0,to=4000,by=100)) +
+                      breaks=getJenksBreaks(exp(response_df_mask_best_all$fitted_global),11)) +
+  scale_fill_manual(values=magma(10),drop=FALSE,guide = guide_legend(reverse = TRUE)) +
   labs(fill = "Flaps/hour") +
   xlim(0,90) +
   ylim(0,7.75) +
@@ -399,7 +402,40 @@ ggplot(response_df_mask_best_all) +
         panel.grid.minor = element_blank(),
         strip.text = element_blank())
 
-# Save: 1250 x 550
+# Save: 1250 x 300
+
+# Find highest 5% of predicted flap rates for each species
+all_meta <- data.frame(spp=character(),
+                        a=numeric(),
+                        b=numeric(),
+                        c=numeric(),
+                        d=numeric(),
+                        e=numeric())
+
+for (spp in spp_vec) {
+  
+  # Find highest 5% of responses
+  spp_response <- response_df_mask_best_all %>% filter(Species==spp)
+  spp_response_highest <- spp_response %>% filter(exp(fitted_global)>=quantile(exp(spp_response$fitted_global),probs=1-.05))
+  
+  # Find highest 5% of data
+  spp_m <- m_all %>% filter((HMM_3S_state != 1) & (Species == spp)) %>% 
+    drop_na(flaps,wind_vel_kmh,shts,bird_wind_angle,bird_swell_angle,bird_wind_angle_cat,bird_swell_angle_cat)
+  spp_m_highest <- spp_m %>% filter(flaps>=quantile(spp_m$flaps,probs=1-.05))
+  
+  spp_meta <- c(spp,
+                mean(exp(spp_response$fitted_global),na.rm=TRUE),
+                mean(exp(spp_response_highest$fitted_global),na.rm=TRUE),
+                mean(spp_m$flaps,na.rm=TRUE),
+                mean(spp_m_highest$flaps,na.rm=TRUE))
+  
+  all_meta <- rbind(all_meta,spp_meta)
+}
+
+colnames(all_meta) <- c("spp","avg_response","upper_response",
+                        "avg_flaps","upper_flaps")
+
+all_meta
 
 ################################################################################
 # Plot categorical GAMs
