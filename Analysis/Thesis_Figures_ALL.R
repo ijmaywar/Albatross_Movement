@@ -1,6 +1,149 @@
-# Figures for thesis (having run AllGAMs)
+################################################################################
+#
+# CREATE ALL FIGURES FOR THESIS
+#
+################################################################################
 
+# Clear environment -------------------------------------------------------
+
+rm(list = ls())
+
+# Load Packages -----------------------------------------------------------
+
+library(tidyverse)
+library(ggplot2)
+library(readxl)
+library(lme4)
+library(stringr)
+library(dplyr)
+library(mgcv)
+library(mgcViz)
+library(gridExtra)
+library(patchwork)
+library(gratia)
+library(readr)
+library(RColorBrewer)
+library(viridis)
+library(ks)
+library(sp)
+library(terra)
+library(tidyterra)
+library(BAMMtools)
+library(see)
+library(reshape2)
+library(ggExtra)
+library(grid)
+library(paletteer)
 library(bbmle)
+
+# Set Environment --------------------------------------------------------------
+
+GD_dir <- "/Users/ian/Library/CloudStorage/GoogleDrive-ian.maywar@stonybrook.edu/My Drive/Thorne Lab Shared Drive/Data/Albatross/"
+read_dir <- paste0(GD_dir, "Analysis/Maywar/Merged_Data/Merged_Hourly_Compiled/")
+
+fullmeta <- read_excel(paste0(GD_dir,"metadata/Full_Metadata.xlsx"))
+
+setwd(read_dir)
+files <- list.files(pattern = '*.csv')
+m_all <- read_csv(files[2])
+
+# Edit m_all file as a dataframe for analysis ----------------------------------
+
+# Classify 2BEP, E_pip, Ep as BG
+m_all <- m_all %>% mutate(Trip_Type = factor(replace(as.character(Trip_Type),Trip_Type=="2BEP","BG")))
+m_all <- m_all %>% mutate(Trip_Type = factor(replace(as.character(Trip_Type),Trip_Type=="E_pip","BG")))
+m_all <- m_all %>% mutate(Trip_Type = factor(replace(as.character(Trip_Type),Trip_Type=="Ep","BG")))
+
+# Datetime stuff
+m_all$datetime <- as.POSIXlt(m_all$datetime,format="%Y-%m-%d %H:%M:%S",tz="GMT")
+
+# Categorize BWAs
+m_all <- m_all %>% mutate(bird_wind_angle_cat = case_when(bird_wind_angle<60 ~ "tail",
+                                                          bird_wind_angle>=60 & bird_wind_angle<120 ~ "cross",
+                                                          bird_wind_angle>=120 ~ "head"))
+
+m_all <- m_all %>% mutate(bird_wave_angle_cat = case_when(bird_wave_angle<60 ~ "tail",
+                                                          bird_wave_angle>=60 & bird_wave_angle<120 ~ "cross",
+                                                          bird_wave_angle>=120 ~ "head"))
+
+m_all <- m_all %>% mutate(bird_swell_angle_cat = case_when(bird_swell_angle<60 ~ "tail",
+                                                           bird_swell_angle>=60 & bird_swell_angle<120 ~ "cross",
+                                                           bird_swell_angle>=120 ~ "head"))
+
+m_all <- m_all %>% mutate(bird_ww_angle_cat = case_when(bird_ww_angle<60 ~ "tail",
+                                                        bird_ww_angle>=60 & bird_ww_angle<120 ~ "cross",
+                                                        bird_ww_angle>=120 ~ "head"))
+
+
+# Turn variables into factors
+m_all$id <- as.factor(m_all$id)
+m_all$tripID <- as.factor(m_all$tripID) 
+m_all$Field_Season <- as.factor(m_all$Field_Season)
+m_all$Location <- as.factor(m_all$Location)
+m_all$Trip_Type <- as.factor(m_all$Trip_Type)
+m_all$Species <- as.factor(m_all$Species)
+m_all$bird_wind_angle_cat <- as.factor(m_all$bird_wind_angle_cat)
+m_all$bird_wave_angle_cat <- as.factor(m_all$bird_wave_angle_cat)
+m_all$bird_swell_angle_cat <- as.factor(m_all$bird_swell_angle_cat)
+m_all$bird_ww_angle_cat <- as.factor(m_all$bird_ww_angle_cat)
+m_all$HMM_2S_state <- as.factor(m_all$HMM_2S_state)
+m_all$HMM_3S_state <- as.factor(m_all$HMM_3S_state)
+
+# Re-order Species groups and give them their full name
+m_all <- m_all %>% mutate(Species = factor(replace(as.character(Species),Species=="BBAL","Black-browed")),
+                          Species = factor(replace(as.character(Species),Species=="GHAL","Grey-headed")),
+                          Species = factor(replace(as.character(Species),Species=="WAAL","Wandering")),
+                          Species = factor(replace(as.character(Species),Species=="BFAL","Black-footed")),
+                          Species = factor(replace(as.character(Species),Species=="LAAL","Laysan")))
+m_all$Species <- factor(m_all$Species, levels=c("Black-browed", "Grey-headed", "Wandering", "Black-footed", "Laysan"))
+
+m_all$bird_wind_angle_cat <- factor(m_all$bird_wind_angle_cat, levels=c("head", "cross", "tail"))
+m_all$bird_wave_angle_cat <- factor(m_all$bird_wave_angle_cat, levels=c("head", "cross", "tail"))
+m_all$bird_swell_angle_cat <- factor(m_all$bird_swell_angle_cat, levels=c("head", "cross", "tail"))
+m_all$bird_ww_angle_cat <- factor(m_all$bird_ww_angle_cat, levels=c("head", "cross", "tail"))
+
+# Add km/hr of wind_vel
+m_all$wind_vel_kmh <- 3.6*(m_all$wind_vel)
+
+# Create df for analyzable data (remove on-water, remove NAs)
+m_model <- m_all %>% filter(HMM_3S_state != 1) %>% 
+  drop_na(flaps,wind_vel_kmh,shts,bird_wind_angle,bird_swell_angle,bird_wind_angle_cat,bird_swell_angle_cat)
+
+# Create df for data where the entire trip is captured by GPS
+m_poscomplete <- m_all %>% filter(Pos_complete==1)
+
+spp_vec <- c("Black-browed", "Grey-headed", "Wandering", "Black-footed", "Laysan")
+
+
+# Sample stats -----------------------------------------------------------------
+
+nrow(m_all)
+m_all_nonaflaps %>% count(Species)
+m_all_nonaflaps %>% group_by(Species) %>% summarize(unique_IDs=n_distinct(id))
+
+m_model %>% count(Species)
+m_model %>% group_by(Species) %>% summarize(unique_IDs=n_distinct(id))
+
+m_all_meta <- m_all %>% 
+  group_by(Species,Field_Season) %>% 
+  summarize(unique_IDs=n_distinct(id),n=n()) %>% 
+  arrange(Species)
+
+clipr::write_clip(m_all_meta)
+
+m_model_meta <- m_model %>% 
+  group_by(Species,Field_Season) %>% 
+  summarize(unique_IDs=n_distinct(id),n=n()) %>% 
+  arrange(Species)
+
+clipr::write_clip(m_model_meta)
+
+m_poscomplete_meta <- m_poscomplete %>% 
+  group_by(Species,Field_Season) %>% 
+  summarize(unique_IDs=n_distinct(id),n=n()) %>% 
+  arrange(Species)
+
+clipr::write_clip(m_poscomplete_meta)
 
 ################################################################################
 # run all GAMs -----------------------------------------------------------------
@@ -11,8 +154,7 @@ All_GAMs <- list()
 dist <- "nb"
 for (spp in spp_vec) {
   
-  m_current <- m_all %>% filter((HMM_3S_state != 1) & (Species == spp)) %>% 
-    drop_na(flaps,wind_vel_kmh,shts,bird_wind_angle,bird_swell_angle,bird_wind_angle_cat,bird_swell_angle_cat)
+  m_current <- m_model %>% filter(Species == spp)
   
   null_GAM <- gam(formula = flaps ~ s(id,k=length(unique(m_current$id)),bs="re"),
                   data = m_current,
@@ -279,19 +421,16 @@ response_df_mask_best_all <- list()
 for (spp in spp_vec) {
   
   # Create 99% KDEs
-  kd_wind <- ks::kde(m_all %>% 
-                       filter(HMM_3S_state != 1, Species == spp) %>% 
-                       drop_na(flaps,wind_vel_kmh,shts,bird_wind_angle,bird_swell_angle,bird_wind_angle_cat,bird_swell_angle_cat) %>% 
+  kd_wind <- ks::kde(m_model %>% 
+                       filter(Species == spp) %>%
                        dplyr::select(wind_vel_kmh,bird_wind_angle), 
                      compute.cont=TRUE,gridsize = grid_size)
-  kd_swell <- ks::kde(m_all %>% 
-                        filter(HMM_3S_state != 1, Species == spp) %>% 
-                        drop_na(flaps,wind_vel_kmh,shts,bird_wind_angle,bird_swell_angle,bird_wind_angle_cat,bird_swell_angle_cat) %>% 
+  kd_swell <- ks::kde(m_model %>% 
+                        filter(Species == spp) %>%
                         dplyr::select(shts,bird_swell_angle), 
                       compute.cont=TRUE,gridsize = grid_size)
-  kd_best <- ks::kde(m_all %>% 
-                        filter(HMM_3S_state != 1, Species == spp) %>% 
-                        drop_na(flaps,wind_vel_kmh,shts,bird_wind_angle,bird_swell_angle,bird_wind_angle_cat,bird_swell_angle_cat) %>% 
+  kd_best <- ks::kde(m_model %>% 
+                       filter(Species == spp) %>%
                         dplyr::select(wind_vel_kmh,shts),
                       compute.cont=TRUE,gridsize = grid_size)
   
@@ -404,38 +543,52 @@ ggplot(response_df_mask_best_all) +
 
 # Save: 1250 x 300
 
-# Find highest 5% of predicted flap rates for each species
-all_meta <- data.frame(spp=character(),
+E_savings <- data.frame(spp=character(),
                         a=numeric(),
                         b=numeric(),
                         c=numeric(),
                         d=numeric(),
-                        e=numeric())
+                        e=numeric(),
+                        f=numeric())
 
 for (spp in spp_vec) {
   
-  # Find highest 5% of responses
-  spp_response <- response_df_mask_best_all %>% filter(Species==spp)
-  spp_response_highest <- spp_response %>% filter(exp(fitted_global)>=quantile(exp(spp_response$fitted_global),probs=1-.05))
-  
-  # Find highest 5% of data
-  spp_m <- m_all %>% filter((HMM_3S_state != 1) & (Species == spp)) %>% 
-    drop_na(flaps,wind_vel_kmh,shts,bird_wind_angle,bird_swell_angle,bird_wind_angle_cat,bird_swell_angle_cat)
-  spp_m_highest <- spp_m %>% filter(flaps>=quantile(spp_m$flaps,probs=1-.05))
-  
+  spp_I_response <- fig_wind_simple$data %>% filter(Species==spp)
+  spp_I_min <- min(exp(spp_I_response$fitted_global))
+  spp_I_max <- max(exp(spp_I_response$fitted_global))
+  spp_II_response <- fig_shts_simple$data %>% filter(Species==spp)
+  spp_II_min <- min(exp(spp_II_response$fitted_global))
+  spp_II_max <- max(exp(spp_II_response$fitted_global))
+
   spp_meta <- c(spp,
-                mean(exp(spp_response$fitted_global),na.rm=TRUE),
-                mean(exp(spp_response_highest$fitted_global),na.rm=TRUE),
-                mean(spp_m$flaps,na.rm=TRUE),
-                mean(spp_m_highest$flaps,na.rm=TRUE))
-  
-  all_meta <- rbind(all_meta,spp_meta)
+                spp_I_min,
+                spp_I_max,
+                # (spp_I_max-spp_I_min)/spp_I_max,
+                (spp_I_max-spp_I_min),
+                spp_II_min,
+                spp_II_max,
+                # (spp_II_max-spp_II_min)/spp_II_max)
+                (spp_II_max-spp_II_min))
+                
+  E_savings <- rbind(E_savings,spp_meta)
 }
 
-colnames(all_meta) <- c("spp","avg_response","upper_response",
-                        "avg_flaps","upper_flaps")
+colnames(E_savings) <- c("spp","wind_min","wind_max","wind_savings",
+                        "wave_min","wave_max","wave_savings")
 
-all_meta
+E_savings$wind_min <- as.numeric(E_savings$wind_min)
+E_savings$wind_max <- as.numeric(E_savings$wind_max)
+E_savings$wind_savings <- as.numeric(E_savings$wind_savings)
+E_savings$wave_min <- as.numeric(E_savings$wave_min)
+E_savings$wave_max <- as.numeric(E_savings$wave_max)
+E_savings$wave_savings <- as.numeric(E_savings$wave_savings)
+
+E_savings
+
+clipr::write_clip(E_savings)
+
+# Energy savings
+
 
 ################################################################################
 # Plot categorical GAMs
