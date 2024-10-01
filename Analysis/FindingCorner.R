@@ -1,4 +1,4 @@
-cutoff <- .1
+cutoff <- .05
 
 temp <- m_all_nonaflaps %>% filter(shts<=quantile(m_all_nonaflaps$shts,probs=cutoff,na.rm=TRUE),
                          wind_vel_kmh<=quantile(m_all_nonaflaps$wind_vel_kmh,probs=cutoff,na.rm=TRUE))
@@ -64,7 +64,7 @@ mean(m_all_nonaflaps$flaps)
 ################################################################################
 # Systematically find theoretical max wingbeats for all species
 
-cutoff <- .2
+cutoff <- .05
 
 meta_corner <- data.frame(spp = character(),
                           num_rows = numeric(),
@@ -89,7 +89,7 @@ for (spp in spp_vec) {
   m_current$norm_score <- m_current$norm_wind_vel_kmh + m_current$norm_shts
   
   # m_corner <- m_current %>% filter(norm_score<=quantile(m_current$norm_score,probs=cutoff))
-  m_corner <- m_current %>% filter(shts<=quantile(m_current$shts,probs=cutoff))
+  m_corner <- m_current %>% filter(norm_score<=quantile(m_current$norm_score,probs=cutoff))
   
   spp_meta <- c(spp,
                 nrow(m_current),
