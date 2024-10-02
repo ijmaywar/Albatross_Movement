@@ -114,6 +114,18 @@ m_poscomplete <- m_all %>% filter(Pos_complete==1)
 
 spp_vec <- c("Black-browed", "Grey-headed", "Wandering", "Black-footed", "Laysan")
 
+# KDE data ---------------------------------------------------------------------
+
+Bird_Island_KDE_df <- read_csv(paste0(GD_dir,"L1/Bird_Island/Env_Data/ERA5_MonthlyAvg_10m/Bird_Island_KDEs_avg_env.csv"))
+Midway_KDE_df <- read_csv(paste0(GD_dir,"L1/Midway/Env_Data/ERA5_MonthlyAvg_10m/Midway_KDEs_avg_env.csv"))
+compiled_KDE_df <- rbind(Bird_Island_KDE_df,Midway_KDE_df)
+
+# Turn columns into factors
+compiled_KDE_df$Species <- factor(compiled_KDE_df$Species, levels=c("BBAL","GHAL","WAAL","BFAL","LAAL"))
+compiled_KDE_df$KDE_type <- factor(compiled_KDE_df$KDE_type, levels=c("all","Inc","BG"))
+compiled_KDE_df$on_colony <- factor(compiled_KDE_df$on_colony, levels=c(1,0))
+compiled_KDE_df$Month <- factor(compiled_KDE_df$Month, levels=1:12)
+
 
 # Sample stats -----------------------------------------------------------------
 
@@ -261,7 +273,7 @@ clipr::write_clip(All_metrics)
 #
 # THESE DON'T HAVE THE CORRECT COLORS
 
-wave_height_long <- melt(m_all_poscomplete %>% dplyr::select(Species,shts,shww,swh), 
+wave_height_long <- melt(m_poscomplete %>% dplyr::select(Species,shts,shww,swh), 
                          id.vars = "Species", variable.name = "Wave_type", value.name = "Wave_height")
 
 # Create the boxplot
@@ -640,7 +652,7 @@ wrap_elements(panel = fig_wind_cat / fig_swell_cat)
 # all other analyses can use all available data]
 #   2x5 plot
 
-fig_winds <- m_all_poscomplete |>
+fig_winds <- m_poscomplete |>
   ggplot(aes(Species,wind_vel_kmh)) +
   geom_violinhalf(width=1.1,flip=TRUE) + 
   geom_boxplot(width=0.3,outliers=FALSE) +
@@ -653,7 +665,7 @@ fig_winds <- m_all_poscomplete |>
         panel.grid.minor = element_blank(),
         strip.text = element_blank())
 
-fig_swells <- m_all_poscomplete |>
+fig_swells <- m_poscomplete |>
   ggplot(aes(Species,shts)) +
   geom_violinhalf(width=1.1,flip=TRUE) + 
   geom_boxplot(width=0.3,outliers=FALSE) +
@@ -672,7 +684,7 @@ wrap_elements(panel = fig_winds / fig_swells)
 # Montly env plots: 2 5x1 figs
 
 # Windspeed km/h
-ggplot(compiled_df %>% filter(KDE_type=="all"), 
+monthly_wind <- ggplot(compiled_KDE_df %>% filter(KDE_type=="all"), 
        aes(x = Month, y = si10*3.6)) +
   geom_boxplot(width=0.6,outliers = FALSE) +
   labs(y = "Windspeed (km/h)") +
@@ -684,7 +696,7 @@ ggplot(compiled_df %>% filter(KDE_type=="all"),
         strip.text = element_blank())
 
 # Swell height m
-ggplot(compiled_df %>% filter(KDE_type=="all"), 
+monthly_swell <- ggplot(compiled_KDE_df %>% filter(KDE_type=="all"), 
        aes(x = Month, y = shts)) +
   geom_boxplot(width=0.6,outliers = FALSE) +
   labs(y = "Significant height of total swell (m)") +
@@ -695,29 +707,33 @@ ggplot(compiled_df %>% filter(KDE_type=="all"),
   theme(axis.title.x = element_blank(),
         strip.text = element_blank())
 
+wrap_elements(panel = monthly_wind / monthly_swell)
+
+# 700 x 700
+
 ################################################################################
 # Box plots of prop. time spent in high/med/low winds AND wave heights
 
 # Winds
-bird_wind_angle_cat_hist_data <- as.data.frame(m_all_poscomplete %>%
+bird_wind_angle_cat_hist_data <- as.data.frame(m_poscomplete %>%
                                                  drop_na(bird_wind_angle_cat) %>% 
                                                  group_by(Location,Species,id,bird_wind_angle_cat) %>% 
                                                  summarize(count=n()) %>% 
                                                  mutate(proportion = count/sum(count)))
 
 
-# Randomly downsample m_all_poscomplete such that there are 34 individuals for each study site.
-m_all_poscomplete_spp_ds <- rbind(
-  m_all_poscomplete %>% filter(Species == "Black-browed") %>% filter(id %in% sample(unique(id), 11)),
-  m_all_poscomplete %>% filter(Species == "Grey-headed") %>% filter(id %in% sample(unique(id), 12)),
-  m_all_poscomplete %>% filter(Species == "Wandering") %>% filter(id %in% sample(unique(id), 11)),
-  m_all_poscomplete %>% filter(Species == "Black-footed"),
-  m_all_poscomplete %>% filter(Species == "Laysan") %>% filter(id %in% sample(unique(id), 17)))
+# Randomly downsample m_poscomplete such that there are 34 individuals for each study site.
+m_poscomplete_spp_ds <- rbind(
+  m_poscomplete %>% filter(Species == "Black-browed") %>% filter(id %in% sample(unique(id), 11)),
+  m_poscomplete %>% filter(Species == "Grey-headed") %>% filter(id %in% sample(unique(id), 12)),
+  m_poscomplete %>% filter(Species == "Wandering") %>% filter(id %in% sample(unique(id), 11)),
+  m_poscomplete %>% filter(Species == "Black-footed"),
+  m_poscomplete %>% filter(Species == "Laysan") %>% filter(id %in% sample(unique(id), 17)))
 
-wind_vel_kmh_breaks <- quantile(m_all_poscomplete_spp_ds$wind_vel_kmh, probs=c((1/3),(2/3)))
-shts_cat_breaks <- quantile(m_all_poscomplete_spp_ds$shts, probs=c((1/3),(2/3)))
+wind_vel_kmh_breaks <- quantile(m_poscomplete_spp_ds$wind_vel_kmh, probs=c((1/3),(2/3)))
+shts_cat_breaks <- quantile(m_poscomplete_spp_ds$shts, probs=c((1/3),(2/3)))
 
-m_all_poscomplete <- m_all_poscomplete %>% 
+m_poscomplete <- m_poscomplete %>% 
   mutate(shts_cat = case_when(shts<shts_cat_breaks[[1]] ~ "low",
                               shts>=shts_cat_breaks[[1]] & shts<shts_cat_breaks[[2]] ~ "medium",
                               shts>=shts_cat_breaks[[2]] ~ "high"),
@@ -725,12 +741,12 @@ m_all_poscomplete <- m_all_poscomplete %>%
                                       wind_vel_kmh>=wind_vel_kmh_breaks[[1]] & wind_vel_kmh<wind_vel_kmh_breaks[[2]] ~ "medium",
                                       wind_vel_kmh>=wind_vel_kmh_breaks[[2]] ~ "high"))
 
-wind_vel_kmh_cat_density_data <- as.data.frame(m_all_poscomplete %>% group_by(Location,Species,id,wind_vel_kmh_cat) %>% 
+wind_vel_kmh_cat_density_data <- as.data.frame(m_poscomplete %>% group_by(Location,Species,id,wind_vel_kmh_cat) %>% 
                                                  summarize(count=n()) %>% 
                                                  mutate(proportion = count/sum(count),
                                                         wind_vel_kmh_cat = factor(wind_vel_kmh_cat,levels=c("low","medium","high"))))
 
-shts_cat_density_data <- as.data.frame(m_all_poscomplete %>% group_by(Location,Species,id,shts_cat) %>% 
+shts_cat_density_data <- as.data.frame(m_poscomplete %>% group_by(Location,Species,id,shts_cat) %>% 
                                          summarize(count=n()) %>% 
                                          mutate(proportion = count/sum(count),
                                                 shts_cat = factor(shts_cat,levels=c("low","medium","high"))))
@@ -740,7 +756,7 @@ windspeed_prop <- ggplot(wind_vel_kmh_cat_density_data) +
   geom_boxplot(aes(x=Species,y=proportion,fill=wind_vel_kmh_cat),outliers = FALSE) +
   scale_fill_manual(values = rev(reds(3)),labels = c(paste0("Low: (0,",round(wind_vel_kmh_breaks[[1]],3),") km/h"), 
                                                      paste0("Medium: [",round(wind_vel_kmh_breaks[[1]],3),",",round(wind_vel_kmh_breaks[[2]],3),") km/h"),
-                                                     paste0("High: [",round(wind_vel_kmh_breaks[[2]],3),",",round(max(m_all_poscomplete$wind_vel_kmh),3),"] km/h"))) +
+                                                     paste0("High: [",round(wind_vel_kmh_breaks[[2]],3),",",round(max(m_poscomplete$wind_vel_kmh),3),"] km/h"))) +
   labs(y="Proportion of time") +
   ylim(0,1) +
   theme_linedraw() +
@@ -755,7 +771,7 @@ wave_height_prop <- ggplot(shts_cat_density_data) +
   geom_boxplot(aes(x=Species,y=proportion,fill=shts_cat),outliers = FALSE) +
   scale_fill_manual(values = rev(blues(3)),labels = c(paste0("Low: (0,",round(shts_cat_breaks[[1]],3),") m"), 
                                                       paste0("Medium: [",round(shts_cat_breaks[[1]],3),",",round(shts_cat_breaks[[2]],3),") m"),
-                                                      paste0("High: [",round(shts_cat_breaks[[2]],3),",",round(max(m_all_poscomplete$shts),3),"] m"))) +
+                                                      paste0("High: [",round(shts_cat_breaks[[2]],3),",",round(max(m_poscomplete$shts),3),"] m"))) +
   labs(y="Proportion of time") +
   ylim(0,1) +
   theme_linedraw() +
@@ -768,20 +784,23 @@ wave_height_prop <- ggplot(shts_cat_density_data) +
 
 wrap_elements(panel = windspeed_prop / wave_height_prop)
 
+# 1000 x 400
+
+
 
 ################################################################################
 # Box or violin plots [or density plots?] of prop. time spent in 
 # high/ side/ tail winds AND wave direction [with/  against/ across wave direction] 
 
 # Winds
-bird_wind_angle_cat_hist_data <- as.data.frame(m_all_poscomplete %>%
+bird_wind_angle_cat_hist_data <- as.data.frame(m_poscomplete %>%
                                                  drop_na(bird_wind_angle_cat) %>% 
                                                  group_by(Location,Species,id,bird_wind_angle_cat) %>% 
                                                  summarize(count=n()) %>% 
                                                  mutate(proportion = count/sum(count)))
 
 # Swells
-swell_bird_angle_cat_density_data <- as.data.frame(m_all_poscomplete %>%
+swell_bird_angle_cat_density_data <- as.data.frame(m_poscomplete %>%
                                                      drop_na(bird_swell_angle_cat) %>% 
                                                      group_by(Location,Species,id,bird_swell_angle_cat) %>% 
                                                      summarize(count=n()) %>% 
@@ -818,38 +837,7 @@ wave_dir_prop <- ggplot(swell_bird_angle_cat_density_data) +
 
 wrap_elements(panel = wind_dir_prop / wave_dir_prop)
 
-
-# Density figure
-ggplot(bird_wind_angle_cat_hist_data) +
-  facet_wrap(~Species) +
-  geom_density(aes(x=proportion,fill=bird_wind_angle_cat),alpha=0.5) +
-  scale_fill_paletteer_d("nationalparkcolors::Acadia") + 
-  labs(y="Density") +
-  theme_bw() +
-  scale_x_continuous(name ="Proportion of time", 
-                     breaks=c(0,0.25,0.5,0.75,1),
-                     labels = c("0",".25",".5",".75","1"),
-                     limits = c(0,1)) + 
-  theme(legend.position = c(0.85, 0.2), # c(0,0) bottom left, c(1,1) top-right.
-        legend.background = element_rect(fill = NA, colour = NA)) +
-  guides(fill=guide_legend(title="Relative wind")) +
-  theme(text = element_text(size = 24))
-
-# Density plot
-ggplot(swell_bird_angle_cat_density_data) +
-  facet_wrap(~Species) +
-  geom_density(aes(x=proportion,fill=bird_swell_angle_cat),alpha=0.5) +
-  scale_fill_manual(values=cat_hist_colors) + 
-  labs(y="Density") +
-  theme_bw() +
-  scale_x_continuous(name ="Proportion of time", 
-                     breaks=c(0,0.25,0.5,0.75,1),
-                     labels = c("0",".25",".5",".75","1"),
-                     limits = c(0,1)) + 
-  theme(legend.position = c(0.85, 0.2), # c(0,0) bottom left, c(1,1) top-right.
-        legend.background = element_rect(fill = NA, colour = NA)) +
-  guides(fill=guide_legend(title="Relative swell")) +
-  theme(text = element_text(size = 24))
+# 1000 x 400
 
 ################################################################################
 # Table of deployments based on field season
@@ -859,7 +847,7 @@ m_all %>%
   summarize(unique_IDs=n_distinct(id),n=n()) %>% 
   arrange(Species)
 
-m_all_poscomplete %>% 
+m_poscomplete %>% 
   group_by(Species,Field_Season) %>% 
   summarize(unique_IDs=n_distinct(id),n=n()) %>% 
   arrange(Species)
@@ -873,7 +861,7 @@ m_all_poscomplete %>%
 # s3: relationship between windspeed and significant height of waves
 
 # Swells
-fig_ws_shts <- ggplot(m_all_poscomplete %>% filter((HMM_3S_state != 1))) +
+fig_ws_shts <- ggplot(m_poscomplete %>% filter((HMM_3S_state != 1))) +
   geom_point(aes(x=wind_vel_kmh,y=shts),size=0.001,alpha=1,color="black") + 
   facet_wrap(~Species,nrow = 1) + 
   labs(x="Windspeed (km/h)", y="Total swell") +
@@ -885,7 +873,7 @@ fig_ws_shts <- ggplot(m_all_poscomplete %>% filter((HMM_3S_state != 1))) +
         strip.text = element_blank())
 
 # Wind waves
-fig_ws_shww <- ggplot(m_all_poscomplete %>% filter((HMM_3S_state != 1))) +
+fig_ws_shww <- ggplot(m_poscomplete %>% filter((HMM_3S_state != 1))) +
   geom_point(aes(x=wind_vel_kmh,y=shww),size=0.001,alpha=1,color="black") + 
   facet_wrap(~Species,nrow = 1) + 
   labs(x="Windspeed (km/h)", y="Wind waves") +
@@ -897,7 +885,7 @@ fig_ws_shww <- ggplot(m_all_poscomplete %>% filter((HMM_3S_state != 1))) +
         strip.text = element_blank())
 
 # Total waves
-fig_ws_swh <- ggplot(m_all_poscomplete %>% filter((HMM_3S_state != 1))) +
+fig_ws_swh <- ggplot(m_poscomplete %>% filter((HMM_3S_state != 1))) +
   geom_point(aes(x=wind_vel_kmh,y=swh),size=0.001,alpha=1,color="black") + 
   facet_wrap(~Species,nrow = 1) + 
   labs(x="Windspeed (km/h)", y="Surface sea waves") +
@@ -918,7 +906,7 @@ wrap_elements(panel = fig_ws_shts / fig_ws_shww / fig_ws_swh) +
 
 # Categorize wave heights
 # Reshape data to long format
-wave_height_long <- melt(m_all_poscomplete %>% dplyr::select(Species,shts,shww,swh), 
+wave_height_long <- melt(m_poscomplete %>% dplyr::select(Species,shts,shww,swh), 
                          id.vars = "Species", variable.name = "Wave_type", value.name = "Wave_height")
 
 # Create the boxplot
@@ -963,10 +951,10 @@ fig_swells_cat
 #   2x5 plot
 
 
-# # Randomly downsample m_all_poscomplete such that there are 48 individuals for each location.
-# m_all_poscomplete_loc_ds <- rbind(
-#   m_all_poscomplete %>% filter(Location == "Bird_Island") %>% filter(id %in% sample(unique(id), 48)),
-#   m_all_poscomplete %>% filter(Location == "Midway"))
+# # Randomly downsample m_poscomplete such that there are 48 individuals for each location.
+# m_poscomplete_loc_ds <- rbind(
+#   m_poscomplete %>% filter(Location == "Bird_Island") %>% filter(id %in% sample(unique(id), 48)),
+#   m_poscomplete %>% filter(Location == "Midway"))
 # 
-# quantile(m_all_poscomplete_loc_ds$shts, probs=c((1/3),(2/3)))
+# quantile(m_poscomplete_loc_ds$shts, probs=c((1/3),(2/3)))
 
