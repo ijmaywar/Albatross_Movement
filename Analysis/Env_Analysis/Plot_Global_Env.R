@@ -100,7 +100,7 @@ grid_global_df_rot$centroid_lon <- ifelse(grid_global_df_rot$centroid_lon-270 < 
 
 avgwindspeed_cols <- colorRampPalette(c("white","red4"))
 
-ggplot() +
+global_wind <- ggplot() +
   # geom_contour_filled(grid_global_df_rot,
   #                       mapping=aes(centroid_lon-270,centroid_lat,z=3.6*breeding_szn_si10),
   #                     breaks=seq(from=0,to=47.5,by=2.5)) +
@@ -118,7 +118,8 @@ ggplot() +
   xlim(-177,180) +
   theme(axis.title.x=element_blank(),
         axis.title.y=element_blank(),
-        panel.grid = element_blank())
+        panel.grid = element_blank(),
+        legend.position = "bottom")
 
 
 # 1100 x 550
@@ -127,9 +128,7 @@ ggplot() +
 
 # Swell height in Breeding szn (Dec, Jan, Feb)
 
-avgswellheight_cols <- colorRampPalette(c("white","navy"))
-
-ggplot() +
+global_swell <- ggplot() +
   # geom_contour_filled(grid_global_df_rot,
   #                     mapping=aes(centroid_lon-270,centroid_lat,z=breeding_szn_shts),
   #                     breaks=seq(from=0,to=3.6,by=0.2)) +
@@ -147,8 +146,12 @@ ggplot() +
   xlim(-177,180) +
   theme(axis.title.x=element_blank(),
         axis.title.y=element_blank(),
-        panel.grid = element_blank())
+        panel.grid = element_blank(),
+        legend.position = "bottom")
 
 # 1100 x 550
 
+wrap_elements(panel = global_wind | global_swell)
+
+# max x max
 
