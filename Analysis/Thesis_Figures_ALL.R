@@ -556,44 +556,36 @@ ggplot(response_df_mask_best_all) +
 # Save: 1250 x 300
 
 E_savings <- data.frame(spp=character(),
-                        a=numeric(),
-                        b=numeric(),
-                        c=numeric(),
-                        d=numeric(),
-                        e=numeric(),
-                        f=numeric())
+                        high=numeric(),
+                        low=numeric())
 
 for (spp in spp_vec) {
   
-  spp_I_response <- fig_wind_simple$data %>% filter(Species==spp)
-  spp_I_min <- min(exp(spp_I_response$fitted_global))
-  spp_I_max <- max(exp(spp_I_response$fitted_global))
-  spp_II_response <- fig_shts_simple$data %>% filter(Species==spp)
-  spp_II_min <- min(exp(spp_II_response$fitted_global))
-  spp_II_max <- max(exp(spp_II_response$fitted_global))
+  # Find highest 5% of responses
+  spp_response <- response_df_mask_best_all %>% filter(Species==spp)
+  spp_response_highest <- spp_response %>% 
+    filter(exp(fitted_global)>=quantile(exp(spp_response$fitted_global),probs=1-.05))
+  
+  # Find lowest 5% of responses
+  spp_response_lowest <- spp_response %>% 
+    filter(exp(fitted_global)<=quantile(exp(spp_response$fitted_global),probs=.05))
+  
+  # spp_response <- response_df_mask_best_all %>% filter(Species==spp)
+  # spp_min <- min(exp(spp_response$fitted_global))
+  # spp_max <- max(exp(spp_response$fitted_global))
 
   spp_meta <- c(spp,
-                spp_I_min,
-                spp_I_max,
-                # (spp_I_max-spp_I_min)/spp_I_max,
-                (spp_I_max-spp_I_min),
-                spp_II_min,
-                spp_II_max,
-                # (spp_II_max-spp_II_min)/spp_II_max)
-                (spp_II_max-spp_II_min))
+                mean(exp(spp_response_highest$fitted_global),na.rm=TRUE),
+                mean(exp(spp_response_lowest$fitted_global),na.rm=TRUE))
                 
   E_savings <- rbind(E_savings,spp_meta)
 }
 
-colnames(E_savings) <- c("spp","wind_min","wind_max","wind_savings",
-                        "wave_min","wave_max","wave_savings")
+colnames(E_savings) <- c("spp","high","low")
 
-E_savings$wind_min <- as.numeric(E_savings$wind_min)
-E_savings$wind_max <- as.numeric(E_savings$wind_max)
-E_savings$wind_savings <- as.numeric(E_savings$wind_savings)
-E_savings$wave_min <- as.numeric(E_savings$wave_min)
-E_savings$wave_max <- as.numeric(E_savings$wave_max)
-E_savings$wave_savings <- as.numeric(E_savings$wave_savings)
+E_savings$high <- as.numeric(E_savings$high)
+E_savings$low <- as.numeric(E_savings$low)
+E_savings$savings <- 100*((E_savings$high-E_savings$low)/((E_savings$high+E_savings$low)/2))
 
 E_savings
 
