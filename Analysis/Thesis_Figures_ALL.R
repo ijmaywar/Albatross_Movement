@@ -609,7 +609,7 @@ dir_cat_cols <- c("#9484B1FF", "#F1C100FF","#496849FF")
 fig_wind_cat <- ggplot(cat_wind_fv) +
   geom_line(aes(wind_vel_kmh,exp(fitted_global),color=bird_wind_angle_cat)) +
   geom_ribbon(mapping=aes(x=wind_vel_kmh,ymin=exp(lower_global),ymax=exp(upper_global),y=NULL,color=bird_wind_angle_cat,fill=bird_wind_angle_cat),alpha=0.2) +
-  guides(color=guide_legend(title = "Wind direction category",
+  guides(color=guide_legend(title = "BWA category",
                             override.aes = list(fill = dir_cat_cols)),
          fill="none") +
   scale_color_manual(values=dir_cat_cols,
@@ -628,7 +628,7 @@ fig_wind_cat <- ggplot(cat_wind_fv) +
 fig_swell_cat <- ggplot(cat_swell_fv) +
   geom_line(aes(shts,exp(fitted_global),color=bird_swell_angle_cat)) +
   geom_ribbon(mapping=aes(x=shts,ymin=exp(lower_global),ymax=exp(upper_global),y=NULL,color=bird_swell_angle_cat,fill=bird_swell_angle_cat),alpha=0.2) +
-  guides(color=guide_legend(title = "Swell direction category",
+  guides(color=guide_legend(title = "BSA category",
                             override.aes = list(fill = dir_cat_cols)),
          fill="none") +
   scale_color_manual(values=dir_cat_cols,
@@ -820,7 +820,7 @@ wind_dir_prop <- ggplot(bird_wind_angle_cat_hist_data) +
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(),
         strip.text = element_blank()) +
-  guides(fill=guide_legend(title="Wind direction category"))
+  guides(fill=guide_legend(title="BWA category"))
 
 # Wave boxplot
 wave_dir_prop <- ggplot(swell_bird_angle_cat_density_data) +
@@ -833,7 +833,7 @@ wave_dir_prop <- ggplot(swell_bird_angle_cat_density_data) +
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(),
         strip.text = element_blank()) +
-  guides(fill=guide_legend(title="Swell direction category"))
+  guides(fill=guide_legend(title="BSA category"))
 
 wrap_elements(panel = wind_dir_prop / wave_dir_prop)
 
@@ -912,7 +912,7 @@ wave_height_long <- melt(m_poscomplete %>% dplyr::select(Species,shts,shww,swh),
 # Create the boxplot
 ggplot(wave_height_long) +
   geom_boxplot(aes(x=Species,y=Wave_height,fill=Wave_type),outliers = FALSE) +
-  scale_fill_manual(values = rev(blues(3)),labels = c("Total swell", "Wind waves", "Surface sea waves")) +
+  scale_fill_manual(values = c("#000080",'#FCA636FF','#6A00A8FF'),labels = c("Total swell", "Wind waves", "Surface sea waves")) +
   labs(y="Significant height of wave (m)") +
   theme_linedraw() +
   theme(axis.title.x = element_blank(),
@@ -920,6 +920,8 @@ ggplot(wave_height_long) +
         panel.grid.minor = element_blank(),
         strip.text = element_blank()) +
   guides(fill=guide_legend(title="Wave type"))
+
+# 
 
 
 # s5: Pie graphic --------------------------------------------------------------
