@@ -593,7 +593,6 @@ clipr::write_clip(E_savings)
 
 # Energy savings
 
-
 ################################################################################
 # Plot categorical GAMs
 
