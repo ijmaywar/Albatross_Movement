@@ -130,8 +130,10 @@ compiled_KDE_df$Month <- factor(compiled_KDE_df$Month, levels=1:12)
 # Sample stats -----------------------------------------------------------------
 
 nrow(m_all)
-m_all_nonaflaps %>% count(Species)
-m_all_nonaflaps %>% group_by(Species) %>% summarize(unique_IDs=n_distinct(id))
+
+m_all %>% summarize(n_distinct(id))
+m_model %>% summarize(n_distinct(id))
+m_poscomplete %>% summarize(n_distinct(id))
 
 m_model %>% count(Species)
 m_model %>% group_by(Species) %>% summarize(unique_IDs=n_distinct(id))
