@@ -101,16 +101,14 @@ grid_global_df_rot$centroid_lon <- ifelse(grid_global_df_rot$centroid_lon-270 < 
 avgwindspeed_cols <- colorRampPalette(c("white","red4"))
 
 global_wind <- ggplot() +
-  # geom_contour_filled(grid_global_df_rot,
-  #                       mapping=aes(centroid_lon-270,centroid_lat,z=3.6*breeding_szn_si10),
-  #                     breaks=seq(from=0,to=47.5,by=2.5)) +
-  # scale_fill_manual(values=viridis::rocket(19,direction=-1),drop=FALSE,guide = guide_legend(reverse = TRUE)) +
   geom_tile(grid_global_df_rot,
     mapping=aes(centroid_lon-270,centroid_lat,fill=3.6*breeding_szn_si10)) +
   scale_fill_continuous(type="viridis",option="rocket",direction=-1) +
   geom_sf(worldmap_rot,mapping=aes(),fill="white") + 
-  geom_point(aes(x=90-177.3813,y=28.19989),size=5,color="#1170AAFF") +
-  geom_point(aes(x=90-38.0658417,y=-54.0101833),size=5,color="#479125FF") +
+  # geom_point(aes(x=90-177.3813,y=28.19989),shape=21,size=5,color='white',fill="#1170AAFF") +
+  # geom_point(aes(x=90-38.0658417,y=-54.0101833),shape=21,size=5,color='white',fill="#479125FF") +
+  geom_point(aes(x=90-177.3813,y=28.19989),shape=21,size=5,color='white',stroke=2) +
+  geom_point(aes(x=90-38.0658417,y=-54.0101833),shape=21,size=5,color='white',stroke=2) +
   coord_sf(expand = FALSE) +
   labs(fill = "Windspeed (km/h)") +
   scale_y_continuous(breaks = seq(-90, 90, by = 30)) +
@@ -119,7 +117,7 @@ global_wind <- ggplot() +
   theme(axis.title.x=element_blank(),
         axis.title.y=element_blank(),
         panel.grid = element_blank(),
-        legend.position = "bottom")
+        legend.position = "right")
 
 
 # 1100 x 550
@@ -129,16 +127,14 @@ global_wind <- ggplot() +
 # Swell height in Breeding szn (Dec, Jan, Feb)
 
 global_swell <- ggplot() +
-  # geom_contour_filled(grid_global_df_rot,
-  #                     mapping=aes(centroid_lon-270,centroid_lat,z=breeding_szn_shts),
-  #                     breaks=seq(from=0,to=3.6,by=0.2)) +
-  # scale_fill_manual(values=viridis::rocket(19,direction=-1),drop=FALSE,guide = guide_legend(reverse = TRUE)) +
   geom_tile(grid_global_df_rot,
             mapping=aes(centroid_lon-270,centroid_lat,fill=breeding_szn_shts)) +
-  scale_fill_continuous(type="viridis",option="rocket",direction=-1) +
+  scale_fill_continuous(type="viridis",option="mako",direction=-1) +
   geom_sf(worldmap_rot,mapping=aes(),fill="white") + 
-  geom_point(aes(x=90-177.3813,y=28.19989),size=5,color="#1170AAFF") +
-  geom_point(aes(x=90-38.0658417,y=-54.0101833),size=5,color="#479125FF") +
+  # geom_point(aes(x=90-177.3813,y=28.19989),shape=21,size=5,color='white',fill="#1170AAFF") +
+  # geom_point(aes(x=90-38.0658417,y=-54.0101833),shape=21,size=5,color='white',fill="#479125FF") +
+  geom_point(aes(x=90-177.3813,y=28.19989),shape=21,size=5,color='white',stroke=2) +
+  geom_point(aes(x=90-38.0658417,y=-54.0101833),shape=21,size=5,color='white',stroke=2) +
   coord_sf(expand = FALSE) +
   labs(fill = "Swell hieght (m)") +
   scale_y_continuous(breaks = seq(-90, 90, by = 30)) +
@@ -147,11 +143,11 @@ global_swell <- ggplot() +
   theme(axis.title.x=element_blank(),
         axis.title.y=element_blank(),
         panel.grid = element_blank(),
-        legend.position = "bottom")
+        legend.position = "right")
 
 # 1100 x 550
 
-wrap_elements(panel = global_wind | global_swell)
+wrap_elements(panel = global_wind / global_swell)
 
 # max x max
 
