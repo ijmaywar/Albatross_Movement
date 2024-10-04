@@ -22,6 +22,7 @@ library(rnaturalearth)
 library(readxl)
 library(viridis)
 library(scales)
+library(patchwork)
 
 # User functions ---------------------------------------------------------------
 
@@ -156,7 +157,7 @@ Bird_Island_GPS_compiled_complete <- read_csv(paste0(GD_dir,"L2/Bird_Island/Tag_
 Bird_Island_GPS_compiled_complete$datetime <- as.POSIXlt(Bird_Island_GPS_compiled_complete$datetime,format="%Y-%m-%d %H:%M:%S",tz="GMT")
 
 
-ggplot() +
+SO_KDEs <- ggplot() +
   geom_sf(worldmap,mapping=aes()) + 
   geom_sf(data = st_as_sf(BBAL_Polygon),fill='black',color='black',linewidth=1,alpha=0.5) +
   geom_sf(data = st_as_sf(GHAL_Polygon),fill='#6A00A8FF',color='#6A00A8FF',linewidth=1,alpha=0.5) +
@@ -172,6 +173,8 @@ ggplot() +
   theme_linedraw() +
   theme(axis.title.x = element_blank(),
         axis.title.y = element_blank())
+
+SO_KDEs
 
 
 # Extent map of SO foraging map
@@ -202,10 +205,10 @@ Midway_GPS_compiled_complete <- read_csv(paste0(GD_dir,"L2/Midway/Tag_Data/GPS/c
 Midway_GPS_compiled_complete$datetime <- as.POSIXlt(Midway_GPS_compiled_complete$datetime,format="%Y-%m-%d %H:%M:%S",tz="GMT")
 
 # Without windfield, with complete GPS track
-ggplot() +
+NP_KDEs <- ggplot() +
   geom_sf(data = st_shift_longitude(st_crop(worldmap,xmin=-120,xmax=120,ymin=10,ymax=70))) + 
-  # geom_sf(data = st_shift_longitude(st_as_sf(BFAL_Polygon)),fill='black',color='black',linewidth=1,alpha=0.5) +
-  # geom_sf(data = st_shift_longitude(st_as_sf(LAAL_Polygon)),fill='#6A00A8FF',color='#6A00A8FF',linewidth=1,alpha=0.5) +
+  geom_sf(data = st_shift_longitude(st_as_sf(BFAL_Polygon)),fill='black',color='black',linewidth=1,alpha=0.5) +
+  geom_sf(data = st_shift_longitude(st_as_sf(LAAL_Polygon)),fill='#6A00A8FF',color='#6A00A8FF',linewidth=1,alpha=0.5) +
   coord_sf(xlim = c(140,220), ylim = c(15,55), expand = FALSE) +
   geom_path(data=Midway_GPS_compiled_complete %>% filter(substr(id,1,4)=="BFAL"),
             aes(x=lon,y=lat,group=tripID),linewidth=0.2,color='black') +
@@ -216,6 +219,7 @@ ggplot() +
   theme(axis.title.x = element_blank(),
         axis.title.y = element_blank())
 
+NP_KDEs
 
 # Extent map of SO foraging map
 ggplot() + 
@@ -230,4 +234,10 @@ ggplot() +
         axis.title.x=element_blank(),
         axis.title.y=element_blank())
 
+
+# Plot both KDE maps
+
+wrap_elements(panel = SO_KDEs / NP_KDEs)
+
+# max x max
 
