@@ -159,6 +159,9 @@ m_poscomplete_meta <- m_poscomplete %>%
 
 clipr::write_clip(m_poscomplete_meta)
 
+# Compare GLS states to 3-state HMM
+m_all %>% group_by(GLS_state,HMM_3S_state) %>% summarize(count=n())
+
 ################################################################################
 # run all GAMs -----------------------------------------------------------------
 
@@ -514,7 +517,9 @@ fig_wave_cont_trim <- ggplot(response_df_mask_wind_all) +
   theme_linedraw() +
   theme(panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(),
-        strip.text = element_blank())
+        strip.text = element_blank(),
+        legend.text=element_text(size=8),
+        legend.key.size = unit(.5, 'cm'))
 
 # Blues for swells
 blues <- colorRampPalette(c("#E2E2E2FF","navy"))
@@ -531,10 +536,12 @@ fig_swell_cont_trim <- ggplot(response_df_mask_swell_all) +
   theme_linedraw() +
   theme(panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(),
-        strip.text = element_blank())
+        strip.text = element_blank(),
+        legend.text=element_text(size=8),
+        legend.key.size = unit(.5, 'cm'))
 
 wrap_elements(panel = fig_wave_cont_trim / fig_swell_cont_trim)
-# Save as 1250 x 900 figure
+# Save as 700 x 485 figure
 
 ################################################################################
 # Plot the wind * swell figure
@@ -553,9 +560,11 @@ ggplot(response_df_mask_best_all) +
   theme_linedraw() +
   theme(panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(),
-        strip.text = element_blank())
+        strip.text = element_blank(),
+        legend.text=element_text(size=8),
+        legend.key.size = unit(.5, 'cm'))
 
-# Save: 1250 x 300
+# Save: 700 x 275
 
 E_savings <- data.frame(spp=character(),
                         high=numeric(),
@@ -571,10 +580,6 @@ for (spp in spp_vec) {
   # Find lowest 5% of responses
   spp_response_lowest <- spp_response %>% 
     filter(exp(fitted_global)<=quantile(exp(spp_response$fitted_global),probs=.05))
-  
-  # spp_response <- response_df_mask_best_all %>% filter(Species==spp)
-  # spp_min <- min(exp(spp_response$fitted_global))
-  # spp_max <- max(exp(spp_response$fitted_global))
 
   spp_meta <- c(spp,
                 mean(exp(spp_response_highest$fitted_global),na.rm=TRUE),
@@ -587,7 +592,7 @@ colnames(E_savings) <- c("spp","high","low")
 
 E_savings$high <- as.numeric(E_savings$high)
 E_savings$low <- as.numeric(E_savings$low)
-E_savings$savings <- 100*((E_savings$high-E_savings$low)/((E_savings$high+E_savings$low)/2))
+E_savings$savings <- 100*((E_savings$high-E_savings$low)/E_savings$high)
 
 E_savings
 
@@ -654,8 +659,8 @@ fig_winds <- m_poscomplete |>
   theme_linedraw() +
   theme(axis.title.x = element_blank(),
         axis.text.x = element_blank(),
-        panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank(),
+        # panel.grid.major = element_blank(), 
+        # panel.grid.minor = element_blank(),
         strip.text = element_blank())
 
 fig_swells <- m_poscomplete |>
@@ -666,8 +671,8 @@ fig_swells <- m_poscomplete |>
   theme_linedraw() +
   ylim(0,9.5) + 
   theme(axis.title.x = element_blank(),
-        panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank(),
+        # panel.grid.major = element_blank(), 
+        # panel.grid.minor = element_blank(),
         strip.text = element_blank())
 
 wrap_elements(panel = fig_winds / fig_swells)
