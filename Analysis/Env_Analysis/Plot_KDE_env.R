@@ -66,25 +66,6 @@ world2 <- worldmap %>% st_difference(polygon)
 # Transform
 worldmap_rot <- world2 %>% st_transform(crs = target_crs)
 
-grid_polys_df <- st_read(paste0(GD_dir,"Analysis/Maywar/Global_Env/Global_avg_env_GS2.gpkg"))
-
-grid_polys_df <- grid_polys_df %>% mutate(breeding_szn_si10 = rowMeans(dplyr::select(as.data.frame(grid_polys_df),paste0("si10_", c("1","2","3","12")))),
-                                          breeding_szn_mdts = rowMeans(dplyr::select(as.data.frame(grid_polys_df),paste0("mdts_", c("1","2","3","12")))),
-                                          breeding_szn_mdww = rowMeans(dplyr::select(as.data.frame(grid_polys_df),paste0("mdww_", c("1","2","3","12")))),
-                                          breeding_szn_mpts = rowMeans(dplyr::select(as.data.frame(grid_polys_df),paste0("mpww_", c("1","2","3","12")))),
-                                          breeding_szn_mwd = rowMeans(dplyr::select(as.data.frame(grid_polys_df),paste0("mwd_", c("1","2","3","12")))),
-                                          breeding_szn_mwp = rowMeans(dplyr::select(as.data.frame(grid_polys_df),paste0("mwp_", c("1","2","3","12")))),
-                                          breeding_szn_swh = rowMeans(dplyr::select(as.data.frame(grid_polys_df),paste0("swh_", c("1","2","3","12")))),
-                                          breeding_szn_shts = rowMeans(dplyr::select(as.data.frame(grid_polys_df),paste0("shts_", c("1","2","3","12")))),
-                                          breeding_szn_shww = rowMeans(dplyr::select(as.data.frame(grid_polys_df),paste0("shww_", c("1","2","3","12"))))) %>% 
-                                          dplyr::select(centroid_lon,centroid_lat,breeding_szn_si10,breeding_szn_shts,geom)
-
-# modify world dataset to remove overlapping portions with world's polygons
-grid_polys_df_mod <- grid_polys_df %>% st_difference(polygon)
-
-# Transform
-grid_polys_df_rot <- grid_polys_df_mod %>% st_transform(crs = target_crs)
-
 # Box plots comparing average windspeeds during TripTypes ----------------------
 
 # REPLACE THE Y VALUES IN ORDER TO CHANGE THE ENV VAR YOU WANT TO LOOK AT.
@@ -241,3 +222,26 @@ wrap_elements(panel = SO_KDEs / NP_KDEs)
 
 # max x max
 
+
+
+################################################################################
+# Leftover code just in case
+
+# grid_polys_df <- st_read(paste0(GD_dir,"Analysis/Maywar/Global_Env/Global_avg_env_GS2.gpkg"))
+# 
+# grid_polys_df <- grid_polys_df %>% mutate(breeding_szn_si10 = rowMeans(dplyr::select(as.data.frame(grid_polys_df),paste0("si10_", c("1","2","3","12")))),
+#                                           breeding_szn_mdts = rowMeans(dplyr::select(as.data.frame(grid_polys_df),paste0("mdts_", c("1","2","3","12")))),
+#                                           breeding_szn_mdww = rowMeans(dplyr::select(as.data.frame(grid_polys_df),paste0("mdww_", c("1","2","3","12")))),
+#                                           breeding_szn_mpts = rowMeans(dplyr::select(as.data.frame(grid_polys_df),paste0("mpww_", c("1","2","3","12")))),
+#                                           breeding_szn_mwd = rowMeans(dplyr::select(as.data.frame(grid_polys_df),paste0("mwd_", c("1","2","3","12")))),
+#                                           breeding_szn_mwp = rowMeans(dplyr::select(as.data.frame(grid_polys_df),paste0("mwp_", c("1","2","3","12")))),
+#                                           breeding_szn_swh = rowMeans(dplyr::select(as.data.frame(grid_polys_df),paste0("swh_", c("1","2","3","12")))),
+#                                           breeding_szn_shts = rowMeans(dplyr::select(as.data.frame(grid_polys_df),paste0("shts_", c("1","2","3","12")))),
+#                                           breeding_szn_shww = rowMeans(dplyr::select(as.data.frame(grid_polys_df),paste0("shww_", c("1","2","3","12"))))) %>% 
+#                                           dplyr::select(centroid_lon,centroid_lat,breeding_szn_si10,breeding_szn_shts,geom)
+# 
+# # modify world dataset to remove overlapping portions with world's polygons
+# grid_polys_df_mod <- grid_polys_df %>% st_difference(polygon)
+# 
+# # Transform
+# grid_polys_df_rot <- grid_polys_df_mod %>% st_transform(crs = target_crs)
