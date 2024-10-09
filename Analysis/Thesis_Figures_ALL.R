@@ -601,50 +601,6 @@ clipr::write_clip(E_savings)
 # Energy savings
 
 ################################################################################
-# Plot categorical GAMs
-
-dir_cat_cols <- c("#9484B1FF", "#F1C100FF","#496849FF")
-fig_wind_cat <- ggplot(cat_wind_fv) +
-  geom_line(aes(wind_vel_kmh,exp(fitted_global),color=bird_wind_angle_cat)) +
-  geom_ribbon(mapping=aes(x=wind_vel_kmh,ymin=exp(lower_global),ymax=exp(upper_global),y=NULL,color=bird_wind_angle_cat,fill=bird_wind_angle_cat),alpha=0.2) +
-  guides(color=guide_legend(title = "BWA category",
-                            override.aes = list(fill = dir_cat_cols)),
-         fill="none") +
-  scale_color_manual(values=dir_cat_cols,
-                     labels=c("Head","Cross","Tail")) + 
-  scale_fill_manual(values=dir_cat_cols,
-                    labels=c("Head","Cross","Tail")) + 
-  labs(y="Flaps/hour") +
-  ylim(0,2500) +
-  facet_wrap(~Species,nrow = 1) + 
-  theme_linedraw() +
-  theme(axis.title.x = element_blank(),
-        panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank(),
-        strip.text = element_blank())
-
-fig_swell_cat <- ggplot(cat_swell_fv) +
-  geom_line(aes(shts,exp(fitted_global),color=bird_swell_angle_cat)) +
-  geom_ribbon(mapping=aes(x=shts,ymin=exp(lower_global),ymax=exp(upper_global),y=NULL,color=bird_swell_angle_cat,fill=bird_swell_angle_cat),alpha=0.2) +
-  guides(color=guide_legend(title = "BSA category",
-                            override.aes = list(fill = dir_cat_cols)),
-         fill="none") +
-  scale_color_manual(values=dir_cat_cols,
-                     labels=c("Against","Across","With")) + 
-  scale_fill_manual(values=dir_cat_cols,
-                    labels=c("Against","Across","With")) + 
-  labs(y="Flaps/hour") +
-  ylim(0,2500) +
-  facet_wrap(~Species,nrow = 1) + 
-  theme_linedraw() +
-  theme(axis.title.x = element_blank(),
-        panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank(),
-        strip.text = element_blank())
-
-wrap_elements(panel = fig_wind_cat / fig_swell_cat)
-
-################################################################################
 # Box of violin plots of wind and waves experienced by species 
 # [this and the boxplot below should only represent complete trips; 
 # all other analyses can use all available data]
@@ -676,7 +632,7 @@ fig_swells <- m_poscomplete |>
         strip.text = element_blank())
 
 wrap_elements(panel = fig_winds / fig_swells)
-# 1000 x 500
+# 500 x 500
 
 ################################################################################
 # Montly env plots: 2 5x1 figs
@@ -752,9 +708,8 @@ shts_cat_density_data <- as.data.frame(m_poscomplete %>% group_by(Location,Speci
 
 windspeed_prop <- ggplot(wind_vel_kmh_cat_density_data) +
   geom_boxplot(aes(x=Species,y=proportion,fill=wind_vel_kmh_cat),outliers = FALSE) +
-  scale_fill_manual(values = rev(reds(3)),labels = c(paste0("Low: (0,",round(wind_vel_kmh_breaks[[1]],3),") km/h"), 
-                                                     paste0("Medium: [",round(wind_vel_kmh_breaks[[1]],3),",",round(wind_vel_kmh_breaks[[2]],3),") km/h"),
-                                                     paste0("High: [",round(wind_vel_kmh_breaks[[2]],3),",",round(max(m_poscomplete$wind_vel_kmh),3),"] km/h"))) +
+  scale_fill_manual(values = rev(reds(3)),
+                    labels = c(paste0("Low"), paste0("Medium"), paste0("High"))) +
   labs(y="Proportion of time") +
   ylim(0,1) +
   theme_linedraw() +
@@ -767,9 +722,8 @@ windspeed_prop <- ggplot(wind_vel_kmh_cat_density_data) +
 
 wave_height_prop <- ggplot(shts_cat_density_data) +
   geom_boxplot(aes(x=Species,y=proportion,fill=shts_cat),outliers = FALSE) +
-  scale_fill_manual(values = rev(blues(3)),labels = c(paste0("Low: (0,",round(shts_cat_breaks[[1]],3),") m"), 
-                                                      paste0("Medium: [",round(shts_cat_breaks[[1]],3),",",round(shts_cat_breaks[[2]],3),") m"),
-                                                      paste0("High: [",round(shts_cat_breaks[[2]],3),",",round(max(m_poscomplete$shts),3),"] m"))) +
+  scale_fill_manual(values = rev(blues(3)),
+                    labels = c(paste0("Low"), paste0("Medium"), paste0("High"))) +
   labs(y="Proportion of time") +
   ylim(0,1) +
   theme_linedraw() +
@@ -936,25 +890,47 @@ ggplot(data.frame(cat=factor(c("head","cross","tail","cross_2"),levels=c("head",
 
 
 ################################################################################
-# Categorical GAMs
-fig_wind_cat
-fig_swells_cat
-################################################################################
+# Plot categorical GAMs
+# These were removed from the thesis and the manuscript
 
-################################################################################
-# Box or violin plots [or density plots?] of prop. time spent in 
-# low/ medium/ high wind and waves (using same breakpoints across species; 
-# earlier we discussed randomly sampling the same no. of BBAL, GHAL and 
-# WAAL points as BFAL and LAAL points to generate an overall distribution of 
-# wave heights experienced across all species, and picking, say the 33 and 66 
-# quantiles to distinguish between low/ med/ high)
-#   2x5 plot
+dir_cat_cols <- c("#9484B1FF", "#F1C100FF","#496849FF")
+fig_wind_cat <- ggplot(cat_wind_fv) +
+  geom_line(aes(wind_vel_kmh,exp(fitted_global),color=bird_wind_angle_cat)) +
+  geom_ribbon(mapping=aes(x=wind_vel_kmh,ymin=exp(lower_global),ymax=exp(upper_global),y=NULL,color=bird_wind_angle_cat,fill=bird_wind_angle_cat),alpha=0.2) +
+  guides(color=guide_legend(title = "BWA category",
+                            override.aes = list(fill = dir_cat_cols)),
+         fill="none") +
+  scale_color_manual(values=dir_cat_cols,
+                     labels=c("Head","Cross","Tail")) + 
+  scale_fill_manual(values=dir_cat_cols,
+                    labels=c("Head","Cross","Tail")) + 
+  labs(y="Flaps/hour") +
+  ylim(0,2500) +
+  facet_wrap(~Species,nrow = 1) + 
+  theme_linedraw() +
+  theme(axis.title.x = element_blank(),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        strip.text = element_blank())
 
+fig_swell_cat <- ggplot(cat_swell_fv) +
+  geom_line(aes(shts,exp(fitted_global),color=bird_swell_angle_cat)) +
+  geom_ribbon(mapping=aes(x=shts,ymin=exp(lower_global),ymax=exp(upper_global),y=NULL,color=bird_swell_angle_cat,fill=bird_swell_angle_cat),alpha=0.2) +
+  guides(color=guide_legend(title = "BSA category",
+                            override.aes = list(fill = dir_cat_cols)),
+         fill="none") +
+  scale_color_manual(values=dir_cat_cols,
+                     labels=c("Against","Across","With")) + 
+  scale_fill_manual(values=dir_cat_cols,
+                    labels=c("Against","Across","With")) + 
+  labs(y="Flaps/hour") +
+  ylim(0,2500) +
+  facet_wrap(~Species,nrow = 1) + 
+  theme_linedraw() +
+  theme(axis.title.x = element_blank(),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        strip.text = element_blank())
 
-# # Randomly downsample m_poscomplete such that there are 48 individuals for each location.
-# m_poscomplete_loc_ds <- rbind(
-#   m_poscomplete %>% filter(Location == "Bird_Island") %>% filter(id %in% sample(unique(id), 48)),
-#   m_poscomplete %>% filter(Location == "Midway"))
-# 
-# quantile(m_poscomplete_loc_ds$shts, probs=c((1/3),(2/3)))
+wrap_elements(panel = fig_wind_cat / fig_swell_cat)
 
