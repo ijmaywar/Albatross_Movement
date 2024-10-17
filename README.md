@@ -2,4 +2,4 @@ This repository contains code created by IJM for his thesis "Differential impact
 
 Scripts are grouped by data type.
 
-See Workflow_and_Output folder for details regarding workflow and a sample of generated figures and analyses. 
+See Workflow_and_Samples folder for details regarding workflow and a sample of generated figures and analyses. 
