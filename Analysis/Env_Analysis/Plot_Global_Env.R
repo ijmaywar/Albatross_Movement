@@ -21,6 +21,7 @@ library(sf)
 library(rnaturalearth)
 library(readxl)
 library(paletteer)
+library(patchwork)
 
 # Set environment --------------------------------------------------------------
 
@@ -67,6 +68,7 @@ ggplot() +
         axis.title.x=element_blank(),
         axis.title.y=element_blank())
 
+################################################################################
 # Plot global env vars ---------------------------------------------------------
 
 # Add column for the average of Jan, Feb, Mar, Dec - the months we are mainly studying
@@ -96,10 +98,6 @@ grid_global_df_rot$centroid_lon <- ifelse(grid_global_df_rot$centroid_lon-270 < 
                                        grid_global_df_rot$centroid_lon)
 
 # Multiply windspeeds by 3.6 to get km/h
-# Wind in Breeding szn (Dec, Jan, Feb)
-
-avgwindspeed_cols <- colorRampPalette(c("white","red4"))
-
 global_wind <- ggplot() +
   geom_tile(grid_global_df_rot,
     mapping=aes(centroid_lon-270,centroid_lat,fill=3.6*breeding_szn_si10)) +
@@ -119,13 +117,12 @@ global_wind <- ggplot() +
         panel.grid = element_blank(),
         legend.position = "right")
 
-
+global_wind
 # 1100 x 550
 
 
 
 # Swell height in Breeding szn (Dec, Jan, Feb)
-
 global_swell <- ggplot() +
   geom_tile(grid_global_df_rot,
             mapping=aes(centroid_lon-270,centroid_lat,fill=breeding_szn_shts)) +
@@ -150,4 +147,80 @@ global_swell <- ggplot() +
 wrap_elements(panel = global_wind / global_swell)
 
 # max x max
+
+################################################################################
+# Plot the same figures for the entire calendar year - not just breeding szn
+# THIS REWRITES VARIABLES IN THE BREEDING SZN SECTION
+
+grid_global_all_szn_df <- grid_global_df %>% mutate(all_szn_si10 = rowMeans(dplyr::select(as.data.frame(grid_global_df),paste0("si10_", as.character(1:12)))),
+                                                    all_szn_mdts = rowMeans(dplyr::select(as.data.frame(grid_global_df),paste0("mdts_", as.character(1:12)))),
+                                                    all_szn_mdww = rowMeans(dplyr::select(as.data.frame(grid_global_df),paste0("mdww_", as.character(1:12)))),
+                                                    all_szn_mpts = rowMeans(dplyr::select(as.data.frame(grid_global_df),paste0("mpww_", as.character(1:12)))),
+                                                    all_szn_mwd = rowMeans(dplyr::select(as.data.frame(grid_global_df),paste0("mwd_", as.character(1:12)))),
+                                                    all_szn_mwp = rowMeans(dplyr::select(as.data.frame(grid_global_df),paste0("mwp_", as.character(1:12)))),
+                                                    all_szn_swh = rowMeans(dplyr::select(as.data.frame(grid_global_df),paste0("swh_", as.character(1:12)))),
+                                                    all_szn_shts = rowMeans(dplyr::select(as.data.frame(grid_global_df),paste0("shts_", as.character(1:12)))),
+                                                    all_szn_shww = rowMeans(dplyr::select(as.data.frame(grid_global_df),paste0("shww_", as.character(1:12))))) %>% 
+                                                         dplyr::select(centroid_lon,centroid_lat,all_szn_si10,all_szn_shts,geom)
+
+# modify world dataset to remove overlapping portions with world's polygons
+grid_global_df_mod <- grid_global_all_szn_df %>% st_difference(polygon)
+
+# grid_global_df_mod <- grid_global_df_mod
+# Transform
+grid_global_df_rot <- grid_global_df_mod %>% st_transform(crs = target_crs)
+
+# Assuming your data frame is named 'df' and the column is named 'longitude'
+grid_global_df_rot$centroid_lon <- ifelse(grid_global_df_rot$centroid_lon-270 < -180, 
+                                          grid_global_df_rot$centroid_lon + 360, 
+                                          grid_global_df_rot$centroid_lon)
+
+# Multiply windspeeds by 3.6 to get km/h
+global_wind <- ggplot() +
+  geom_tile(grid_global_df_rot,
+            mapping=aes(centroid_lon-270,centroid_lat,fill=3.6*all_szn_si10)) +
+  scale_fill_continuous(type="viridis",option="rocket",direction=-1) +
+  geom_sf(worldmap_rot,mapping=aes(),fill="white") + 
+  # geom_point(aes(x=90-177.3813,y=28.19989),shape=21,size=5,color='white',fill="#1170AAFF") +
+  # geom_point(aes(x=90-38.0658417,y=-54.0101833),shape=21,size=5,color='white',fill="#479125FF") +
+  geom_point(aes(x=90-177.3813,y=28.19989),shape=21,size=5,color='white',stroke=2) +
+  geom_point(aes(x=90-38.0658417,y=-54.0101833),shape=21,size=5,color='white',stroke=2) +
+  coord_sf(expand = FALSE) +
+  labs(fill = "Windspeed (km/h)") +
+  scale_y_continuous(breaks = seq(-90, 90, by = 30)) +
+  theme_linedraw() + 
+  xlim(-177,180) +
+  theme(axis.title.x=element_blank(),
+        axis.title.y=element_blank(),
+        panel.grid = element_blank(),
+        legend.position = "right")
+
+global_wind
+# 1100 x 550
+
+# Swell height in Breeding szn (Dec, Jan, Feb)
+global_swell <- ggplot() +
+  geom_tile(grid_global_df_rot,
+            mapping=aes(centroid_lon-270,centroid_lat,fill=all_szn_shts)) +
+  scale_fill_continuous(type="viridis",option="mako",direction=-1) +
+  geom_sf(worldmap_rot,mapping=aes(),fill="white") + 
+  # geom_point(aes(x=90-177.3813,y=28.19989),shape=21,size=5,color='white',fill="#1170AAFF") +
+  # geom_point(aes(x=90-38.0658417,y=-54.0101833),shape=21,size=5,color='white',fill="#479125FF") +
+  geom_point(aes(x=90-177.3813,y=28.19989),shape=21,size=5,color='white',stroke=2) +
+  geom_point(aes(x=90-38.0658417,y=-54.0101833),shape=21,size=5,color='white',stroke=2) +
+  coord_sf(expand = FALSE) +
+  labs(fill = "Swell hieght (m)") +
+  scale_y_continuous(breaks = seq(-90, 90, by = 30)) +
+  theme_linedraw() + 
+  xlim(-177,180) +
+  theme(axis.title.x=element_blank(),
+        axis.title.y=element_blank(),
+        panel.grid = element_blank(),
+        legend.position = "right")
+
+global_swell
+# 1100 x 550
+
+wrap_elements(panel = global_wind / global_swell)
+# 1400 x 700
 
