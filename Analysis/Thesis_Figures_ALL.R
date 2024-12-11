@@ -49,10 +49,11 @@ m_all <- read_csv(files[2])
 
 # Edit m_all file as a dataframe for analysis ----------------------------------
 
-# Classify 2BEP, E_pip, Ep as BG
-m_all <- m_all %>% mutate(Trip_Type = factor(replace(as.character(Trip_Type),Trip_Type=="2BEP","BG")))
-m_all <- m_all %>% mutate(Trip_Type = factor(replace(as.character(Trip_Type),Trip_Type=="E_pip","BG")))
-m_all <- m_all %>% mutate(Trip_Type = factor(replace(as.character(Trip_Type),Trip_Type=="Ep","BG")))
+# Classify 2BE, 2BEP, E_pip, Ep as Inc
+m_all <- m_all %>% mutate(Trip_Type = factor(replace(as.character(Trip_Type),Trip_Type=="2BE","Inc")))
+m_all <- m_all %>% mutate(Trip_Type = factor(replace(as.character(Trip_Type),Trip_Type=="2BEP","Inc")))
+m_all <- m_all %>% mutate(Trip_Type = factor(replace(as.character(Trip_Type),Trip_Type=="E_pip","Inc")))
+m_all <- m_all %>% mutate(Trip_Type = factor(replace(as.character(Trip_Type),Trip_Type=="Ep","Inc")))
 
 # Datetime stuff
 m_all$datetime <- as.POSIXlt(m_all$datetime,format="%Y-%m-%d %H:%M:%S",tz="GMT")
@@ -135,8 +136,10 @@ m_all %>% summarize(n_distinct(id))
 m_model %>% summarize(n_distinct(id))
 m_poscomplete %>% summarize(n_distinct(id))
 
+m_model %>% summarize(total_hours=n())
 m_model %>% count(Species)
 m_model %>% group_by(Species) %>% summarize(unique_IDs=n_distinct(id))
+m_model %>% filter(Species == "Black-footed") %>% group_by(Trip_Type) %>% summarize(unique_IDs=n_distinct(id))
 
 m_all_meta <- m_all %>% 
   group_by(Species,Field_Season) %>% 
@@ -161,6 +164,25 @@ clipr::write_clip(m_poscomplete_meta)
 
 # Compare GLS states to 3-state HMM
 m_all %>% group_by(GLS_state,HMM_3S_state) %>% summarize(count=n())
+
+# Mean foraging trip duration, max foraging trip duration for each spp, trip_type
+dur_stats <- m_all %>% group_by(Species,Trip_Type) %>% 
+               summarize(mean_GPS_dur=mean(Pos_L1_2_Dur_Days),mean_acc_dur=mean(na.omit(Acc_L1_Dur_Days)))
+dur_stats
+clipr::write_clip(dur_stats)
+
+m_all %>% group_by(Trip_Type) %>% 
+  summarize(mean_GPS_dur=mean(Pos_L1_2_Dur_Days),mean_acc_dur=mean(na.omit(Acc_L1_Dur_Days)))
+
+
+# for only complete trips
+m_all %>% filter(Pos_complete==1) %>% group_by(Species,Trip_Type) %>% 
+  summarize(mean_GPS_dur=mean(Pos_L1_2_Dur_Days),mean_acc_dur=mean(na.omit(Acc_L1_Dur_Days)))
+dur_stats
+clipr::write_clip(dur_stats)
+
+m_all %>% filter(Pos_complete==1) %>% group_by(Trip_Type) %>% 
+  summarize(mean_GPS_dur=mean(Pos_L1_2_Dur_Days),mean_acc_dur=mean(na.omit(Acc_L1_Dur_Days)))
 
 ################################################################################
 # run all GAMs -----------------------------------------------------------------
@@ -437,42 +459,80 @@ response_df_mask_best_all <- list()
 
 for (spp in spp_vec) {
   
-  # Create 99% KDEs
-  kd_wind <- ks::kde(m_model %>% 
+  # # Create 99% KDEs
+  # kd_wind <- ks::kde(m_model %>%
+  #                      filter(Species == spp) %>%
+  #                      dplyr::select(wind_vel_kmh,bird_wind_angle),
+  #                    compute.cont=TRUE,gridsize = grid_size)
+  # kd_swell <- ks::kde(m_model %>%
+  #                       filter(Species == spp) %>%
+  #                       dplyr::select(shts,bird_swell_angle),
+  #                     compute.cont=TRUE,gridsize = grid_size)
+  # kd_best <- ks::kde(m_model %>%
+  #                      filter(Species == spp) %>%
+  #                       dplyr::select(wind_vel_kmh,shts),
+  #                     compute.cont=TRUE,gridsize = grid_size)
+  # 
+  # contour_99_wind <- data.frame(with(kd_wind, contourLines(x=eval.points[[1]], y=eval.points[[2]],
+  #                                                                z=estimate, levels=cont["1%"])[[1]]))
+  # contour_99_swell <- data.frame(with(kd_swell, contourLines(x=eval.points[[1]], y=eval.points[[2]],
+  #                                                          z=estimate, levels=cont["1%"])[[1]]))
+  # contour_99_best <- data.frame(with(kd_best, contourLines(x=eval.points[[1]], y=eval.points[[2]],
+  #                                                            z=estimate, levels=cont["1%"])[[1]]))
+  # 
+  # contour_99_wind_vect <- as.polygons(as.lines((contour_99_wind %>% vect(geom=c('x','y')))))
+  # contour_99_swell_vect <- as.polygons(as.lines((contour_99_swell %>% vect(geom=c('x','y')))))
+  # contour_99_best_vect <- as.polygons(as.lines((contour_99_best %>% vect(geom=c('x','y')))))
+  # 
+  # # Mask GAM response values for plotting
+  # response_rast_wind <- terra::rast(cont_wind_fv %>% filter(Species == spp) %>% dplyr::select(wind_vel_kmh, bird_wind_angle, fitted_global), type='xyz')
+  # response_rast_mask_wind = terra::mask(response_rast_wind, contour_99_wind_vect)
+  # response_df_mask_wind = as.data.frame(response_rast_mask_wind, xy=T)
+  # 
+  # response_rast_swell <- terra::rast(cont_swell_fv %>% filter(Species == spp) %>% dplyr::select(shts, bird_swell_angle, fitted_global), type='xyz')
+  # response_rast_mask_swell = terra::mask(response_rast_swell, contour_99_swell_vect)
+  # response_df_mask_swell = as.data.frame(response_rast_mask_swell, xy=T)
+  # 
+  # response_rast_best <- terra::rast(best_fv %>% filter(Species == spp) %>% dplyr::select(wind_vel_kmh, shts, fitted_global), type='xyz')
+  # response_rast_mask_best = terra::mask(response_rast_best, contour_99_best_vect)
+  # response_df_mask_best = as.data.frame(response_rast_mask_best, xy=T)
+  
+  # Create 95% KDEs
+  kd_wind <- ks::kde(m_model %>%
                        filter(Species == spp) %>%
-                       dplyr::select(wind_vel_kmh,bird_wind_angle), 
+                       dplyr::select(wind_vel_kmh,bird_wind_angle),
                      compute.cont=TRUE,gridsize = grid_size)
-  kd_swell <- ks::kde(m_model %>% 
+  kd_swell <- ks::kde(m_model %>%
                         filter(Species == spp) %>%
-                        dplyr::select(shts,bird_swell_angle), 
+                        dplyr::select(shts,bird_swell_angle),
                       compute.cont=TRUE,gridsize = grid_size)
-  kd_best <- ks::kde(m_model %>% 
+  kd_best <- ks::kde(m_model %>%
                        filter(Species == spp) %>%
                         dplyr::select(wind_vel_kmh,shts),
                       compute.cont=TRUE,gridsize = grid_size)
-  
-  contour_99_wind <- data.frame(with(kd_wind, contourLines(x=eval.points[[1]], y=eval.points[[2]],
-                                                                 z=estimate, levels=cont["1%"])[[1]]))
-  contour_99_swell <- data.frame(with(kd_swell, contourLines(x=eval.points[[1]], y=eval.points[[2]],
-                                                           z=estimate, levels=cont["1%"])[[1]]))
-  contour_99_best <- data.frame(with(kd_best, contourLines(x=eval.points[[1]], y=eval.points[[2]],
-                                                             z=estimate, levels=cont["1%"])[[1]]))
-  
-  contour_99_wind_vect <- as.polygons(as.lines((contour_99_wind %>% vect(geom=c('x','y')))))
-  contour_99_swell_vect <- as.polygons(as.lines((contour_99_swell %>% vect(geom=c('x','y')))))
-  contour_99_best_vect <- as.polygons(as.lines((contour_99_best %>% vect(geom=c('x','y')))))
-  
+
+  contour_95_wind <- data.frame(with(kd_wind, contourLines(x=eval.points[[1]], y=eval.points[[2]],
+                                                                 z=estimate, levels=cont["5%"])[[1]]))
+  contour_95_swell <- data.frame(with(kd_swell, contourLines(x=eval.points[[1]], y=eval.points[[2]],
+                                                           z=estimate, levels=cont["5%"])[[1]]))
+  contour_95_best <- data.frame(with(kd_best, contourLines(x=eval.points[[1]], y=eval.points[[2]],
+                                                             z=estimate, levels=cont["5%"])[[1]]))
+
+  contour_95_wind_vect <- as.polygons(as.lines((contour_95_wind %>% vect(geom=c('x','y')))))
+  contour_95_swell_vect <- as.polygons(as.lines((contour_95_swell %>% vect(geom=c('x','y')))))
+  contour_95_best_vect <- as.polygons(as.lines((contour_95_best %>% vect(geom=c('x','y')))))
+
   # Mask GAM response values for plotting
   response_rast_wind <- terra::rast(cont_wind_fv %>% filter(Species == spp) %>% dplyr::select(wind_vel_kmh, bird_wind_angle, fitted_global), type='xyz')
-  response_rast_mask_wind = terra::mask(response_rast_wind, contour_99_wind_vect)
+  response_rast_mask_wind = terra::mask(response_rast_wind, contour_95_wind_vect)
   response_df_mask_wind = as.data.frame(response_rast_mask_wind, xy=T)
-  
+
   response_rast_swell <- terra::rast(cont_swell_fv %>% filter(Species == spp) %>% dplyr::select(shts, bird_swell_angle, fitted_global), type='xyz')
-  response_rast_mask_swell = terra::mask(response_rast_swell, contour_99_swell_vect)
+  response_rast_mask_swell = terra::mask(response_rast_swell, contour_95_swell_vect)
   response_df_mask_swell = as.data.frame(response_rast_mask_swell, xy=T)
-  
+
   response_rast_best <- terra::rast(best_fv %>% filter(Species == spp) %>% dplyr::select(wind_vel_kmh, shts, fitted_global), type='xyz')
-  response_rast_mask_best = terra::mask(response_rast_best, contour_99_best_vect)
+  response_rast_mask_best = terra::mask(response_rast_best, contour_95_best_vect)
   response_df_mask_best = as.data.frame(response_rast_mask_best, xy=T)
   
   # Save values for all spp
@@ -526,7 +586,7 @@ blues <- colorRampPalette(c("#E2E2E2FF","navy"))
 fig_swell_cont_trim <- ggplot(response_df_mask_swell_all) +
   geom_contour_filled(aes(x,y,z=exp(fitted_global)),
                       # breaks=seq(from=0,to=1600,by=100)) +
-                      breaks=getJenksBreaks(exp(response_df_mask_swell_all$fitted_global),11)) +
+                      breaks=round(getJenksBreaks(exp(response_df_mask_swell_all$fitted_global),11))) +
   scale_fill_manual(values=blues(10),drop=FALSE,guide = guide_legend(reverse = TRUE)) +
   labs(fill = "Flaps/hour") +
   scale_y_continuous(breaks=seq(0,180,60)) +
@@ -549,7 +609,7 @@ wrap_elements(panel = fig_wave_cont_trim / fig_swell_cont_trim)
 ggplot(response_df_mask_best_all) +
   geom_contour_filled(aes(x,y,z=exp(fitted_global)),
                       # breaks=seq(from=0,to=4000,by=100)) +
-                      breaks=getJenksBreaks(exp(response_df_mask_best_all$fitted_global),11)) +
+                      breaks=round(getJenksBreaks(exp(response_df_mask_best_all$fitted_global),11))) +
   scale_fill_manual(values=magma(10),drop=FALSE,guide = guide_legend(reverse = TRUE)) +
   labs(fill = "Flaps/hour") +
   xlim(0,90) +
