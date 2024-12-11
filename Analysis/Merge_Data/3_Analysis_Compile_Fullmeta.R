@@ -47,6 +47,8 @@ compiled_m$Aux_complete <- NA
 compiled_m$Trips_Full_dur <- NA
 compiled_m$Pos_TagType <- NA
 compiled_m$Aux_TagType <- NA
+compiled_m$Pos_L1_2_Dur_Days <- NA
+compiled_m$Acc_L1_Dur_Days <- NA
 
 for (i in 1:length(birds)) {
   current_bird <- birds[i]
@@ -55,7 +57,7 @@ for (i in 1:length(birds)) {
   # Add select metadata
   current_bird_rows <- which(compiled_m$id==current_bird)
   if (length(current_bird_rows)==0) {
-    # If there is a labeling issue with the Deployment_ID. This has occured with 2 WAAL birds...
+    # If there is a labeling issue with the Deployment_ID. This has occurred with 2 WAAL birds...
     current_bird_rows <- which(str_sub(compiled_m$id,1,-2)==str_sub(current_bird,1,-2))
     # Amend id and tripID columns
     compiled_m$id[current_bird_rows] <- current_bird
@@ -72,6 +74,8 @@ for (i in 1:length(birds)) {
   compiled_m$Trips_Full_dur[current_bird_rows] <- birdmeta$Trips_Full_dur
   compiled_m$Pos_TagType[current_bird_rows] <- birdmeta$Pos_TagType
   compiled_m$Aux_TagType[current_bird_rows] <- birdmeta$Aux_TagType
+  compiled_m$Pos_L1_2_Dur_Days[current_bird_rows] <- birdmeta$Pos_L1_2_Dur_Days
+  compiled_m$Acc_L1_Dur_Days[current_bird_rows] <- birdmeta$Acc_L1_Dur_Days
 }
 
 # Save m
