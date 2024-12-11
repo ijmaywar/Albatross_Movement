@@ -137,7 +137,7 @@ crs(WAAL_Polygon) <- crs(worldmap)
 Bird_Island_GPS_compiled_complete <- read_csv(paste0(GD_dir,"L2/Bird_Island/Tag_Data/GPS/compiled_2019_2022/compiled_complete/Bird_Island_Compiled_600s_compiled_complete.csv"))
 Bird_Island_GPS_compiled_complete$datetime <- as.POSIXlt(Bird_Island_GPS_compiled_complete$datetime,format="%Y-%m-%d %H:%M:%S",tz="GMT")
 
-
+# All KDEs at the same time
 SO_KDEs <- ggplot() +
   geom_sf(worldmap,mapping=aes()) + 
   geom_sf(data = st_as_sf(BBAL_Polygon),fill='black',color='black',linewidth=1,alpha=0.5) +
@@ -157,6 +157,41 @@ SO_KDEs <- ggplot() +
 
 SO_KDEs
 
+# Individually
+BBAL_KDE <- ggplot() +
+  geom_sf(worldmap,mapping=aes()) + 
+  geom_sf(data = st_as_sf(BBAL_Polygon),fill='black',color='black',linewidth=1,alpha=0.5) +
+  coord_sf(xlim = c(-120,-10), ylim = c(-72.5,-32.5), expand = FALSE) +
+  geom_path(data=Bird_Island_GPS_compiled_complete %>% filter(substr(id,1,4)=="BBAL"),
+            aes(x=Lon360to180(lon),y=lat,group=tripID),linewidth=0.2,color='black') +
+  geom_point(aes(x=-38.0658417,y=-54.0101833),size=5,color='#479125FF') + 
+  theme_linedraw() +
+  theme(axis.title.x = element_blank(),
+        axis.title.y = element_blank())
+
+GHAL_KDE <- ggplot() +
+  geom_sf(worldmap,mapping=aes()) + 
+  geom_sf(data = st_as_sf(GHAL_Polygon),fill='black',color='black',linewidth=1,alpha=0.5) +
+  coord_sf(xlim = c(-120,-10), ylim = c(-72.5,-32.5), expand = FALSE) +
+  geom_path(data=Bird_Island_GPS_compiled_complete %>% filter(substr(id,1,4)=="GHAL"),
+            aes(x=Lon360to180(lon),y=lat,group=tripID),linewidth=0.2,color='black') +
+  geom_point(aes(x=-38.0658417,y=-54.0101833),size=5,color='#479125FF') + 
+  theme_linedraw() +
+  theme(axis.title.x = element_blank(),
+        axis.title.y = element_blank())
+
+WAAL_KDE <- ggplot() +
+  geom_sf(worldmap,mapping=aes()) + 
+  geom_sf(data = st_as_sf(WAAL_Polygon),fill='black',color='black',linewidth=1,alpha=0.5) +
+  coord_sf(xlim = c(-120,-10), ylim = c(-72.5,-32.5), expand = FALSE) +
+  geom_path(data=Bird_Island_GPS_compiled_complete %>% filter(substr(id,1,4)=="WAAL"),
+            aes(x=Lon360to180(lon),y=lat,group=tripID),linewidth=0.2,color='black') +
+  geom_point(aes(x=-38.0658417,y=-54.0101833),size=5,color='#479125FF') + 
+  theme_linedraw() +
+  theme(axis.title.x = element_blank(),
+        axis.title.y = element_blank())
+
+wrap_elements(panel = BBAL_KDE / GHAL_KDE / WAAL_KDE)
 
 # Extent map of SO foraging map
 ggplot() + 
@@ -185,7 +220,7 @@ crs(LAAL_Polygon) <- crs(worldmap)
 Midway_GPS_compiled_complete <- read_csv(paste0(GD_dir,"L2/Midway/Tag_Data/GPS/compiled_2018_2023/compiled_complete/Midway_Compiled_600s_compiled_complete.csv"))
 Midway_GPS_compiled_complete$datetime <- as.POSIXlt(Midway_GPS_compiled_complete$datetime,format="%Y-%m-%d %H:%M:%S",tz="GMT")
 
-# Without windfield, with complete GPS track
+# All NP species
 NP_KDEs <- ggplot() +
   geom_sf(data = st_shift_longitude(st_crop(worldmap,xmin=-120,xmax=120,ymin=10,ymax=70))) + 
   geom_sf(data = st_shift_longitude(st_as_sf(BFAL_Polygon)),fill='black',color='black',linewidth=1,alpha=0.5) +
@@ -202,6 +237,31 @@ NP_KDEs <- ggplot() +
 
 NP_KDEs
 
+# Individually
+BFAL_KDE <- ggplot() +
+  geom_sf(data = st_shift_longitude(st_crop(worldmap,xmin=-120,xmax=120,ymin=10,ymax=70))) + 
+  geom_sf(data = st_shift_longitude(st_as_sf(BFAL_Polygon)),fill='black',color='black',linewidth=1,alpha=0.5) +
+  coord_sf(xlim = c(140,220), ylim = c(15,55), expand = FALSE) +
+  geom_path(data=Midway_GPS_compiled_complete %>% filter(substr(id,1,4)=="BFAL"),
+            aes(x=lon,y=lat,group=tripID),linewidth=0.2,color='black') +
+  geom_point(aes(x=360-177.3813,y=28.19989),size=5,color='#1170AAFF') +
+  theme_linedraw() +
+  theme(axis.title.x = element_blank(),
+        axis.title.y = element_blank())
+
+LAAL_KDE <- ggplot() +
+  geom_sf(data = st_shift_longitude(st_crop(worldmap,xmin=-120,xmax=120,ymin=10,ymax=70))) + 
+  geom_sf(data = st_shift_longitude(st_as_sf(LAAL_Polygon)),fill='black',color='black',linewidth=1,alpha=0.5) +
+  coord_sf(xlim = c(140,220), ylim = c(15,55), expand = FALSE) +
+  geom_path(data=Midway_GPS_compiled_complete %>% filter(substr(id,1,4)=="LAAL"),
+            aes(x=lon,y=lat,group=tripID),linewidth=0.2,color='black') +
+  geom_point(aes(x=360-177.3813,y=28.19989),size=5,color='#1170AAFF') +
+  theme_linedraw() +
+  theme(axis.title.x = element_blank(),
+        axis.title.y = element_blank())
+
+wrap_elements(panel = BFAL_KDE / LAAL_KDE)
+
 # Extent map of SO foraging map
 ggplot() + 
   geom_sf(worldmap_rot,mapping=aes()) + # worldmap_rot is from Plot_Global_Env.R
@@ -217,31 +277,15 @@ ggplot() +
 
 
 # Plot both KDE maps
-
 wrap_elements(panel = SO_KDEs / NP_KDEs)
 
 # max x max
 
 
 
-################################################################################
-# Leftover code just in case
+# Plot all species individually
+library(patchwork)
+BBAL_KDE + GHAL_KDE + WAAL_KDE + BFAL_KDE + LAAL_KDE +
+  plot_layout(ncol = 3)
+# 1200 x 600
 
-# grid_polys_df <- st_read(paste0(GD_dir,"Analysis/Maywar/Global_Env/Global_avg_env_GS2.gpkg"))
-# 
-# grid_polys_df <- grid_polys_df %>% mutate(breeding_szn_si10 = rowMeans(dplyr::select(as.data.frame(grid_polys_df),paste0("si10_", c("1","2","3","12")))),
-#                                           breeding_szn_mdts = rowMeans(dplyr::select(as.data.frame(grid_polys_df),paste0("mdts_", c("1","2","3","12")))),
-#                                           breeding_szn_mdww = rowMeans(dplyr::select(as.data.frame(grid_polys_df),paste0("mdww_", c("1","2","3","12")))),
-#                                           breeding_szn_mpts = rowMeans(dplyr::select(as.data.frame(grid_polys_df),paste0("mpww_", c("1","2","3","12")))),
-#                                           breeding_szn_mwd = rowMeans(dplyr::select(as.data.frame(grid_polys_df),paste0("mwd_", c("1","2","3","12")))),
-#                                           breeding_szn_mwp = rowMeans(dplyr::select(as.data.frame(grid_polys_df),paste0("mwp_", c("1","2","3","12")))),
-#                                           breeding_szn_swh = rowMeans(dplyr::select(as.data.frame(grid_polys_df),paste0("swh_", c("1","2","3","12")))),
-#                                           breeding_szn_shts = rowMeans(dplyr::select(as.data.frame(grid_polys_df),paste0("shts_", c("1","2","3","12")))),
-#                                           breeding_szn_shww = rowMeans(dplyr::select(as.data.frame(grid_polys_df),paste0("shww_", c("1","2","3","12"))))) %>% 
-#                                           dplyr::select(centroid_lon,centroid_lat,breeding_szn_si10,breeding_szn_shts,geom)
-# 
-# # modify world dataset to remove overlapping portions with world's polygons
-# grid_polys_df_mod <- grid_polys_df %>% st_difference(polygon)
-# 
-# # Transform
-# grid_polys_df_rot <- grid_polys_df_mod %>% st_transform(crs = target_crs)
