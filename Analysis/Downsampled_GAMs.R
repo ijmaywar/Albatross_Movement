@@ -17,13 +17,14 @@ GAM_list_wind_vel <- list()
     
     # the 101st iter. is not downsampled 
     if (iter==101) {
-      m_current <- m_all %>% filter((HMM_3S_state != 1) & (Species == spp)) %>% 
-        drop_na(flaps,wind_vel_kmh,shts,bird_wind_angle,bird_swell_angle,bird_wind_angle_cat,bird_swell_angle_cat)
+      m_current <- m_model %>% filter(Species == spp)
     } else {
-      # There are 18 black-footed albatross for m_all
-      m_current <- m_all %>% filter((HMM_3S_state != 1) & (Species == spp)) %>% 
-        drop_na(flaps,wind_vel_kmh,shts,bird_wind_angle,bird_swell_angle,bird_wind_angle_cat,bird_swell_angle_cat) %>% 
-        filter(id %in% sample(unique(id), 18))
+      # There are 18 black-footed albatross for m_model
+      #   13 BGs and 5 Incs
+      m_current <- rbind((m_model %>% filter(Species == spp, Trip_Type=="BG") %>% 
+                         filter(id %in% sample(unique(id), 12))),
+                         (m_model %>% filter(Species == spp, Trip_Type=="Inc") %>% 
+                            filter(id %in% sample(unique(id), 6))))
     }
       
     current_GAM <- gam(formula = flaps ~ s(wind_vel_kmh,k=fac_k,bs='tp') + 
@@ -87,13 +88,13 @@ for (iter in 1:101) {
     
     # the 101st iter. is not downsampled 
     if (iter==101) {
-      m_current <- m_all %>% filter((HMM_3S_state != 1) & (Species == spp)) %>% 
-        drop_na(flaps,wind_vel_kmh,shts,bird_wind_angle,bird_swell_angle,bird_wind_angle_cat,bird_swell_angle_cat)
+      m_current <- m_model %>% filter(Species == spp)
     } else {
       # There are 18 black-footed albatross for m_all
-      m_current <- m_all %>% filter((HMM_3S_state != 1) & (Species == spp)) %>% 
-        drop_na(flaps,wind_vel_kmh,shts,bird_wind_angle,bird_swell_angle,bird_wind_angle_cat,bird_swell_angle_cat) %>% 
-        filter(id %in% sample(unique(id), 18))
+      m_current <- rbind((m_model %>% filter(Species == spp, Trip_Type=="BG") %>% 
+                            filter(id %in% sample(unique(id), 12))),
+                         (m_model %>% filter(Species == spp, Trip_Type=="Inc") %>% 
+                            filter(id %in% sample(unique(id), 6))))
     }
     
     current_GAM <- gam(formula = flaps ~ s(shts,k=fac_k,bs='tp') + 
@@ -148,3 +149,6 @@ fig_shts_simple
 
 # Use the tag label as an x-axis label
 fig_wind_simple / fig_shts_simple
+
+# 800 x 500
+
