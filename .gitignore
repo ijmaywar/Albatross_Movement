@@ -1,5 +1,5 @@
-# Created by https://www.toptal.com/developers/gitignore/api/macos,r
-# Edit at https://www.toptal.com/developers/gitignore?templates=macos,r
+# Created by https://www.toptal.com/developers/gitignore/api/r,macos,matlab
+# Edit at https://www.toptal.com/developers/gitignore?templates=r,macos,matlab
 
 ### macOS ###
 # General
@@ -33,6 +33,39 @@ Temporary Items
 ### macOS Patch ###
 # iCloud generated files
 *.icloud
+
+### MATLAB ###
+# Windows default autosave extension
+*.asv
+
+# OSX / *nix default autosave extension
+*.m~
+
+# Compiled MEX binaries (all platforms)
+*.mex*
+
+# Packaged app and toolbox files
+*.mlappinstall
+*.mltbx
+
+# Generated helpsearch folders
+helpsearch*/
+
+# Simulink code generation folders
+slprj/
+sccprj/
+
+# Matlab code generation folders
+codegen/
+
+# Simulink autosave extension
+*.autosave
+
+# Simulink cache files
+*.slxc
+
+# Octave session info
+octave-workspace
 
 ### R ###
 # History files
@@ -89,4 +122,4 @@ rsconnect/
 # R package: bookdown caching files
 /*_files/
 
-# End of https://www.toptal.com/developers/gitignore/api/macos,r
+# End of https://www.toptal.com/developers/gitignore/api/r,macos,matlab
