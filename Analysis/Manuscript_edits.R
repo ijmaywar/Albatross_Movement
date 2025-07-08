@@ -4,11 +4,11 @@
 #
 ################################################################################
 
-# Clear environment -------------------------------------------------------
+# Clear environment ------------------------------------------------------------
 
 rm(list = ls())
 
-# Load Packages -----------------------------------------------------------
+# Load Packages ----------------------------------------------------------------
 
 library(tidyverse)
 library(ggplot2)
@@ -35,6 +35,7 @@ library(ggExtra)
 library(grid)
 library(paletteer)
 library(bbmle)
+library(viridisLite)
 
 # Set Environment --------------------------------------------------------------
 
@@ -193,10 +194,10 @@ for (spp in spp_vec) {
   
   m_current <- m_model %>% filter(Species == spp)
   
-  # null_GAM <- gam(formula = flaps ~ s(id,k=length(unique(m_current$id)),bs="re"),
-  #                 data = m_current,
-  #                 family = dist,
-  #                 method = "REML")
+  null_GAM <- gam(formula = flaps ~ s(id,k=length(unique(m_current$id)),bs="re"),
+                  data = m_current,
+                  family = dist,
+                  method = "REML")
   # 
   # uni_wind_GAM <- gam(formula = flaps ~ s(wind_vel_kmh,k=fac_k,bs='tp') + 
   #                       s(id,k=length(unique(m_current$id)),bs="re"),
@@ -226,29 +227,28 @@ for (spp in spp_vec) {
   #                      family = "nb",
   #                      method = "REML")
   # 
-  # cont_wind_GAM <- gam(formula = flaps ~ te(wind_vel_kmh,bird_wind_angle,k=c(fac_k,fac_k),bs=c('tp','tp')) + 
-  #                        s(id,k=length(unique(m_current$id)),bs="re"),
-  #                      data = m_current,
-  #                      family = dist,
-  #                      method = "REML")
-  # 
-  # cont_swell_GAM <- gam(formula = flaps ~ te(shts,bird_swell_angle,k=c(fac_k,fac_k),bs=c('tp','tp')) + 
-  #                         s(id,k=length(unique(m_current$id)),bs="re"),
-  #                       data = m_current,
-  #                       family = dist,
-  #                       method = "REML")
-  
+  cont_wind_GAM <- gam(formula = flaps ~ te(wind_vel_kmh,bird_wind_angle,k=c(fac_k,fac_k),bs=c('tp','tp')) +
+                         s(id,k=length(unique(m_current$id)),bs="re"),
+                       data = m_current,
+                       family = dist,
+                       method = "REML")
+
+  cont_swell_GAM <- gam(formula = flaps ~ te(shts,bird_swell_angle,k=c(fac_k,fac_k),bs=c('tp','tp')) +
+                          s(id,k=length(unique(m_current$id)),bs="re"),
+                        data = m_current,
+                        family = dist,
+                        method = "REML")
   te_GAM <- gam(formula = flaps ~ te(wind_vel_kmh,shts,k=c(fac_k,fac_k),bs=c('tp','tp')) +
                   s(id,k=length(unique(m_current$id)),bs="re"),
                 data = m_current,
                 family = dist,
                 method = "REML")
   
-  # All_GAMs[[paste0(spp,"_0")]] <- null_GAM
+  All_GAMs[[paste0(spp,"_0")]] <- null_GAM
   # All_GAMs[[paste0(spp,"_1")]] <- uni_wind_GAM
   # All_GAMs[[paste0(spp,"_2")]] <- uni_swell_GAM
-  # All_GAMs[[paste0(spp,"_3")]] <- cont_wind_GAM
-  # All_GAMs[[paste0(spp,"_4")]] <- cont_swell_GAM
+  All_GAMs[[paste0(spp,"_3")]] <- cont_wind_GAM
+  All_GAMs[[paste0(spp,"_4")]] <- cont_swell_GAM
   All_GAMs[[paste0(spp,"_5")]] <- te_GAM
   # All_GAMs[[paste0(spp,"_s1")]] <- cat_wind_GAM
   # All_GAMs[[paste0(spp,"_s2")]] <- cat_swell_GAM
@@ -339,8 +339,8 @@ for (spp in spp_vec) {
   #                            bird_wind_angle = evenly(bird_wind_angle, n=100))
   # cont_swell_ds <- data_slice(cont_swell_GAM, shts = evenly(shts, n=100),
   #                             bird_swell_angle = evenly(bird_swell_angle, n=100))
-  # best_ds <- data_slice(best_GAM, wind_vel_kmh = evenly(wind_vel_kmh, n=100),
-  #                       shts = evenly(shts, n=100))
+  best_ds <- data_slice(best_GAM, wind_vel_kmh = evenly(wind_vel_kmh, n=100),
+                        shts = evenly(shts, n=100))
   best_ds_wind <- data_slice(best_GAM, wind_vel_kmh = evenly(wind_vel_kmh, n=100),
                         shts = c(min(best_GAM$model$shts,na.rm=TRUE),mean(best_GAM$model$shts,na.rm=TRUE)))
   best_ds_swell <- data_slice(best_GAM, wind_vel_kmh = c(min(best_GAM$model$wind_vel_kmh,na.rm=TRUE),mean(best_GAM$model$wind_vel_kmh,na.rm=TRUE)),
@@ -369,9 +369,9 @@ for (spp in spp_vec) {
   # cont_swell_fv_spp <- cbind(cont_swell_ds[,1:2], rep(spp,nrow(cont_swell_ds)),
   #                            fitted_values(cont_swell_GAM, data = cont_swell_ds, scale = "link",
   #                                          terms = c("(Intercept)","te(shts,bird_swell_angle)"))[,4:7])
-  # best_fv_spp <- cbind(best_ds[,1:2], rep(spp,nrow(best_ds)),
-  #                      fitted_values(best_GAM, data = best_ds, scale = "link",
-  #                                    terms = c("(Intercept)","te(wind_vel_kmh,shts)"))[,4:7])
+  best_fv_spp <- cbind(best_ds[,1:2], rep(spp,nrow(best_ds)),
+                       fitted_values(best_GAM, data = best_ds, scale = "link",
+                                     terms = c("(Intercept)","te(wind_vel_kmh,shts)"))[,4:7])
   best_fv_spp_wind <- cbind(best_ds_wind[,1:2], rep(spp,nrow(best_ds_wind)),
                        fitted_values(best_GAM, data = best_ds_wind, scale = "link",
                                      terms = c("(Intercept)","te(wind_vel_kmh,shts)"))[,4:7])
@@ -401,7 +401,7 @@ for (spp in spp_vec) {
     # uni_swell_fv <- uni_swell_fv_spp
     # cont_wind_fv <- cont_wind_fv_spp
     # cont_swell_fv <- cont_swell_fv_spp
-    # best_fv <- best_fv_spp
+    best_fv <- best_fv_spp
     best_fv_wind <- best_fv_spp_wind
     best_fv_swell <- best_fv_spp_swell
     # cat_wind_fv <- cat_wind_fv_spp
@@ -414,7 +414,7 @@ for (spp in spp_vec) {
     # uni_swell_fv <- rbind(uni_swell_fv,uni_swell_fv_spp)
     # cont_wind_fv <- rbind(cont_wind_fv,cont_wind_fv_spp)
     # cont_swell_fv <- rbind(cont_swell_fv,cont_swell_fv_spp)
-    # best_fv <- rbind(best_fv,best_fv_spp)
+    best_fv <- rbind(best_fv,best_fv_spp)
     best_fv_wind <- rbind(best_fv_wind,best_fv_spp_wind)
     best_fv_swell <- rbind(best_fv_swell,best_fv_spp_swell)
     # cat_wind_fv <- rbind(cat_wind_fv,cat_wind_fv_spp)
@@ -434,8 +434,8 @@ for (spp in spp_vec) {
 #                             "fitted_global","se_global","lower_global","upper_global")
 # colnames(cont_swell_fv) <- c("shts","bird_swell_angle","Species",
 #                              "fitted_global","se_global","lower_global","upper_global")
-# colnames(best_fv) <- c("wind_vel_kmh","shts","Species",
-#                        "fitted_global","se_global","lower_global","upper_global")
+colnames(best_fv) <- c("wind_vel_kmh","shts","Species",
+                       "fitted_global","se_global","lower_global","upper_global")
 colnames(best_fv_wind) <- c("wind_vel_kmh","shts","Species",
                        "fitted_global","se_global","lower_global","upper_global")
 colnames(best_fv_swell) <- c("wind_vel_kmh","shts","Species",
@@ -456,7 +456,7 @@ colnames(best_fv_swell) <- c("wind_vel_kmh","shts","Species",
 # uni_swell_fv$Species <- factor(uni_swell_fv$Species, levels=spp_vec)
 # cont_wind_fv$Species <- factor(cont_wind_fv$Species, levels=spp_vec)
 # cont_swell_fv$Species <- factor(cont_swell_fv$Species, levels=spp_vec)
-# best_fv$Species <- factor(best_fv$Species, levels=spp_vec)
+best_fv$Species <- factor(best_fv$Species, levels=spp_vec)
 best_fv_wind$Species <- factor(best_fv_wind$Species, levels=spp_vec)
 best_fv_swell$Species <- factor(best_fv_swell$Species, levels=spp_vec)
 # cat_wind_fv$Species <- factor(cat_wind_fv$Species, levels=spp_vec)
@@ -464,6 +464,11 @@ best_fv_swell$Species <- factor(best_fv_swell$Species, levels=spp_vec)
 # Harris_wind_fv$Species <- factor(Harris_wind_fv$Species, levels=spp_vec)
 # Harris_swell_fv$Species <- factor(Harris_swell_fv$Species, levels=spp_vec)
 # Harris_best_fv$Species <- factor(Harris_best_fv$Species, levels=spp_vec)
+
+# Save fv's
+# write.csv(best_fv_wind, "/Users/ian/Desktop/Manuscript_edits/Data/best_fv_wind.csv", row.names = FALSE)
+# write.csv(best_fv_swell, "/Users/ian/Desktop/Manuscript_edits/Data/best_fv_swell.csv", row.names = FALSE)
+write.csv(best_fv, "/Users/ian/Desktop/Manuscript_edits/Data/best_fv.csv", row.names = FALSE)
 
 ################################################################################
 # Uni-directional plots
@@ -499,28 +504,14 @@ wrap_elements(panel = fig_wind_simple / fig_shts_simple)
 ################################################################################
 # Plot the flaps/hour * relative angle figures (NEW TO THE EDITS)
 
-write.csv(best_fv_wind, "/Users/ian/Desktop/Manuscript_edits/Data/best_fv_wind.csv", row.names = FALSE)
-write.csv(best_fv_swell, "/Users/ian/Desktop/Manuscript_edits/Data/best_fv_swell.csv", row.names = FALSE)
+best_fv_wind <- read_csv("/Users/ian/Desktop/Manuscript_edits/Data/best_fv_wind.csv")
+best_fv_swell <- read_csv("/Users/ian/Desktop/Manuscript_edits/Data/best_fv_swell.csv")
 
-# Flapping rate vs. windspeed (using min shts)
-best_fv_wind_min_shts <- best_fv_wind %>%
-  group_by(Species) %>%
-  filter(shts == min(shts, na.rm = TRUE)) %>%
-  ungroup()
+y_lim_max <- 2000
 
-fig_wind_te_min_shts <- ggplot(best_fv_wind_min_shts) +
-  geom_line(aes(wind_vel_kmh,exp(fitted_global))) +
-  geom_ribbon(mapping=aes(x=wind_vel_kmh,ymin=exp(lower_global),ymax=exp(upper_global),y=NULL),alpha=0.2) +
-  labs(y="Flaps/hour",
-       x="Windspeed (km/h)") +
-  ylim(0,10000) +
-  facet_wrap(~Species,nrow=1) +
-  theme_linedraw() +
-  theme(panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank(),
-        strip.text = element_blank())
-
-fig_wind_te_min_shts
+# Get min and max windspeed based on 99% KDEs
+min_max_99_wind <- read_csv("/Users/ian/Desktop/Manuscript_edits/Data/min_max_99_wind.csv")
+print(min_max_99_wind)
 
 # Flapping rate vs. windspeed (using mean shts)
 best_fv_wind_mean_shts <- best_fv_wind %>%
@@ -528,92 +519,107 @@ best_fv_wind_mean_shts <- best_fv_wind %>%
   filter(shts == max(shts, na.rm = TRUE)) %>%
   ungroup()
 
-fig_wind_te_mean_shts <- ggplot(best_fv_wind_mean_shts) +
+# Trim fv based on min and max values from 99% KDEs
+best_fv_wind_mean_shts_trimmed <- best_fv_wind_mean_shts %>%
+                                    left_join(min_max_99_wind, by = "Species") %>%
+                                    filter(wind_vel_kmh >= min_val & wind_vel_kmh <= max_val)
+
+# Make sure the spp get plotted in the correct order
+best_fv_wind_mean_shts$Species <- factor(best_fv_wind_mean_shts$Species, levels=spp_vec)
+best_fv_wind_mean_shts_trimmed$Species <- factor(best_fv_wind_mean_shts_trimmed$Species, levels=spp_vec)
+
+# Plot figure
+fig_wind_te_mean_shts <- ggplot(best_fv_wind_mean_shts_trimmed) +
   geom_line(aes(wind_vel_kmh,exp(fitted_global))) +
   geom_ribbon(mapping=aes(x=wind_vel_kmh,ymin=exp(lower_global),ymax=exp(upper_global),y=NULL),alpha=0.2) +
   labs(y="Flaps/hour",
        x="Windspeed (km/h)") +
-  ylim(0,1500) +
+  ylim(0,y_lim_max) +
   facet_wrap(~Species,nrow=1) +
-  theme_linedraw() +
-  theme(panel.grid.major = element_blank(), 
+  theme_linedraw() + 
+  theme(panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
         strip.text = element_blank())
 
 fig_wind_te_mean_shts
 
-# Flapping rate vs. shts (using min windspeed)
-best_fv_shts_min_wind <- best_fv_swell %>%
-  group_by(Species) %>%
-  filter(wind_vel_kmh == min(wind_vel_kmh, na.rm = TRUE)) %>%
-  ungroup()
+# Get min and max swell height based on 99% KDEs
+min_max_99_swell <- read_csv("/Users/ian/Desktop/Manuscript_edits/Data/min_max_99_swell.csv")
+print(min_max_99_swell)
 
-fig_shts_te_min_wind <- ggplot(best_fv_shts_min_wind) +
-  geom_line(aes(shts,exp(fitted_global))) +
-  geom_ribbon(mapping=aes(x=shts,ymin=exp(lower_global),ymax=exp(upper_global),y=NULL),alpha=0.2) +
-  labs(y="Flaps/hour",
-       x="Significant height of total swell (m)") +
-  ylim(0,10000) +
-  facet_wrap(~Species,nrow=1) +
-  theme_linedraw() +
-  theme(panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank(),
-        strip.text = element_blank())
-
-fig_shts_te_min_wind
-
-# Flapping rate vs. shts (using min windspeed)
+# Flapping rate vs. shts (using mean windspeed)
 best_fv_shts_mean_wind <- best_fv_swell %>%
   group_by(Species) %>%
   filter(wind_vel_kmh == max(wind_vel_kmh, na.rm = TRUE)) %>%
   ungroup()
 
-fig_shts_te_mean_wind <- ggplot(best_fv_shts_mean_wind) +
+# Trim fv based on min and max values from 99% KDEs
+best_fv_shts_mean_wind_trimmed <- best_fv_shts_mean_wind %>%
+  left_join(min_max_99_swell, by = "Species") %>%
+  filter(shts >= min_val & shts <= max_val)
+
+# Make sure the spp get plotted in the correct order
+best_fv_shts_mean_wind$Species <- factor(best_fv_shts_mean_wind$Species, levels=spp_vec)
+best_fv_shts_mean_wind_trimmed$Species <- factor(best_fv_shts_mean_wind_trimmed$Species, levels=spp_vec)
+
+# Plot figure
+fig_shts_te_mean_wind <- ggplot(best_fv_shts_mean_wind_trimmed) +
   geom_line(aes(shts,exp(fitted_global))) +
-  geom_ribbon(mapping=aes(x=shts,ymin=exp(lower_global),ymax=exp(upper_global),y=NULL),alpha=0.2) +
+  geom_ribbon(mapping=aes(x=shts,
+                          ymin=exp(lower_global), 
+                          ymax = ifelse(exp(upper_global)>y_lim_max, y_lim_max, exp(upper_global)),
+                          y=NULL),
+              alpha=0.2) +
   labs(y="Flaps/hour",
-       x="Significant height of total swell (m)") +
-  ylim(0,1500) +
+       x="Swell height (m)") +
+  ylim(0,y_lim_max) +
   facet_wrap(~Species,nrow=1) +
   theme_linedraw() +
-  theme(panel.grid.major = element_blank(), 
+  theme(panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
         strip.text = element_blank())
 
 fig_shts_te_mean_wind
 
-# Plot both min figs (1000 x 300)
-wrap_elements(panel = fig_wind_te_min_shts / fig_shts_te_min_wind)
-
-# Plot both mean figs (1000 x 300)
 wrap_elements(panel = fig_wind_te_mean_shts / fig_shts_te_mean_wind)
+
+ggsave("/Users/ian/Desktop/Manuscript_edits/Figures/R_outputs/Tensor_using_mean.png",
+       wrap_elements(panel = fig_wind_te_mean_shts / fig_shts_te_mean_wind),
+       width = 8,
+       height = 4,
+       dpi = 300)
 
 ################################################################################
 # Uni-directional plots using full tensor product (NEW TO THE EDITS)
 
 # Save fv dataframes
-write.csv(Harris_wind_fv, "/Users/ian/Desktop/Manuscript_edits/Data/Harris_wind_fv.csv", row.names = FALSE)
-write.csv(Harris_swell_fv, "/Users/ian/Desktop/Manuscript_edits/Data/Harris_swell_fv.csv", row.names = FALSE)
-write.csv(Harris_best_fv, "/Users/ian/Desktop/Manuscript_edits/Data/Harris_best_fv.csv", row.names = FALSE)
+# write.csv(Harris_wind_fv, "/Users/ian/Desktop/Manuscript_edits/Data/Harris_wind_fv.csv", row.names = FALSE)
+# write.csv(Harris_swell_fv, "/Users/ian/Desktop/Manuscript_edits/Data/Harris_swell_fv.csv", row.names = FALSE)
+
+Harris_wind_fv <- read_csv('/Users/ian/Desktop/Manuscript_edits/Data/Harris_wind_fv.csv')
+Harris_swell_fv <- read_csv('/Users/ian/Desktop/Manuscript_edits/Data/Harris_swell_fv.csv')
 
 # Wind
 Harris_wind_fv$Species <- factor(Harris_wind_fv$Species, levels=spp_vec)
+
+# Custom colors from Viridis: Rocket
+full_palette <- viridisLite::viridis(n = 9, option = "rocket", direction = -1)
+my_colors <- full_palette[2:9]  # pick 8 darker colors
 
 fig_wind_Harris <- ggplot(Harris_wind_fv %>% filter(wind_vel_kmh %in% seq(10, max(wind_vel_kmh, na.rm = TRUE), by = 10),), 
                           aes(x = bird_wind_angle, y = exp(fitted_global), group = factor(wind_vel_kmh))) +
   geom_ribbon(aes(ymin = exp(lower_global), ymax = exp(upper_global), fill = factor(wind_vel_kmh)), alpha = 0.3) +
   geom_line(aes(color = factor(wind_vel_kmh)), size = 1) +
-  scale_color_viridis_d(option = "rocket", direction = -1, name = "Wind Velocity (km/h)") +
-  scale_fill_viridis_d(option = "rocket", direction = -1, name = "Wind Velocity (km/h)") +
-  scale_x_continuous(breaks = seq(0, 180, by = 30)) +  # <- Custom x-axis ticks
+  scale_color_manual(values = my_colors, name = "Wind Velocity (km/h)") + 
+  scale_fill_manual(values = my_colors, name = "Wind Velocity (km/h)") +
+  scale_x_continuous(breaks = seq(0, 180, by = 30)) +
   labs(
     x = "Bird-Wind Angle (°)",
     y = "Flaps/hour",
     color = "Wind Velocity (km/h)",
-    fill = "Wind Velocity (km/h)",
-    title = "Effect of Bird-Wind Angle at Different Wind Velocities"
+    fill = "Wind Velocity (km/h)"
   ) +
-  ylim(0,1500) +
+  ylim(0,y_lim_max) +
   facet_wrap(~Species,nrow=1) +
   theme_linedraw() +
   theme(panel.grid.major = element_blank(), 
@@ -622,26 +628,29 @@ fig_wind_Harris <- ggplot(Harris_wind_fv %>% filter(wind_vel_kmh %in% seq(10, ma
 
 fig_wind_Harris
 
-# 1100 x 300
-
 # Swell
 Harris_swell_fv$Species <- factor(Harris_swell_fv$Species, levels=spp_vec)
+
+# Custom colors from Viridis: Mako
+full_palette <- viridisLite::viridis(n = 7, option = "mako", direction = -1)
+my_colors <- full_palette[2:7]  # pick 6 darker colors
 
 fig_swell_Harris <- ggplot(Harris_swell_fv %>% filter(shts %in% seq(1, 6, by = 1)), 
                           aes(x = bird_swell_angle, y = exp(fitted_global), group = factor(shts))) +
   geom_ribbon(aes(ymin = exp(lower_global), ymax = exp(upper_global), fill = factor(shts)), alpha = 0.3) +
   geom_line(aes(color = factor(shts)), size = 1) +
-  scale_color_viridis_d(option = "mako", direction = -1, name = "Swell height (m)") +
-  scale_fill_viridis_d(option = "mako", direction = -1, name = "Swell height (m)") +
+  scale_color_manual(values = my_colors, name = "Swell height (m)") +
+  scale_fill_manual(values = my_colors, name = "Swell height (m)") +
+  # scale_color_viridis_d(option = "mako", direction = -1, name = "Swell height (m)") +
+  # scale_fill_viridis_d(option = "mako", direction = -1, name = "Swell height (m)") +
   scale_x_continuous(breaks = seq(0, 180, by = 30)) +  # <- Custom x-axis ticks
   labs(
     x = "Bird-Swell Angle (°)",
     y = "Flaps/hour",
     color = "Swell height (m)",
-    fill = "Swell height (m)",
-    title = "Effect of Bird-Swell Angle at Different Wind Velocities"
+    fill = "Swell height (m)"
   ) +
-  ylim(0,1500) +
+  ylim(0,y_lim_max) +
   facet_wrap(~Species,nrow=1) +
   theme_linedraw() +
   theme(panel.grid.major = element_blank(), 
@@ -650,52 +659,61 @@ fig_swell_Harris <- ggplot(Harris_swell_fv %>% filter(shts %in% seq(1, 6, by = 1
 
 fig_swell_Harris
 
-# 1100 x 300
+# Both, together
+wrap_elements(panel = fig_wind_Harris / fig_swell_Harris)
+
+ggsave("/Users/ian/Desktop/Manuscript_edits/Figures/R_outputs/Harris_working.png",
+       wrap_elements(panel = fig_wind_Harris / fig_swell_Harris),
+       width = 12,
+       height = 6,
+       dpi = 300)
 
 ################################################################################
 # TRIM RESPONSES of te GAMs BASED ON EXPERIENCED VALUES
 
+best_fv <- read_csv("/Users/ian/Desktop/Manuscript_edits/Data/best_fv.csv")
+
 # Create geom_contours with terra wraps
 grid_size <- 1000
-response_df_mask_wind_all <- list()
-response_df_mask_swell_all <- list()
+# response_df_mask_wind_all <- list()
+# response_df_mask_swell_all <- list()
 response_df_mask_best_all <- list()
 
 for (spp in spp_vec) {
   
   # Create 99% KDEs
-  kd_wind <- ks::kde(m_model %>%
-                       filter(Species == spp) %>%
-                       dplyr::select(wind_vel_kmh,bird_wind_angle),
-                     compute.cont=TRUE,gridsize = grid_size)
-  kd_swell <- ks::kde(m_model %>%
-                        filter(Species == spp) %>%
-                        dplyr::select(shts,bird_swell_angle),
-                      compute.cont=TRUE,gridsize = grid_size)
+  # kd_wind <- ks::kde(m_model %>%
+  #                      filter(Species == spp) %>%
+  #                      dplyr::select(wind_vel_kmh,bird_wind_angle),
+  #                    compute.cont=TRUE,gridsize = grid_size)
+  # kd_swell <- ks::kde(m_model %>%
+  #                       filter(Species == spp) %>%
+  #                       dplyr::select(shts,bird_swell_angle),
+  #                     compute.cont=TRUE,gridsize = grid_size)
   kd_best <- ks::kde(m_model %>%
                        filter(Species == spp) %>%
                         dplyr::select(wind_vel_kmh,shts),
                       compute.cont=TRUE,gridsize = grid_size)
 
-  contour_99_wind <- data.frame(with(kd_wind, contourLines(x=eval.points[[1]], y=eval.points[[2]],
-                                                                 z=estimate, levels=cont["1%"])[[1]]))
-  contour_99_swell <- data.frame(with(kd_swell, contourLines(x=eval.points[[1]], y=eval.points[[2]],
-                                                           z=estimate, levels=cont["1%"])[[1]]))
+  # contour_99_wind <- data.frame(with(kd_wind, contourLines(x=eval.points[[1]], y=eval.points[[2]],
+  #                                                                z=estimate, levels=cont["1%"])[[1]]))
+  # contour_99_swell <- data.frame(with(kd_swell, contourLines(x=eval.points[[1]], y=eval.points[[2]],
+  #                                                          z=estimate, levels=cont["1%"])[[1]]))
   contour_99_best <- data.frame(with(kd_best, contourLines(x=eval.points[[1]], y=eval.points[[2]],
                                                              z=estimate, levels=cont["1%"])[[1]]))
 
-  contour_99_wind_vect <- as.polygons(as.lines((contour_99_wind %>% vect(geom=c('x','y')))))
-  contour_99_swell_vect <- as.polygons(as.lines((contour_99_swell %>% vect(geom=c('x','y')))))
+  # contour_99_wind_vect <- as.polygons(as.lines((contour_99_wind %>% vect(geom=c('x','y')))))
+  # contour_99_swell_vect <- as.polygons(as.lines((contour_99_swell %>% vect(geom=c('x','y')))))
   contour_99_best_vect <- as.polygons(as.lines((contour_99_best %>% vect(geom=c('x','y')))))
 
   # Mask GAM response values for plotting
-  response_rast_wind <- terra::rast(cont_wind_fv %>% filter(Species == spp) %>% dplyr::select(wind_vel_kmh, bird_wind_angle, fitted_global), type='xyz')
-  response_rast_mask_wind = terra::mask(response_rast_wind, contour_99_wind_vect)
-  response_df_mask_wind = as.data.frame(response_rast_mask_wind, xy=T)
+  # response_rast_wind <- terra::rast(cont_wind_fv %>% filter(Species == spp) %>% dplyr::select(wind_vel_kmh, bird_wind_angle, fitted_global), type='xyz')
+  # response_rast_mask_wind = terra::mask(response_rast_wind, contour_99_wind_vect)
+  # response_df_mask_wind = as.data.frame(response_rast_mask_wind, xy=T)
 
-  response_rast_swell <- terra::rast(cont_swell_fv %>% filter(Species == spp) %>% dplyr::select(shts, bird_swell_angle, fitted_global), type='xyz')
-  response_rast_mask_swell = terra::mask(response_rast_swell, contour_99_swell_vect)
-  response_df_mask_swell = as.data.frame(response_rast_mask_swell, xy=T)
+  # response_rast_swell <- terra::rast(cont_swell_fv %>% filter(Species == spp) %>% dplyr::select(shts, bird_swell_angle, fitted_global), type='xyz')
+  # response_rast_mask_swell = terra::mask(response_rast_swell, contour_99_swell_vect)
+  # response_df_mask_swell = as.data.frame(response_rast_mask_swell, xy=T)
 
   response_rast_best <- terra::rast(best_fv %>% filter(Species == spp) %>% dplyr::select(wind_vel_kmh, shts, fitted_global), type='xyz')
   response_rast_mask_best = terra::mask(response_rast_best, contour_99_best_vect)
@@ -740,28 +758,39 @@ for (spp in spp_vec) {
   # response_df_mask_best = as.data.frame(response_rast_mask_best, xy=T)
   
   # Save values for all spp
-  response_df_mask_wind$Species <- spp
-  response_df_mask_swell$Species <- spp
+  # response_df_mask_wind$Species <- spp
+  # response_df_mask_swell$Species <- spp
   response_df_mask_best$Species <- spp
   
   if (spp == "Black-browed") {
-    response_df_mask_wind_all <- response_df_mask_wind
-    response_df_mask_swell_all <- response_df_mask_swell
+    # response_df_mask_wind_all <- response_df_mask_wind
+    # response_df_mask_swell_all <- response_df_mask_swell
     response_df_mask_best_all <- response_df_mask_best
   } else {
-    response_df_mask_wind_all <- rbind(response_df_mask_wind_all,response_df_mask_wind)
-    response_df_mask_swell_all <- rbind(response_df_mask_swell_all,response_df_mask_swell)
+    # response_df_mask_wind_all <- rbind(response_df_mask_wind_all,response_df_mask_wind)
+    # response_df_mask_swell_all <- rbind(response_df_mask_swell_all,response_df_mask_swell)
     response_df_mask_best_all <- rbind(response_df_mask_best_all,response_df_mask_best)
   }
   
 }
 
-response_df_mask_wind_all$Species <- factor(response_df_mask_wind_all$Species, 
-                                            levels=spp_vec)
-response_df_mask_swell_all$Species <- factor(response_df_mask_swell_all$Species,
-                                             levels=spp_vec)
+# response_df_mask_wind_all$Species <- factor(response_df_mask_wind_all$Species, 
+#                                             levels=spp_vec)
+# response_df_mask_swell_all$Species <- factor(response_df_mask_swell_all$Species,
+#                                              levels=spp_vec)
 response_df_mask_best_all$Species <- factor(response_df_mask_best_all$Species,
                                             levels=spp_vec)
+
+# Min and Max vals for windspeed
+min_max_99_wind <- response_df_mask_best_all %>% group_by(Species) %>% summarise(min_val = min(x, na.rm = TRUE), max_val = max(x, na.rm = TRUE))
+print(min_max_99_wind)
+# write.csv(min_max_99_wind, "/Users/ian/Desktop/Manuscript_edits/Data/min_max_99_wind.csv", row.names = FALSE)
+
+# Min and Max vals for swell height
+min_max_99_swell <- response_df_mask_best_all %>% group_by(Species) %>% summarise(min_val = min(y, na.rm = TRUE), max_val = max(y, na.rm = TRUE))
+print(min_max_99_swell)
+# write.csv(min_max_99_swell, "/Users/ian/Desktop/Manuscript_edits/Data/min_max_99_swell.csv", row.names = FALSE)
+
 
 ################################################################################
 # Plot the magnitude * relative angle figures

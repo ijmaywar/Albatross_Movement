@@ -149,7 +149,7 @@ env_grid_SO <- grid_global_breeding_szn_df %>%
     between(lon_180, SO_lon_min, SO_lon_max)
   )
 
-line_width <- 0.7
+line_width <- 0.5
 BBAL_color <- '#CCFF00'
 GHAL_color <- '#FF69B4'
 WAAL_color <- '#FFFFFF'
@@ -224,8 +224,8 @@ env_grid_NP <- grid_global_breeding_szn_df %>%
     between(centroid_lon, NP_lon_min, NP_lon_max)
   )
 
-BFAL_color <- '#CCFF00'
-LAAL_color <- '#FFFFFF'
+BFAL_color <- '#BFBFBF'
+LAAL_color <- '#89CFF0'
 colony_color <- '#1170AAFF'
 
 
@@ -288,11 +288,17 @@ wrap_elements(panel = NP_wind_KDE / NP_waves_KDE)
 patchwork <- (NP_wind_KDE + NP_waves_KDE) / (SO_wind_KDE + SO_waves_KDE) & 
   theme(plot.margin = margin(1, 4, 1, 4))
 
-ggsave("~/Desktop/Manuscript_edits/Figures/KDEs_with_env.png", plot = patchwork, width = 11, height = 6, units = "in", dpi = 300)
+patchwork
 
-# Get the legends --------------------------------------------------------------
+ggsave("~/Desktop/Manuscript_edits/Figures/R_outputs/KDEs_with_env_working.png", 
+       plot = patchwork, 
+       width = 11, 
+       height = 6,
+       dpi = 300)
 
-legend_width <- 28.2
+# Get the environmental legends ------------------------------------------------
+
+legend_width <- 28.35
 
 # Wind
 wind_with_legend <- ggplot() +
@@ -351,6 +357,90 @@ legend <- g$grobs[[legend_index]]
 
 ggsave(
   filename = "~/Desktop/Manuscript_edits/Figures/swell_legend.png",
+  plot = ggdraw(legend),
+  width = convertWidth(legend$widths, "in", valueOnly = TRUE) %>% sum(),
+  height = convertHeight(legend$heights, "in", valueOnly = TRUE) %>% sum(),
+  dpi = 300,
+  units = "in"
+)
+
+
+# Get the KDE legends ----------------------------------------------------------
+
+# Midway
+BFAL_sf <- st_as_sf(BFAL_Polygon) %>%
+  mutate(Species = "BFAL")
+
+LAAL_sf <- st_as_sf(LAAL_Polygon) %>%
+  mutate(Species = "LAAL")
+
+polygon_sf <- bind_rows(BFAL_sf, LAAL_sf) %>%
+  st_shift_longitude()
+
+NP_with_KDE_legend <- ggplot() +
+  geom_sf(data = polygon_sf, aes(color = Species), fill = NA, alpha = 0.2, linewidth = .7) +
+  scale_color_manual(
+    values = c("BFAL" = BFAL_color, "LAAL" = LAAL_color),
+    name = "Species"
+  ) +
+  coord_sf(xlim = c(NP_lon_min, NP_lon_max), ylim = c(NP_lat_min, NP_lat_max), expand = FALSE) +
+  theme_minimal() +
+  theme(legend.position = "right")
+
+NP_with_KDE_legend
+
+g <- ggplotGrob(NP_with_KDE_legend)
+
+# 3. Locate the legend grob
+legend_index <- which(sapply(g$grobs, function(x) x$name) == "guide-box")
+
+# 4. Extract the legend
+legend <- g$grobs[[legend_index]]
+
+ggsave(
+  filename = "~/Desktop/Manuscript_edits/Figures/R_outputs/NP_KDE_legend.png",
+  plot = ggdraw(legend),
+  width = convertWidth(legend$widths, "in", valueOnly = TRUE) %>% sum(),
+  height = convertHeight(legend$heights, "in", valueOnly = TRUE) %>% sum(),
+  dpi = 300,
+  units = "in"
+)
+
+
+# Bird Island
+BBAL_sf <- st_as_sf(BBAL_Polygon) %>%
+  mutate(Species = "BBAL")
+
+GHAL_sf <- st_as_sf(GHAL_Polygon) %>%
+  mutate(Species = "GHAL")
+
+WAAL_sf <- st_as_sf(WAAL_Polygon) %>%
+  mutate(Species = "WAAL")
+
+polygon_sf <- bind_rows(BBAL_sf, GHAL_sf, WAAL_sf) %>%
+  st_shift_longitude()
+
+SO_with_KDE_legend <- ggplot() +
+  geom_sf(data = polygon_sf, aes(color = Species), fill = NA, alpha = 0.2, linewidth = .7) +
+  scale_color_manual(
+    values = c("BBAL" = BBAL_color, "GHAL" = GHAL_color, "WAAL" = WAAL_color),
+    name = "Species"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "right")
+
+SO_with_KDE_legend
+
+g <- ggplotGrob(SO_with_KDE_legend)
+
+# 3. Locate the legend grob
+legend_index <- which(sapply(g$grobs, function(x) x$name) == "guide-box")
+
+# 4. Extract the legend
+legend <- g$grobs[[legend_index]]
+
+ggsave(
+  filename = "~/Desktop/Manuscript_edits/Figures/R_outputs/SO_KDE_legend.png",
   plot = ggdraw(legend),
   width = convertWidth(legend$widths, "in", valueOnly = TRUE) %>% sum(),
   height = convertHeight(legend$heights, "in", valueOnly = TRUE) %>% sum(),
