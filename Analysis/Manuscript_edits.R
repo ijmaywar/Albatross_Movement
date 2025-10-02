@@ -39,8 +39,8 @@ library(viridisLite)
 
 # Set Environment --------------------------------------------------------------
 
-read_dir <- '/Users/ian/Library/Mobile Documents/com~apple~CloudDocs/Projects/Albatross/Data_for_analysis/Merged_Hourly_Compiled/'
-fullmeta <- read_excel('/Users/ian/Library/Mobile Documents/com~apple~CloudDocs/Projects/Albatross/Data_for_analysis/Full_Metadata.xlsx')
+read_dir <- '/Users/imaywar/Library/Mobile Documents/com~apple~CloudDocs/Projects/Thorne/Data_for_analysis/Merged_Hourly_Compiled'
+fullmeta <- read_excel('/Users/imaywar/Library/Mobile Documents/com~apple~CloudDocs/Projects/Thorne/Data_for_analysis/Full_Metadata.xlsx')
 
 setwd(read_dir)
 files <- list.files(pattern = '*.csv')
@@ -116,8 +116,8 @@ spp_vec <- c("Black-browed", "Grey-headed", "Wandering", "Black-footed", "Laysan
 
 # KDE data ---------------------------------------------------------------------
 
-Bird_Island_KDE_df <- read_csv('/Users/ian/Library/Mobile Documents/com~apple~CloudDocs/Projects/Albatross/Data_for_analysis/ERA5_MonthlyAvg_10m/Bird_Island_KDEs_avg_env.csv')
-Midway_KDE_df <- read_csv('/Users/ian/Library/Mobile Documents/com~apple~CloudDocs/Projects/Albatross/Data_for_analysis/ERA5_MonthlyAvg_10m/Midway_KDEs_avg_env.csv')
+Bird_Island_KDE_df <- read_csv('/Users/imaywar/Library/Mobile Documents/com~apple~CloudDocs/Projects/Thorne/Data_for_analysis/ERA5_MonthlyAvg_10m/Bird_Island_KDEs_avg_env.csv')
+Midway_KDE_df <- read_csv('/Users/imaywar/Library/Mobile Documents/com~apple~CloudDocs/Projects/Thorne/Data_for_analysis/ERA5_MonthlyAvg_10m/Midway_KDEs_avg_env.csv')
 compiled_KDE_df <- rbind(Bird_Island_KDE_df,Midway_KDE_df)
 
 # Turn columns into factors
@@ -194,10 +194,10 @@ for (spp in spp_vec) {
   
   m_current <- m_model %>% filter(Species == spp)
   
-  null_GAM <- gam(formula = flaps ~ s(id,k=length(unique(m_current$id)),bs="re"),
-                  data = m_current,
-                  family = dist,
-                  method = "REML")
+  # null_GAM <- gam(formula = flaps ~ s(id,k=length(unique(m_current$id)),bs="re"),
+  #                 data = m_current,
+  #                 family = dist,
+  #                 method = "REML")
   # 
   # uni_wind_GAM <- gam(formula = flaps ~ s(wind_vel_kmh,k=fac_k,bs='tp') + 
   #                       s(id,k=length(unique(m_current$id)),bs="re"),
@@ -227,28 +227,28 @@ for (spp in spp_vec) {
   #                      family = "nb",
   #                      method = "REML")
   # 
-  cont_wind_GAM <- gam(formula = flaps ~ te(wind_vel_kmh,bird_wind_angle,k=c(fac_k,fac_k),bs=c('tp','tp')) +
-                         s(id,k=length(unique(m_current$id)),bs="re"),
-                       data = m_current,
-                       family = dist,
-                       method = "REML")
-
-  cont_swell_GAM <- gam(formula = flaps ~ te(shts,bird_swell_angle,k=c(fac_k,fac_k),bs=c('tp','tp')) +
-                          s(id,k=length(unique(m_current$id)),bs="re"),
-                        data = m_current,
-                        family = dist,
-                        method = "REML")
+  # cont_wind_GAM <- gam(formula = flaps ~ te(wind_vel_kmh,bird_wind_angle,k=c(fac_k,fac_k),bs=c('tp','tp')) +
+  #                        s(id,k=length(unique(m_current$id)),bs="re"),
+  #                      data = m_current,
+  #                      family = dist,
+  #                      method = "REML")
+  # 
+  # cont_swell_GAM <- gam(formula = flaps ~ te(shts,bird_swell_angle,k=c(fac_k,fac_k),bs=c('tp','tp')) +
+  #                         s(id,k=length(unique(m_current$id)),bs="re"),
+  #                       data = m_current,
+  #                       family = dist,
+  #                       method = "REML")
   te_GAM <- gam(formula = flaps ~ te(wind_vel_kmh,shts,k=c(fac_k,fac_k),bs=c('tp','tp')) +
                   s(id,k=length(unique(m_current$id)),bs="re"),
                 data = m_current,
                 family = dist,
                 method = "REML")
   
-  All_GAMs[[paste0(spp,"_0")]] <- null_GAM
+  # All_GAMs[[paste0(spp,"_0")]] <- null_GAM
   # All_GAMs[[paste0(spp,"_1")]] <- uni_wind_GAM
   # All_GAMs[[paste0(spp,"_2")]] <- uni_swell_GAM
-  All_GAMs[[paste0(spp,"_3")]] <- cont_wind_GAM
-  All_GAMs[[paste0(spp,"_4")]] <- cont_swell_GAM
+  # All_GAMs[[paste0(spp,"_3")]] <- cont_wind_GAM
+  # All_GAMs[[paste0(spp,"_4")]] <- cont_swell_GAM
   All_GAMs[[paste0(spp,"_5")]] <- te_GAM
   # All_GAMs[[paste0(spp,"_s1")]] <- cat_wind_GAM
   # All_GAMs[[paste0(spp,"_s2")]] <- cat_swell_GAM
@@ -292,6 +292,7 @@ for (spp in spp_vec) {
 All_metrics
 
 clipr::write_clip(All_metrics)
+
 
 ################################################################################
 # Figure of mean wind speed during breeding season relative to study site location 
@@ -371,13 +372,13 @@ for (spp in spp_vec) {
   #                                          terms = c("(Intercept)","te(shts,bird_swell_angle)"))[,4:7])
   best_fv_spp <- cbind(best_ds[,1:2], rep(spp,nrow(best_ds)),
                        fitted_values(best_GAM, data = best_ds, scale = "link",
-                                     terms = c("(Intercept)","te(wind_vel_kmh,shts)"))[,4:7])
+                                     terms = c("(Intercept)","te(wind_vel_kmh,shts)"))[,5:8])
   best_fv_spp_wind <- cbind(best_ds_wind[,1:2], rep(spp,nrow(best_ds_wind)),
                        fitted_values(best_GAM, data = best_ds_wind, scale = "link",
-                                     terms = c("(Intercept)","te(wind_vel_kmh,shts)"))[,4:7])
+                                     terms = c("(Intercept)","te(wind_vel_kmh,shts)"))[,5:8])
   best_fv_spp_swell <- cbind(best_ds_swell[,1:2], rep(spp,nrow(best_ds_swell)),
                                  fitted_values(best_GAM, data = best_ds_swell, scale = "link",
-                                               terms = c("(Intercept)","te(wind_vel_kmh,shts)"))[,4:7])
+                                               terms = c("(Intercept)","te(wind_vel_kmh,shts)"))[,5:8])
   # cat_wind_fv_spp <- cbind(cat_wind_ds[,1:2],
   #                          rep(spp,nrow(cat_wind_ds)),
   #                          fitted_values(cat_wind_GAM, data = cat_wind_ds, scale = "link",
@@ -468,7 +469,8 @@ best_fv_swell$Species <- factor(best_fv_swell$Species, levels=spp_vec)
 # Save fv's
 # write.csv(best_fv_wind, "/Users/ian/Desktop/Manuscript_edits/Data/best_fv_wind.csv", row.names = FALSE)
 # write.csv(best_fv_swell, "/Users/ian/Desktop/Manuscript_edits/Data/best_fv_swell.csv", row.names = FALSE)
-write.csv(best_fv, "/Users/ian/Desktop/Manuscript_edits/Data/best_fv.csv", row.names = FALSE)
+# write.csv(best_fv, "/Users/ian/Desktop/Manuscript_edits/Data/best_fv.csv", row.names = FALSE)
+write.csv(best_fv, "/Users/imaywar/Desktop/best_fv.csv", row.names = FALSE)
 
 ################################################################################
 # Uni-directional plots
@@ -700,7 +702,7 @@ for (spp in spp_vec) {
   # contour_99_swell <- data.frame(with(kd_swell, contourLines(x=eval.points[[1]], y=eval.points[[2]],
   #                                                          z=estimate, levels=cont["1%"])[[1]]))
   contour_99_best <- data.frame(with(kd_best, contourLines(x=eval.points[[1]], y=eval.points[[2]],
-                                                             z=estimate, levels=cont["1%"])[[1]]))
+                                                            z=estimate, levels=cont["1%"])[[1]]))
 
   # contour_99_wind_vect <- as.polygons(as.lines((contour_99_wind %>% vect(geom=c('x','y')))))
   # contour_99_swell_vect <- as.polygons(as.lines((contour_99_swell %>% vect(geom=c('x','y')))))
@@ -718,44 +720,6 @@ for (spp in spp_vec) {
   response_rast_best <- terra::rast(best_fv %>% filter(Species == spp) %>% dplyr::select(wind_vel_kmh, shts, fitted_global), type='xyz')
   response_rast_mask_best = terra::mask(response_rast_best, contour_99_best_vect)
   response_df_mask_best = as.data.frame(response_rast_mask_best, xy=T)
-  
-  # # Create 95% KDEs
-  # kd_wind <- ks::kde(m_model %>%
-  #                      filter(Species == spp) %>%
-  #                      dplyr::select(wind_vel_kmh,bird_wind_angle),
-  #                    compute.cont=TRUE,gridsize = grid_size)
-  # kd_swell <- ks::kde(m_model %>%
-  #                       filter(Species == spp) %>%
-  #                       dplyr::select(shts,bird_swell_angle),
-  #                     compute.cont=TRUE,gridsize = grid_size)
-  # kd_best <- ks::kde(m_model %>%
-  #                      filter(Species == spp) %>%
-  #                      dplyr::select(wind_vel_kmh,shts),
-  #                    compute.cont=TRUE,gridsize = grid_size)
-  # 
-  # contour_95_wind <- data.frame(with(kd_wind, contourLines(x=eval.points[[1]], y=eval.points[[2]],
-  #                                                          z=estimate, levels=cont["5%"])[[1]]))
-  # contour_95_swell <- data.frame(with(kd_swell, contourLines(x=eval.points[[1]], y=eval.points[[2]],
-  #                                                            z=estimate, levels=cont["5%"])[[1]]))
-  # contour_95_best <- data.frame(with(kd_best, contourLines(x=eval.points[[1]], y=eval.points[[2]],
-  #                                                          z=estimate, levels=cont["5%"])[[1]]))
-  # 
-  # contour_95_wind_vect <- as.polygons(as.lines((contour_95_wind %>% vect(geom=c('x','y')))))
-  # contour_95_swell_vect <- as.polygons(as.lines((contour_95_swell %>% vect(geom=c('x','y')))))
-  # contour_95_best_vect <- as.polygons(as.lines((contour_95_best %>% vect(geom=c('x','y')))))
-  # 
-  # # Mask GAM response values for plotting
-  # response_rast_wind <- terra::rast(cont_wind_fv %>% filter(Species == spp) %>% dplyr::select(wind_vel_kmh, bird_wind_angle, fitted_global), type='xyz')
-  # response_rast_mask_wind = terra::mask(response_rast_wind, contour_95_wind_vect)
-  # response_df_mask_wind = as.data.frame(response_rast_mask_wind, xy=T)
-  # 
-  # response_rast_swell <- terra::rast(cont_swell_fv %>% filter(Species == spp) %>% dplyr::select(shts, bird_swell_angle, fitted_global), type='xyz')
-  # response_rast_mask_swell = terra::mask(response_rast_swell, contour_95_swell_vect)
-  # response_df_mask_swell = as.data.frame(response_rast_mask_swell, xy=T)
-  # 
-  # response_rast_best <- terra::rast(best_fv %>% filter(Species == spp) %>% dplyr::select(wind_vel_kmh, shts, fitted_global), type='xyz')
-  # response_rast_mask_best = terra::mask(response_rast_best, contour_95_best_vect)
-  # response_df_mask_best = as.data.frame(response_rast_mask_best, xy=T)
   
   # Save values for all spp
   # response_df_mask_wind$Species <- spp
