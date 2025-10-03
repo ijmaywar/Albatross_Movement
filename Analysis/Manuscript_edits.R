@@ -138,7 +138,7 @@ m_poscomplete %>% summarize(n_distinct(id))
 m_model %>% summarize(total_hours=n())
 m_model %>% count(Species)
 m_model %>% group_by(Species) %>% summarize(unique_IDs=n_distinct(id))
-m_model %>% filter(Species == "Black-footed") %>% group_by(Trip_Type) %>% summarize(unique_IDs=n_distinct(id))
+m_model %>% group_by(Species, Trip_Type) %>% summarize(unique_IDs=n_distinct(id))
 
 m_all_meta <- m_all %>% 
   group_by(Species,Field_Season) %>% 
