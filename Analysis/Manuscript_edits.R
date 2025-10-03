@@ -1130,8 +1130,6 @@ ggplot(wave_height_long) +
         strip.text = element_blank()) +
   guides(fill=guide_legend(title="Wave type"))
 
-# 
-
 
 # s5: Pie graphic --------------------------------------------------------------
 
@@ -1144,50 +1142,3 @@ ggplot(data.frame(cat=factor(c("head","cross","tail","cross_2"),levels=c("head",
   scale_fill_manual(values=pie_colors) +
   theme_void() +
   guides(fill=FALSE)
-
-
-################################################################################
-# Plot categorical GAMs
-# These were removed from the thesis and the manuscript
-
-dir_cat_cols <- c("#9484B1FF", "#F1C100FF","#496849FF")
-fig_wind_cat <- ggplot(cat_wind_fv) +
-  geom_line(aes(wind_vel_kmh,exp(fitted_global),color=bird_wind_angle_cat)) +
-  geom_ribbon(mapping=aes(x=wind_vel_kmh,ymin=exp(lower_global),ymax=exp(upper_global),y=NULL,color=bird_wind_angle_cat,fill=bird_wind_angle_cat),alpha=0.2) +
-  guides(color=guide_legend(title = "BWA category",
-                            override.aes = list(fill = dir_cat_cols)),
-         fill="none") +
-  scale_color_manual(values=dir_cat_cols,
-                     labels=c("Head","Cross","Tail")) + 
-  scale_fill_manual(values=dir_cat_cols,
-                    labels=c("Head","Cross","Tail")) + 
-  labs(y="Flaps/hour") +
-  ylim(0,2500) +
-  facet_wrap(~Species,nrow = 1) + 
-  theme_linedraw() +
-  theme(axis.title.x = element_blank(),
-        panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank(),
-        strip.text = element_blank())
-
-fig_swell_cat <- ggplot(cat_swell_fv) +
-  geom_line(aes(shts,exp(fitted_global),color=bird_swell_angle_cat)) +
-  geom_ribbon(mapping=aes(x=shts,ymin=exp(lower_global),ymax=exp(upper_global),y=NULL,color=bird_swell_angle_cat,fill=bird_swell_angle_cat),alpha=0.2) +
-  guides(color=guide_legend(title = "BSA category",
-                            override.aes = list(fill = dir_cat_cols)),
-         fill="none") +
-  scale_color_manual(values=dir_cat_cols,
-                     labels=c("Against","Across","With")) + 
-  scale_fill_manual(values=dir_cat_cols,
-                    labels=c("Against","Across","With")) + 
-  labs(y="Flaps/hour") +
-  ylim(0,2500) +
-  facet_wrap(~Species,nrow = 1) + 
-  theme_linedraw() +
-  theme(axis.title.x = element_blank(),
-        panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank(),
-        strip.text = element_blank())
-
-wrap_elements(panel = fig_wind_cat / fig_swell_cat)
-
