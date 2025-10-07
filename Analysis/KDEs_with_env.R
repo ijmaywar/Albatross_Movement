@@ -14,7 +14,6 @@ require(tidyverse)
 library(lubridate)
 library(terra)
 library(geosphere)
-# library(foehnix)
 library(ggplot2)
 library(maps)
 library(sf)
@@ -27,6 +26,7 @@ library(scales)
 library(patchwork)
 library(cowplot)
 library(grid)
+library(colorspace)
 
 # User functions ---------------------------------------------------------------
 
@@ -119,10 +119,10 @@ grid_global_df_rot$centroid_lon <- ifelse(grid_global_df_rot$centroid_lon-270 < 
                                           grid_global_df_rot$centroid_lon + 360, 
                                           grid_global_df_rot$centroid_lon)
 
-swell_m_min <- min(grid_global_df_rot$all_shts,na.rm=TRUE)
-swell_m_max <- max(grid_global_df_rot$all_shts,na.rm=TRUE)
-wind_mps_min <- min(grid_global_df_rot$all_si10,na.rm=TRUE)
-wind_mps_max <- max(grid_global_df_rot$all_si10,na.rm=TRUE)
+swell_m_min <- 0
+swell_m_max <- 3.5
+wind_mps_min <- 0
+wind_mps_max <- 15
 
 grid_global_summer_df <- grid_global_df %>% mutate(summer_si10 = rowMeans(dplyr::select(as.data.frame(grid_global_df),paste0("si10_", c("6","7","8")))),
                                                    summer_shts = rowMeans(dplyr::select(as.data.frame(grid_global_df),paste0("shts_", c("6","7","8"))))) %>% 
@@ -155,7 +155,7 @@ line_width <- 0.5
 BBAL_color <- '#CCFF00'
 GHAL_color <- '#FF69B4'
 WAAL_color <- '#FFFFFF'
-colony_color <- '#479125FF'
+SO_colony_color <- '#479125FF'
 
 # Build KDE composite for wind
 SO_wind_KDE_breeding <- ggplot() +
@@ -164,7 +164,7 @@ SO_wind_KDE_breeding <- ggplot() +
   geom_sf(data = st_as_sf(BBAL_Polygon), fill = NA, color = BBAL_color, alpha = 0.2, linewidth = line_width) +
   geom_sf(data = st_as_sf(GHAL_Polygon), fill = NA, color = GHAL_color, alpha = 0.2, linewidth = line_width) +
   geom_sf(data = st_as_sf(WAAL_Polygon), fill = NA, color = WAAL_color, alpha = 0.2, linewidth = line_width) +
-  geom_point(aes(x=-38.0658417,y=-54.0101833), size = 3, color = colony_color) + 
+  geom_point(aes(x=-38.0658417,y=-54.0101833), size = 3, color = 'white') + #SO_colony_color) + 
   geom_sf(data = worldmap) +
   coord_sf(xlim = c(SO_lon_min, SO_lon_max), ylim = c(SO_lat_min, SO_lat_max), expand = FALSE) +
   scale_x_continuous(
@@ -196,7 +196,7 @@ SO_wind_KDE_summer <- ggplot() +
   geom_sf(data = st_as_sf(BBAL_Polygon), fill = NA, color = BBAL_color, alpha = 0.2, linewidth = line_width) +
   geom_sf(data = st_as_sf(GHAL_Polygon), fill = NA, color = GHAL_color, alpha = 0.2, linewidth = line_width) +
   geom_sf(data = st_as_sf(WAAL_Polygon), fill = NA, color = WAAL_color, alpha = 0.2, linewidth = line_width) +
-  geom_point(aes(x=-38.0658417,y=-54.0101833), size = 3, color = colony_color) + 
+  geom_point(aes(x=-38.0658417,y=-54.0101833), size = 3, color = 'white') + 
   geom_sf(data = worldmap) +
   coord_sf(xlim = c(SO_lon_min, SO_lon_max), ylim = c(SO_lat_min, SO_lat_max), expand = FALSE) +
   scale_x_continuous(
@@ -225,7 +225,7 @@ NP_lon_max <- 270
 
 BFAL_color <- '#BFBFBF'
 LAAL_color <- '#89CFF0'
-colony_color <- '#1170AAFF'
+NP_colony_color <- '#1170AAFF'
 
 world_left <- st_shift_longitude(st_crop(worldmap, xmin = 90, xmax = 192, ymin = 0, ymax = 90))
 world_right <- st_shift_longitude(st_crop(worldmap, xmin = 192, xmax = 270, ymin = 0, ymax = 90))
@@ -248,7 +248,7 @@ NP_wind_KDE_breeding <- ggplot() +
   scale_fill_viridis_c(name = "Wind (km/h)", option = "rocket", direction = -1, limits = c(wind_mps_min*3.6, wind_mps_max*3.6)) +
   geom_sf(data = st_shift_longitude(st_as_sf(BFAL_Polygon)),fill = NA, color = BFAL_color, alpha = 0.2, linewidth = line_width) +
   geom_sf(data = st_shift_longitude(st_as_sf(LAAL_Polygon)),fill = NA, color = LAAL_color, alpha = 0.2, linewidth = line_width) +
-  geom_point(aes(x=360-177.3813,y=28.19989), size = 3, color = colony_color) +
+  geom_point(aes(x=360-177.3813,y=28.19989), size = 3, color = 'white') +
   geom_sf(data = world_left) +
   geom_sf(data = world_right) +
   coord_sf(xlim = c(NP_lon_min, NP_lon_max), ylim = c(NP_lat_min, NP_lat_max), expand = FALSE) +
@@ -282,7 +282,7 @@ NP_wind_KDE_summer <- ggplot() +
   scale_fill_viridis_c(name = "Wind (km/h)", option = "rocket", direction = -1, limits = c(wind_mps_min*3.6, wind_mps_max*3.6)) +
   geom_sf(data = st_shift_longitude(st_as_sf(BFAL_Polygon)),fill = NA, color = BFAL_color, alpha = 0.2, linewidth = line_width) +
   geom_sf(data = st_shift_longitude(st_as_sf(LAAL_Polygon)),fill = NA, color = LAAL_color, alpha = 0.2, linewidth = line_width) +
-  geom_point(aes(x=360-177.3813,y=28.19989), size = 3, color = colony_color) +
+  geom_point(aes(x=360-177.3813,y=28.19989), size = 3, color = 'white') +
   geom_sf(data = world_left) +
   geom_sf(data = world_right) +
   coord_sf(xlim = c(NP_lon_min, NP_lon_max), ylim = c(NP_lat_min, NP_lat_max), expand = FALSE) +
@@ -326,10 +326,7 @@ SO_waves_KDE_breeding <- ggplot() +
   geom_sf(data = st_as_sf(BBAL_Polygon), fill = NA, color = BBAL_color, alpha = 0.1, linewidth = line_width) +
   geom_sf(data = st_as_sf(GHAL_Polygon), fill = NA, color = GHAL_color, alpha = 0.1, linewidth = line_width) +
   geom_sf(data = st_as_sf(WAAL_Polygon), fill = NA, color = WAAL_color, alpha = 0.1, linewidth = line_width) +
-  # geom_sf(data = st_as_sf(BBAL_Polygon), fill = 'white', color = 'white', alpha = 0.2, linewidth = 0) +
-  # geom_sf(data = st_as_sf(GHAL_Polygon), fill = 'white', color = 'white', alpha = 0.2, linewidth = 0) +
-  # geom_sf(data = st_as_sf(WAAL_Polygon), fill = 'white', color = 'white', alpha = 0.2, linewidth = 0) +
-  geom_point(aes(x=-38.0658417,y=-54.0101833), size = 3, color = colony_color) + 
+  geom_point(aes(x=-38.0658417,y=-54.0101833), size = 3, color = 'white') + 
   geom_sf(data = worldmap) +
   coord_sf(xlim = c(SO_lon_min, SO_lon_max), ylim = c(SO_lat_min, SO_lat_max), expand = FALSE) +
   scale_x_continuous(
@@ -350,10 +347,7 @@ SO_waves_KDE_summer <- ggplot() +
   geom_sf(data = st_as_sf(BBAL_Polygon), fill = NA, color = BBAL_color, alpha = 0.1, linewidth = line_width) +
   geom_sf(data = st_as_sf(GHAL_Polygon), fill = NA, color = GHAL_color, alpha = 0.1, linewidth = line_width) +
   geom_sf(data = st_as_sf(WAAL_Polygon), fill = NA, color = WAAL_color, alpha = 0.1, linewidth = line_width) +
-  # geom_sf(data = st_as_sf(BBAL_Polygon), fill = 'white', color = 'white', alpha = 0.2, linewidth = 0) +
-  # geom_sf(data = st_as_sf(GHAL_Polygon), fill = 'white', color = 'white', alpha = 0.2, linewidth = 0) +
-  # geom_sf(data = st_as_sf(WAAL_Polygon), fill = 'white', color = 'white', alpha = 0.2, linewidth = 0) +
-  geom_point(aes(x=-38.0658417,y=-54.0101833), size = 3, color = colony_color) + 
+  geom_point(aes(x=-38.0658417,y=-54.0101833), size = 3, color = "white") + 
   geom_sf(data = worldmap) +
   coord_sf(xlim = c(SO_lon_min, SO_lon_max), ylim = c(SO_lat_min, SO_lat_max), expand = FALSE) +
   scale_x_continuous(
@@ -376,7 +370,7 @@ NP_waves_KDE_breeding <- ggplot() +
   scale_fill_viridis_c(name = "Swell height (m)", option="mako", direction = -1, limits = c(swell_m_min, swell_m_max)) +
   geom_sf(data = st_shift_longitude(st_as_sf(BFAL_Polygon)),fill = NA, color = BFAL_color, alpha = 0.2, linewidth = line_width) +
   geom_sf(data = st_shift_longitude(st_as_sf(LAAL_Polygon)),fill = NA, color = LAAL_color, alpha = 0.2, linewidth = line_width) +
-  geom_point(aes(x=360-177.3813,y=28.19989), size = 3, color = colony_color) +
+  geom_point(aes(x=360-177.3813,y=28.19989), size = 3, color = "white") +
   geom_sf(data = world_left) +
   geom_sf(data = world_right) +
   coord_sf(xlim = c(NP_lon_min, NP_lon_max), ylim = c(NP_lat_min, NP_lat_max), expand = FALSE) +
@@ -396,7 +390,7 @@ NP_waves_KDE_summer <- ggplot() +
   scale_fill_viridis_c(name = "Swell height (m)", option="mako", direction = -1, limits = c(swell_m_min, swell_m_max)) +
   geom_sf(data = st_shift_longitude(st_as_sf(BFAL_Polygon)),fill = NA, color = BFAL_color, alpha = 0.2, linewidth = line_width) +
   geom_sf(data = st_shift_longitude(st_as_sf(LAAL_Polygon)),fill = NA, color = LAAL_color, alpha = 0.2, linewidth = line_width) +
-  geom_point(aes(x=360-177.3813,y=28.19989), size = 3, color = colony_color) +
+  geom_point(aes(x=360-177.3813,y=28.19989), size = 3, color = "white") +
   geom_sf(data = world_left) +
   geom_sf(data = world_right) +
   coord_sf(xlim = c(NP_lon_min, NP_lon_max), ylim = c(NP_lat_min, NP_lat_max), expand = FALSE) +
@@ -432,7 +426,7 @@ legend_width <- 28.35
 
 # Wind
 wind_with_legend <- ggplot() +
-  geom_tile(data = env_grid_NP, aes(x = centroid_lon, y = centroid_lat, fill = wind_kph)) +
+  geom_tile(data = env_grid_NP_breeding, aes(x = centroid_lon, y = centroid_lat, fill = wind_kph)) +
   scale_fill_viridis_c(name = NULL, option = "rocket", direction = -1, limits = c(wind_mps_min*3.6, wind_mps_max*3.6),
                        guide = guide_colorbar(
                          barwidth = legend_width,   # length (horizontal) or thickness (vertical)
@@ -462,7 +456,7 @@ ggsave(
 
 # Swell
 swell_with_legend <- ggplot() +
-  geom_tile(data = env_grid_NP, aes(x = centroid_lon, y = centroid_lat, fill = swell_m)) +
+  geom_tile(data = env_grid_NP_breeding, aes(x = centroid_lon, y = centroid_lat, fill = swell_m)) +
   scale_fill_viridis_c(
     name = NULL,  # or "" for an empty string
     option = "mako",
@@ -590,24 +584,30 @@ env_grid_SO <- env_grid_SO_breeding %>%
 env_grid_SO$diff_si10 <- env_grid_SO$breeding_szn_si10 - env_grid_SO$summer_si10
 env_grid_SO$diff_shts <- env_grid_SO$breeding_szn_shts - env_grid_SO$summer_shts
 
-# diff_swell_m_min <- min(env_grid_SO$diff_shts,na.rm=TRUE)
-# diff_swell_m_max <- max(env_grid_SO$diff_shts,na.rm=TRUE)
-# diff_wind_mps_min <- min(env_grid_SO$diff_si10,na.rm=TRUE)
-# diff_wind_mps_max <- max(env_grid_SO$diff_si10,na.rm=TRUE)
-
 diff_swell_m_min <- -2
 diff_swell_m_max <- 2
-diff_wind_mps_min <- -5
-diff_wind_mps_max <- 5
+diff_wind_mps_min <- -6.5
+diff_wind_mps_max <- 6.5
+
+div_wind_colors <- c("forestgreen", "#FFFFFF", "#c9454c")
+div_swell_colors <- c("orange", "#FFFFFF", "#415994")
+
+BBAL_color <- "black"
+GHAL_color <- "blue"
+WAAL_color <- "purple"
 
 # SO_wind_diff
 SO_wind_KDE_diff <- ggplot() +
   geom_tile(data = env_grid_SO, aes(x = lon_180.x, y = centroid_lat, fill = 3.6 * diff_si10)) +
-  scale_fill_viridis_c(name = "Wind (km/h)", option = "rocket", direction = -1, limits = c(diff_wind_mps_min*3.6, diff_wind_mps_max*3.6)) +
+  # scale_fill_viridis_c(name = "Wind (km/h)", option = "rocket", direction = -1, limits = c(diff_wind_mps_min*3.6, diff_wind_mps_max*3.6)) +
+  scale_fill_gradientn(name = "Wind (km/h)", 
+                       colors = div_wind_colors, 
+                       values  = scales::rescale(c(diff_wind_mps_min*3.6, 0, diff_wind_mps_max*3.6)),
+                       limits = c(diff_wind_mps_min*3.6, diff_wind_mps_max*3.6)) +
   geom_sf(data = st_as_sf(BBAL_Polygon), fill = NA, color = BBAL_color, alpha = 0.2, linewidth = line_width) +
   geom_sf(data = st_as_sf(GHAL_Polygon), fill = NA, color = GHAL_color, alpha = 0.2, linewidth = line_width) +
   geom_sf(data = st_as_sf(WAAL_Polygon), fill = NA, color = WAAL_color, alpha = 0.2, linewidth = line_width) +
-  geom_point(aes(x=-38.0658417,y=-54.0101833), size = 3, color = colony_color) + 
+  geom_point(aes(x=-38.0658417,y=-54.0101833), size = 3, color = "black") + 
   geom_sf(data = worldmap) +
   coord_sf(xlim = c(SO_lon_min, SO_lon_max), ylim = c(SO_lat_min, SO_lat_max), expand = FALSE) +
   scale_x_continuous(
@@ -625,11 +625,15 @@ SO_wind_KDE_diff
 # SO wave diff
 SO_waves_KDE_diff <- ggplot() +
   geom_tile(data = env_grid_SO, aes(x = lon_180.x, y = centroid_lat, fill = diff_shts)) +
-  scale_fill_viridis_c(name = "Swell height (m)", option="mako", direction = -1, limits = c(diff_swell_m_min, diff_swell_m_max)) +
+  # scale_fill_viridis_c(name = "Swell height (m)", option="mako", direction = -1, limits = c(diff_swell_m_min, diff_swell_m_max)) +
+  scale_fill_gradientn(name = "Wind (km/h)", 
+                       colors = div_swell_colors, 
+                       values  = scales::rescale(c(diff_swell_m_min, 0, diff_swell_m_max)),
+                       limits = c(diff_swell_m_min, diff_swell_m_max)) +
   geom_sf(data = st_as_sf(BBAL_Polygon), fill = NA, color = BBAL_color, alpha = 0.1, linewidth = line_width) +
   geom_sf(data = st_as_sf(GHAL_Polygon), fill = NA, color = GHAL_color, alpha = 0.1, linewidth = line_width) +
   geom_sf(data = st_as_sf(WAAL_Polygon), fill = NA, color = WAAL_color, alpha = 0.1, linewidth = line_width) +
-  geom_point(aes(x=-38.0658417,y=-54.0101833), size = 3, color = colony_color) + 
+  geom_point(aes(x=-38.0658417,y=-54.0101833), size = 3, color = "black") + 
   geom_sf(data = worldmap) +
   coord_sf(xlim = c(SO_lon_min, SO_lon_max), ylim = c(SO_lat_min, SO_lat_max), expand = FALSE) +
   scale_x_continuous(
@@ -652,13 +656,20 @@ env_grid_NP <- env_grid_NP_breeding %>%
 env_grid_NP$diff_si10 <- env_grid_NP$breeding_szn_si10 - env_grid_NP$summer_si10
 env_grid_NP$diff_shts <- env_grid_NP$breeding_szn_shts - env_grid_NP$summer_shts
 
+BFAL_color <- "yellow"
+LAAL_color <- "lightblue"
+
 # NP wind diff
 NP_wind_KDE_diff <- ggplot() +
   geom_tile(data = env_grid_NP, aes(x = centroid_lon, y = centroid_lat, fill = diff_si10*3.6)) +
-  scale_fill_viridis_c(name = "Wind (km/h)", option = "rocket", direction = -1, limits = c(diff_wind_mps_min*3.6, diff_wind_mps_max*3.6)) +
+  # scale_fill_viridis_c(name = "Wind (km/h)", option = "rocket", direction = -1, limits = c(diff_wind_mps_min*3.6, diff_wind_mps_max*3.6)) +
+  scale_fill_gradientn(name = "Wind (km/h)", 
+                       colors = div_wind_colors, 
+                       values  = scales::rescale(c(diff_wind_mps_min*3.6, 0, diff_wind_mps_max*3.6)),
+                       limits = c(diff_wind_mps_min*3.6, diff_wind_mps_max*3.6)) +
   geom_sf(data = st_shift_longitude(st_as_sf(BFAL_Polygon)),fill = NA, color = BFAL_color, alpha = 0.2, linewidth = line_width) +
   geom_sf(data = st_shift_longitude(st_as_sf(LAAL_Polygon)),fill = NA, color = LAAL_color, alpha = 0.2, linewidth = line_width) +
-  geom_point(aes(x=360-177.3813,y=28.19989), size = 3, color = colony_color) +
+  geom_point(aes(x=360-177.3813,y=28.19989), size = 3, color = "black") +
   geom_sf(data = world_left) +
   geom_sf(data = world_right) +
   coord_sf(xlim = c(NP_lon_min, NP_lon_max), ylim = c(NP_lat_min, NP_lat_max), expand = FALSE) +
@@ -678,10 +689,14 @@ NP_wind_KDE_diff
 # NP waves diff
 NP_waves_KDE_diff <- ggplot() +
   geom_tile(data = env_grid_NP, aes(x = centroid_lon, y = centroid_lat, fill = diff_shts)) +
-  scale_fill_viridis_c(name = "Swell height (m)", option="mako", direction = -1, limits = c(diff_swell_m_min, diff_swell_m_max)) +
+  # scale_fill_viridis_c(name = "Swell height (m)", option="mako", direction = -1, limits = c(diff_swell_m_min, diff_swell_m_max)) +
+  scale_fill_gradientn(name = "Wind (km/h)", 
+                       colors = div_swell_colors, 
+                       values  = scales::rescale(c(diff_swell_m_min, 0, diff_swell_m_max)),
+                       limits = c(diff_swell_m_min, diff_swell_m_max)) +
   geom_sf(data = st_shift_longitude(st_as_sf(BFAL_Polygon)),fill = NA, color = BFAL_color, alpha = 0.2, linewidth = line_width) +
   geom_sf(data = st_shift_longitude(st_as_sf(LAAL_Polygon)),fill = NA, color = LAAL_color, alpha = 0.2, linewidth = line_width) +
-  geom_point(aes(x=360-177.3813,y=28.19989), size = 3, color = colony_color) +
+  geom_point(aes(x=360-177.3813,y=28.19989), size = 3, color = "black") +
   geom_sf(data = world_left) +
   geom_sf(data = world_right) +
   coord_sf(xlim = c(NP_lon_min, NP_lon_max), ylim = c(NP_lat_min, NP_lat_max), expand = FALSE) +
@@ -720,7 +735,10 @@ legend_width <- 28.35
 # Wind
 wind_with_legend <- ggplot() +
   geom_tile(data = env_grid_NP, aes(x = centroid_lon, y = centroid_lat, fill = diff_shts*3.6)) +
-  scale_fill_viridis_c(name = NULL, option = "rocket", direction = -1, limits = c(diff_wind_mps_min*3.6, diff_wind_mps_max*3.6),
+  scale_fill_gradientn(name = NULL,
+                       colors = div_wind_colors, 
+                       values  = scales::rescale(c(diff_wind_mps_min*3.6, 0, diff_wind_mps_max*3.6)),
+                       limits = c(diff_wind_mps_min*3.6, diff_wind_mps_max*3.6),
                        guide = guide_colorbar(
                          barwidth = legend_width,   # length (horizontal) or thickness (vertical)
                          barheight = 1 # thickness (horizontal) or length (vertical)
@@ -750,15 +768,14 @@ ggsave(
 # Swell
 swell_with_legend <- ggplot() +
   geom_tile(data = env_grid_NP, aes(x = centroid_lon, y = centroid_lat, fill = diff_shts)) +
-  scale_fill_viridis_c(
-    name = NULL,  # or "" for an empty string
-    option = "mako",
-    direction = -1,
-    limits = c(diff_swell_m_min, diff_swell_m_max),
-    guide = guide_colorbar(
-      barwidth = legend_width,   # length (horizontal) or thickness (vertical)
-      barheight = 1 # thickness (horizontal) or length (vertical)
-    )) +
+  scale_fill_gradientn(name = NULL, 
+                       colors = div_swell_colors, 
+                       values  = scales::rescale(c(diff_swell_m_min, 0, diff_swell_m_max)),
+                       limits = c(diff_swell_m_min, diff_swell_m_max),
+                       guide = guide_colorbar(
+                         barwidth = legend_width,   # length (horizontal) or thickness (vertical)
+                         barheight = 1 # thickness (horizontal) or length (vertical)
+                       )) +
   coord_sf(xlim = c(NP_lon_min, NP_lon_max), ylim = c(NP_lat_min, NP_lat_max), expand = FALSE) +
   theme(legend.position = "bottom")
 
@@ -780,4 +797,90 @@ ggsave(
   dpi = 300,
   units = "in"
 )
+
+
+
+# Get the KDE legends ----------------------------------------------------------
+
+# Midway
+BFAL_sf <- st_as_sf(BFAL_Polygon) %>%
+  mutate(Species = "BFAL")
+
+LAAL_sf <- st_as_sf(LAAL_Polygon) %>%
+  mutate(Species = "LAAL")
+
+polygon_sf <- bind_rows(BFAL_sf, LAAL_sf) %>%
+  st_shift_longitude()
+
+NP_with_KDE_legend <- ggplot() +
+  geom_sf(data = polygon_sf, aes(color = Species), fill = NA, alpha = 0.2, linewidth = .7) +
+  scale_color_manual(
+    values = c("BFAL" = BFAL_color, "LAAL" = LAAL_color),
+    name = "Species"
+  ) +
+  coord_sf(xlim = c(NP_lon_min, NP_lon_max), ylim = c(NP_lat_min, NP_lat_max), expand = FALSE) +
+  theme_minimal() +
+  theme(legend.position = "right")
+
+NP_with_KDE_legend
+
+g <- ggplotGrob(NP_with_KDE_legend)
+
+# 3. Locate the legend grob
+legend_index <- which(sapply(g$grobs, function(x) x$name) == "guide-box")
+
+# 4. Extract the legend
+legend <- g$grobs[[legend_index]]
+
+ggsave(
+  filename = "/Users/ian/Desktop/NP_KDE_legend_diff.png",
+  plot = ggdraw(legend),
+  width = convertWidth(legend$widths, "in", valueOnly = TRUE) %>% sum(),
+  height = convertHeight(legend$heights, "in", valueOnly = TRUE) %>% sum(),
+  dpi = 300,
+  units = "in"
+)
+
+
+# Bird Island
+BBAL_sf <- st_as_sf(BBAL_Polygon) %>%
+  mutate(Species = "BBAL")
+
+GHAL_sf <- st_as_sf(GHAL_Polygon) %>%
+  mutate(Species = "GHAL")
+
+WAAL_sf <- st_as_sf(WAAL_Polygon) %>%
+  mutate(Species = "WAAL")
+
+polygon_sf <- bind_rows(BBAL_sf, GHAL_sf, WAAL_sf) %>%
+  st_shift_longitude()
+
+SO_with_KDE_legend <- ggplot() +
+  geom_sf(data = polygon_sf, aes(color = Species), fill = NA, alpha = 0.2, linewidth = .7) +
+  scale_color_manual(
+    values = c("BBAL" = BBAL_color, "GHAL" = GHAL_color, "WAAL" = WAAL_color),
+    name = "Species"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "right")
+
+SO_with_KDE_legend
+
+g <- ggplotGrob(SO_with_KDE_legend)
+
+# 3. Locate the legend grob
+legend_index <- which(sapply(g$grobs, function(x) x$name) == "guide-box")
+
+# 4. Extract the legend
+legend <- g$grobs[[legend_index]]
+
+ggsave(
+  filename = "/Users/ian/Desktop/SO_KDE_legend_diff.png",
+  plot = ggdraw(legend),
+  width = convertWidth(legend$widths, "in", valueOnly = TRUE) %>% sum(),
+  height = convertHeight(legend$heights, "in", valueOnly = TRUE) %>% sum(),
+  dpi = 300,
+  units = "in"
+)
+
 
