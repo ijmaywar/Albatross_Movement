@@ -197,7 +197,7 @@ best_fv_wind_mean_shts_trimmed$Species <- factor(best_fv_wind_mean_shts_trimmed$
 fig_wind_te_mean_shts <- ggplot() +
   geom_line(best_fv_wind_mean_shts_trimmed %>% filter(iter %in% 1:(n_iter-1)),
             mapping = aes(wind_vel_kmh,exp(fitted_global),group=iter),
-            alpha=0.1) +
+            alpha=0.05) +
   geom_line(best_fv_wind_mean_shts_trimmed %>% filter(iter==n_iter),
             mapping = aes(wind_vel_kmh,exp(fitted_global))) +
   labs(y="Flaps/hour",
@@ -231,7 +231,7 @@ best_fv_shts_mean_wind_trimmed$Species <- factor(best_fv_shts_mean_wind_trimmed$
 fig_shts_te_mean_wind <- ggplot() +
   geom_line(best_fv_shts_mean_wind_trimmed %>% filter(iter %in% 1:(n_iter-1)),
             mapping = aes(shts,exp(fitted_global),group=iter),
-            alpha=0.1) +
+            alpha=0.05) +
   geom_line(best_fv_shts_mean_wind_trimmed %>% filter(iter==n_iter),
             mapping = aes(shts,exp(fitted_global))) +
   labs(y="Flaps/hour",
